@@ -1,29 +1,31 @@
 import React, { useState } from 'react';
 import { Search, UserPlus, Phone, MessageSquare, Mail, MapPin, X, ArrowLeft, Trash2 } from 'lucide-react';
+import { Contact } from '../types';
 
 interface ContactsAppProps {
   darkMode: boolean;
   onOpenApp?: (appId: string) => void;
+  contacts?: Contact[];
+  onAddContact?: (contact: Contact) => void;
+  onDeleteContact?: (id: string) => void;
 }
 
-interface Contact {
-  id: string;
-  name: string;
-  avatar: string;
-  role: string;
-  phone: string;
-  email: string;
-  location: string;
-}
-
-export default function ContactsApp({ darkMode, onOpenApp }: ContactsAppProps) {
-  const [contacts, setContacts] = useState<Contact[]>([
+export default function ContactsApp({ 
+  darkMode, 
+  onOpenApp, 
+  contacts: propContacts, 
+  onAddContact, 
+  onDeleteContact 
+}: ContactsAppProps) {
+  const [localContacts, setLocalContacts] = useState<Contact[]>([
     { id: 'mother', name: 'Mãe ❤️', avatar: '👩', role: 'Mãe', phone: '(11) 99222-3344', email: 'mamae.querida@email.com', location: 'São Paulo, SP' },
     { id: 'love', name: 'Amor 💖', avatar: '🥰', role: 'Namorada', phone: '(11) 99888-7766', email: 'meu.amor@email.com', location: 'São Paulo, SP' },
     { id: 'grandmother', name: 'Vovó 👵', avatar: '👵', role: 'Família', phone: '(11) 98765-4321', email: 'vovo.querida@email.com', location: 'Santos, SP' },
     { id: 'friend-lucas', name: 'Lucas 🤙', avatar: '👦', role: 'Amigo', phone: '(11) 99111-2233', email: 'lucas.friend@email.com', location: 'São Bernardo, SP' },
     { id: 'tech-support', name: 'Suporte Mock OS', avatar: '🛠️', role: 'Suporte Técnico', phone: '0800 123 456', email: 'suporte@mockos.io', location: 'Nuvem' },
   ]);
+
+  const contacts = propContacts || localContacts;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -56,7 +58,11 @@ export default function ContactsApp({ darkMode, onOpenApp }: ContactsAppProps) {
       location: newLocation || 'Brasil'
     };
 
-    setContacts(prev => [...prev, newContact].sort((a, b) => a.name.localeCompare(b.name)));
+    if (onAddContact) {
+      onAddContact(newContact);
+    } else {
+      setLocalContacts(prev => [...prev, newContact].sort((a, b) => a.name.localeCompare(b.name)));
+    }
     setShowAddModal(false);
     
     // Clear fields
@@ -69,7 +75,11 @@ export default function ContactsApp({ darkMode, onOpenApp }: ContactsAppProps) {
   };
 
   const handleDeleteContact = (id: string) => {
-    setContacts(prev => prev.filter(c => c.id !== id));
+    if (onDeleteContact) {
+      onDeleteContact(id);
+    } else {
+      setLocalContacts(prev => prev.filter(c => c.id !== id));
+    }
     setSelectedContact(null);
   };
 

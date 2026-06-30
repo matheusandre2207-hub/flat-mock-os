@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Wifi, WifiOff, Bluetooth, Signal, Plane, Moon, Sun, 
   Volume2, VolumeX, Sliders, Search, User, Folder, FileText, 
@@ -9,7 +9,7 @@ import {
   Grid, Compass, FolderClosed, PlayCircle, Eye, EyeOff, Maximize, Minimize
 } from 'lucide-react';
 
-import { Wallpaper, NotificationItem, Track, Chat, Folder as FolderType } from './types';
+import { Wallpaper, NotificationItem, PopupNotification, Track, Chat, Folder as FolderType, Contact } from './types';
 import { wallpapersList, initialNotifications, tracksList, initialChats, initialFolders } from './data';
 
 // Component imports
@@ -46,6 +46,42 @@ const appMetadata: Record<string, { label: string; icon: string; iconBgClass: st
   contatos: { label: 'Contatos', icon: '👥', iconBgClass: 'bg-sky-500' },
   camera: { label: 'Câmera', icon: '📷', iconBgClass: 'bg-zinc-700' }
 };
+
+const randomIncomingMessages = [
+  {
+    chatId: 'love',
+    name: 'Amor 💖',
+    avatar: '💖',
+    texts: [
+      "Amor, quando chegar me avisa tá? Te amo! 🥰",
+      "Queria tanto comer uma pizza hoje de noite... o que acha? 🍕",
+      "Terminou o que estava fazendo aí? Me liga! 😘",
+      "Você é o melhor, sabia? Passando só pra lembrar! ❤️"
+    ]
+  },
+  {
+    chatId: 'friend-lucas',
+    name: 'Lucas 🤙',
+    avatar: '🤙',
+    texts: [
+      "Mano, viu o jogo ontem? Que loucura! ⚽",
+      "Eae, bora fechar um game hoje mais tarde? 🎮",
+      "Tô precisando de uma ajuda com um negócio aqui, depois me liga!",
+      "Aquele churrasco do fim de semana tá de pé né? 🥩🍻"
+    ]
+  },
+  {
+    chatId: 'grandmother',
+    name: 'Vovó 👵',
+    avatar: '👵',
+    texts: [
+      "Meu neto querido, vem comer bolo de cenoura hoje! 👵🍰",
+      "Deus te abençoe muito e te proteja sempre. Amém! 🙏",
+      "Como você está, meu filho? Manda notícias!",
+      "Não fique trabalhando muito nesse computador, faz mal pras vistas! 👵🌸"
+    ]
+  }
+];
 
 export default function App() {
   // 1. Core System Settings & States
@@ -89,6 +125,52 @@ export default function App() {
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
   const [chats, setChats] = useState<Chat[]>(initialChats);
   const [folders, setFolders] = useState<FolderType[]>(initialFolders);
+
+  const [contacts, setContacts] = useState<Contact[]>([
+    { id: 'mother', name: 'Mãe ❤️', avatar: '👩', role: 'Mãe', phone: '(11) 99222-3344', email: 'mamae.querida@email.com', location: 'São Paulo, SP' },
+    { id: 'love', name: 'Amor 💖', avatar: '🥰', role: 'Namorada', phone: '(11) 99888-7766', email: 'meu.amor@email.com', location: 'São Paulo, SP' },
+    { id: 'grandmother', name: 'Vovó 👵', avatar: '👵', role: 'Família', phone: '(11) 98765-4321', email: 'vovo.querida@email.com', location: 'Santos, SP' },
+    { id: 'friend-lucas', name: 'Lucas 🤙', avatar: '👦', role: 'Amigo', phone: '(11) 99111-2233', email: 'lucas.friend@email.com', location: 'São Bernardo, SP' },
+    { id: 'tech-support', name: 'Suporte Mock OS', avatar: '🛠️', role: 'Suporte Técnico', phone: '0800 123 456', email: 'suporte@mockos.io', location: 'Nuvem' },
+  ]);
+
+  const addContact = (newContact: Contact) => {
+    setContacts(prev => [...prev, newContact].sort((a, b) => a.name.localeCompare(b.name)));
+    // Also create a chat for this contact if it doesn't exist
+    setChats(prev => {
+      if (prev.some(c => c.id === newContact.id)) return prev;
+      const now = new Date();
+      const timestamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const newChat: Chat = {
+        id: newContact.id,
+        name: newContact.name,
+        avatar: newContact.avatar,
+        role: newContact.role,
+        unread: false,
+        messages: [
+          {
+            id: `sys-${Date.now()}`,
+            sender: 'contact',
+            text: `Oi Mateus! Adicionei seu número aqui nos meus contatos. Tudo bem? 😊`,
+            timestamp
+          }
+        ]
+      };
+      return [...prev, newChat];
+    });
+  };
+
+  const deleteContact = (id: string) => {
+    setContacts(prev => prev.filter(c => c.id !== id));
+    setChats(prev => prev.filter(c => c.id !== id));
+    if (selectedChatId === id) {
+      setSelectedChatId(null);
+    }
+  };
+
+  // Selected chat ID for messaging & Popups state
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [activePopup, setActivePopup] = useState<PopupNotification | null>(null);
 
   // Installed Apps State
   const [installedApps, setInstalledApps] = useState<string[]>([
@@ -176,6 +258,105 @@ export default function App() {
       }
     }
   };
+
+  // Auto-dismiss popup notifications after 5 seconds
+  useEffect(() => {
+    if (activePopup) {
+      const timer = setTimeout(() => {
+        setActivePopup(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [activePopup]);
+
+  // Periodic background message simulator
+  useEffect(() => {
+    let intervalId: any = null;
+
+    // Wait 60 seconds before the first background message, then send every 150 seconds to prevent spam
+    const initialTimer = setTimeout(() => {
+      const sendRandomMessage = () => {
+        // Use setChats functional form to always read the freshest state without triggering re-runs
+        setChats(prevChats => {
+          // Exclude 'self-notes' and the currently active chat
+          const availableChats = prevChats.filter(c => c.id !== 'self-notes' && c.id !== selectedChatId);
+          if (availableChats.length === 0) return prevChats;
+
+          const targetChat = availableChats[Math.floor(Math.random() * availableChats.length)];
+
+          const getBgMessage = async () => {
+            try {
+              const res = await fetch('/api/chat/background', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contactId: targetChat.id,
+                  contactName: targetChat.name,
+                  contactRole: targetChat.role,
+                  messageHistory: targetChat.messages
+                })
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data && data.reply) {
+                  return data.reply;
+                }
+              }
+            } catch (err) {
+              console.warn("Background AI message generation failed, using static fallback:", err);
+            }
+            // Static fallback
+            const staticContact = randomIncomingMessages.find(rc => rc.chatId === targetChat.id) || randomIncomingMessages[0];
+            return staticContact.texts[Math.floor(Math.random() * staticContact.texts.length)];
+          };
+
+          getBgMessage().then(text => {
+            if (!text) return;
+
+            const now = new Date();
+            const timestamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const botMsg = {
+              id: `b-bg-${Date.now()}`,
+              sender: 'contact' as const,
+              text,
+              timestamp
+            };
+
+            setChats(latestChats => latestChats.map(c => {
+              if (c.id === targetChat.id) {
+                const isCurrentlyViewing = (activeApp === 'mensagens' && selectedChatId === targetChat.id);
+                return {
+                  ...c,
+                  unread: !isCurrentlyViewing,
+                  messages: [...c.messages, botMsg]
+                };
+              }
+              return c;
+            }));
+
+            const isCurrentlyViewing = (activeApp === 'mensagens' && selectedChatId === targetChat.id);
+            if (!isCurrentlyViewing) {
+              triggerNotification(targetChat.name, text, 'mensagens', targetChat.avatar, targetChat.id);
+            }
+          });
+
+          return prevChats;
+        });
+      };
+
+      sendRandomMessage();
+
+      intervalId = setInterval(sendRandomMessage, 150000);
+    }, 60000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [activeApp, selectedChatId]);
+
   const [swipeUpStartY, setSwipeUpStartY] = useState<number | null>(null);
   const [swipeUpCurrentY, setSwipeUpCurrentY] = useState<number | null>(null);
   const swipeUpTimerRef = useRef<any>(null);
@@ -183,12 +364,17 @@ export default function App() {
   const touchCurrentYRef = useRef<number>(0);
   const isHoldingBottomSwipeRef = useRef<boolean>(false);
 
-  // 2. Volume Change HUD display trigger
+  // 2. Volume Change HUD display trigger (disabled by user request)
   useEffect(() => {
-    setShowVolumeHUD(true);
-    const timer = setTimeout(() => setShowVolumeHUD(false), 1500);
-    return () => clearTimeout(timer);
+    // Disabled volume HUD display
   }, [volume]);
+
+  // Auto-close multitasking/recent apps panel when there are no opened apps left
+  useEffect(() => {
+    if (recentAppsOpen && openedApps.length === 0) {
+      setRecentAppsOpen(false);
+    }
+  }, [openedApps, recentAppsOpen]);
 
   // 3. Time Tick Clock trigger
   useEffect(() => {
@@ -345,6 +531,42 @@ export default function App() {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
+  // Trigger system-wide notification with a popup
+  const triggerNotification = (title: string, body: string, app: string, avatar?: string, chatId?: string) => {
+    const newNotif: NotificationItem = {
+      id: `${app}-${Date.now()}`,
+      title,
+      body,
+      time: "Agora",
+      app,
+    };
+
+    setNotifications(prev => [newNotif, ...prev]);
+
+    // Show popup
+    setActivePopup({
+      id: newNotif.id,
+      title,
+      body,
+      app,
+      avatar,
+      chatId,
+    });
+  };
+
+  // Handle click or swipe-down action on popup notification
+  const handlePopupAction = (popup: PopupNotification) => {
+    if (popup.app === 'mensagens') {
+      if (popup.chatId) {
+        setSelectedChatId(popup.chatId);
+      }
+      openApp('mensagens');
+    } else {
+      openApp(popup.app);
+    }
+    setActivePopup(null);
+  };
+
   // Open an app safely
   const openApp = (appName: string) => {
     setActiveApp(appName);
@@ -392,7 +614,7 @@ export default function App() {
           }
         }
       }, 350);
-    } else if (x > window.innerWidth - 20 && activeApp !== null) {
+    } else if (x > window.innerWidth - 45 && activeApp !== null) {
       // Começou bem na borda direita (gesto de voltar do Android/iOS)
       setSwipeBackStartX(x);
       setSwipeBackCurrentX(x);
@@ -536,6 +758,8 @@ export default function App() {
             setChats={setChats}
             darkMode={darkMode}
             isActive={false}
+            selectedChatId={selectedChatId}
+            setSelectedChatId={setSelectedChatId}
           />
         );
       case 'musica':
@@ -585,7 +809,15 @@ export default function App() {
       case 'telefone':
         return <PhoneApp darkMode={darkMode} onOpenApp={openApp} />;
       case 'contatos':
-        return <ContactsApp darkMode={darkMode} onOpenApp={openApp} />;
+        return (
+          <ContactsApp 
+            darkMode={darkMode} 
+            onOpenApp={openApp} 
+            contacts={contacts}
+            onAddContact={addContact}
+            onDeleteContact={deleteContact}
+          />
+        );
       case 'camera':
         return <CameraApp darkMode={darkMode} isActive={false} />;
       default:
@@ -612,16 +844,7 @@ export default function App() {
           style={{ opacity: nightMode ? 1 : 0 }} 
         />
 
-        {/* Floating volume bar HUD capsule */}
-        {showVolumeHUD && (
-          <div className="absolute top-16 left-4 z-50 animate-fade-in bg-slate-900/95 text-white rounded-2xl p-2.5 flex items-center gap-2 border border-white/10 shadow-lg text-xs">
-            <Volume2 size={12} className={volume === 0 ? "text-slate-500" : "text-blue-400"} />
-            <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-              <div className="bg-blue-500 h-full rounded-full" style={{ width: `${volume}%` }} />
-            </div>
-            <span className="font-mono font-bold text-[10px]">{volume}%</span>
-          </div>
-        )}
+
 
         {/* ==========================================
            2. SYSTEM WALLPAPER BACKGROUND (Metal Shift Animado)
@@ -1067,6 +1290,12 @@ export default function App() {
               setChats={setChats}
               darkMode={darkMode}
               isActive={activeApp === 'mensagens'}
+              selectedChatId={selectedChatId}
+              setSelectedChatId={setSelectedChatId}
+              onIncomingMessage={(senderName, text, chatId) => {
+                const chatObj = chats.find(c => c.id === chatId);
+                triggerNotification(senderName, text, 'mensagens', chatObj?.avatar, chatId);
+              }}
             />
           </div>
         </div>
@@ -1219,7 +1448,13 @@ export default function App() {
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
-            <ContactsApp darkMode={darkMode} onOpenApp={openApp} />
+            <ContactsApp 
+              darkMode={darkMode} 
+              onOpenApp={openApp} 
+              contacts={contacts}
+              onAddContact={addContact}
+              onDeleteContact={deleteContact}
+            />
           </div>
         </div>
 
@@ -1399,6 +1634,70 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* ==========================================
+           10. POPUP NOTIFICATION CAP (Deslizar para Cima para Fechar, Deslizar para Baixo para Abrir)
+           ========================================== */}
+        <AnimatePresence>
+          {activePopup && (
+            <motion.div
+              key={activePopup.id}
+              initial={{ x: "-50%", y: -120, opacity: 0, scale: 0.95 }}
+              animate={{ x: "-50%", y: 0, opacity: 1, scale: 1 }}
+              exit={{ x: "-50%", y: -120, opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+              drag="y"
+              dragConstraints={{ top: -150, bottom: 150 }}
+              dragElastic={{ top: 0.15, bottom: 0.4 }}
+              onDragEnd={(event, info) => {
+                if (info.offset.y < -35 || info.velocity.y < -300) {
+                  // Swipe up: close/dismiss
+                  setActivePopup(null);
+                } else if (info.offset.y > 50 || info.velocity.y > 300) {
+                  // Swipe down: open/activate
+                  handlePopupAction(activePopup);
+                }
+              }}
+              onClick={() => handlePopupAction(activePopup)}
+              className="absolute top-14 left-1/2 z-[200] w-[calc(100%-24px)] max-w-[360px] flex items-center gap-3.5 p-3.5 rounded-3xl bg-slate-900/95 dark:bg-[#1a1c22]/95 text-white shadow-[0_20px_45px_rgba(0,0,0,0.55)] border border-white/10 backdrop-blur-xl cursor-pointer select-none active:scale-[0.99] transition-transform duration-100"
+            >
+              {/* Avatar / App Icon on Left */}
+              <div className="flex-shrink-0 relative">
+                {activePopup.avatar ? (
+                  <div className="w-11 h-11 rounded-2xl overflow-hidden bg-slate-800 flex items-center justify-center border border-white/10 shadow-inner">
+                    <span className="text-xl">{activePopup.avatar}</span>
+                  </div>
+                ) : (
+                  <div className="w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center border border-white/10 text-white shadow-inner">
+                    <Bell size={20} />
+                  </div>
+                )}
+                {/* Secondary tiny app icon indicator */}
+                <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-lg p-1 border border-slate-900 shadow">
+                  <MessageSquare size={10} className="text-white" />
+                </div>
+              </div>
+
+              {/* Text content in middle */}
+              <div className="flex-1 min-w-0 pr-1">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-bold text-[12.5px] tracking-tight truncate text-white">
+                    {activePopup.title}
+                  </span>
+                  <span className="text-[9.5px] font-mono text-white/40 flex-shrink-0">
+                    Agora
+                  </span>
+                </div>
+                <p className="text-[11.5px] text-white/80 line-clamp-2 leading-snug mt-0.5">
+                  {activePopup.body}
+                </p>
+              </div>
+
+              {/* Pull handle / Drag hint line at the bottom of the card */}
+              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-white/20" />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ==========================================
            9. GESTURE NAVIGATION PILL BAR (Android/iOS Style)

@@ -12,6 +12,15 @@ export interface NotificationItem {
   app: string;
 }
 
+export interface PopupNotification {
+  id: string;
+  title: string;
+  body: string;
+  app: string;
+  chatId?: string;
+  avatar?: string;
+}
+
 export interface Track {
   title: string;
   artist: string;
@@ -35,6 +44,16 @@ export interface Chat {
   role: string;
   messages: Message[];
   unread: boolean;
+}
+
+export interface Contact {
+  id: string;
+  name: string;
+  avatar: string;
+  role: string;
+  phone: string;
+  email: string;
+  location: string;
 }
 
 export interface SystemFile {
