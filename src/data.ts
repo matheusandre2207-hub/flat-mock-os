@@ -12,10 +12,17 @@ export const wallpapersList: Wallpaper[] = [
 
 export const initialNotifications: NotificationItem[] = [
   {
+    id: "fs-tip",
+    title: "Experiência Nativa 📱",
+    body: "Esconda a barra de status do seu smartphone Android e use como app nativo! Ative a 'Tela Cheia' no painel de atalhos rápidos do topo ou nas Configurações da Tela.",
+    time: "Agora",
+    app: "sistema"
+  },
+  {
     id: "1",
     title: "Sistema Mock OS",
     body: "Mock OS instalado com sucesso. Abra o painel de Configurações para simular diferentes níveis de bateria!",
-    time: "Agora",
+    time: "2m atrás",
     app: "sistema"
   },
   {
@@ -62,6 +69,42 @@ export const initialChats: Chat[] = [
       { id: "m2", sender: "contact", text: "Oi meu filho! Você está se alimentando bem? Me liga depois.", timestamp: "18:15" },
       { id: "m3", sender: "user", text: "Oi mãe, sim! Estou estudando bastante.", timestamp: "18:18" },
       { id: "m4", sender: "contact", text: "Que ótimo, te amo! Se cuida ❤️", timestamp: "18:20" }
+    ]
+  },
+  {
+    id: "love",
+    name: "Amor 💖",
+    avatar: "🥰",
+    role: "Namorada",
+    unread: true,
+    messages: [
+      { id: "l1", sender: "contact", text: "Oi lindo! Já chegou no trabalho? ❤️", timestamp: "18:02" },
+      { id: "l2", sender: "user", text: "Oi amor, cheguei sim! Acabei de sentar no computador.", timestamp: "18:05" },
+      { id: "l3", sender: "contact", text: "Que bom vida! Bom trabalho, te amo muito! Me avisa quando sair 🥰", timestamp: "18:06" }
+    ]
+  },
+  {
+    id: "grandmother",
+    name: "Vovó 👵",
+    avatar: "👵",
+    role: "Família",
+    unread: false,
+    messages: [
+      { id: "g1", sender: "contact", text: "Oi meu netinho querido... a bênção de Deus... fiz aquele bolo de cenoura que você gosta... vem lanchar com a vovó hoje?...", timestamp: "15:20" },
+      { id: "g2", sender: "user", text: "Oi vó! Que delícia, vou tentar ir sim! Amém!", timestamp: "15:35" },
+      { id: "g3", sender: "contact", text: "Deus te abençoe meu filho... te espero...", timestamp: "15:40" }
+    ]
+  },
+  {
+    id: "friend-lucas",
+    name: "Lucas 🤙",
+    avatar: "👦",
+    role: "Amigo",
+    unread: true,
+    messages: [
+      { id: "fl1", sender: "contact", text: "Eae mano, vai rolar o fut hoje à noite? ⚽", timestamp: "17:40" },
+      { id: "fl2", sender: "user", text: "Opa, se a galera confirmar eu tô dentro!", timestamp: "17:45" },
+      { id: "fl3", sender: "contact", text: "Demorou, vou mandar lá no grupo pra agitar kkk", timestamp: "17:46" }
     ]
   },
   {

@@ -4,7 +4,8 @@ import {
   Smartphone, RefreshCw, User, Info, BatteryCharging, Check,
   ChevronRight, ChevronLeft, Search, Bell, Lock, Grid,
   Accessibility, Play, Shield, Activity, Smartphone as PhoneIcon,
-  Volume1, VolumeX, Eye, Sparkles, CheckCircle2, ChevronDown, Trash2
+  Volume1, VolumeX, Eye, Sparkles, CheckCircle2, ChevronDown, Trash2,
+  Maximize
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Wallpaper } from '../types';
@@ -45,6 +46,10 @@ interface SettingsAppProps {
   isActive?: boolean;
   installedApps: string[];
   onUninstall: (id: string) => void;
+
+  // Fullscreen controls
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 // Simple synthesizer for audio feedback using Web Audio API
@@ -106,7 +111,9 @@ export default function SettingsApp({
   wallpapers, currentWallpaperIndex, setWallpaperIndex,
   isActive = false,
   installedApps,
-  onUninstall
+  onUninstall,
+  isFullscreen = false,
+  onToggleFullscreen
 }: SettingsAppProps) {
   
   const [currentPanel, setCurrentPanel] = useState<string | null>(null);
@@ -275,44 +282,46 @@ export default function SettingsApp({
         
         {/* MAIN PANEL */}
         {currentPanel === null && (
-          <div className="px-4 pt-4 space-y-4 max-w-md mx-auto w-full">
+          <div className="px-4 pt-5 max-w-md mx-auto w-full flex flex-col gap-6">
             
             {/* Title */}
-            <div className="text-center py-2 relative">
-              <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
+            <div className="text-left py-1 relative">
+              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">Configurações</h1>
             </div>
 
             {/* Search Bar */}
-            <div className="relative flex items-center px-1">
-              <Search size={16} className="absolute left-4.5 text-slate-400 dark:text-slate-500" />
+            <div className="relative flex items-center mb-1">
+              <Search size={16} className="absolute left-3 text-slate-400 dark:text-slate-500" />
               <input 
                 type="text" 
                 placeholder="Buscar" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full pl-11 pr-10 py-2.5 ${
-                  darkMode ? 'bg-[#1c1c1e] text-white border border-white/5' : 'bg-[#e3e3e9] text-slate-950 border border-slate-200/50'
-                } placeholder-slate-400 dark:placeholder-slate-500 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all`}
+                className={`w-full pl-9 pr-10 py-2.5 ${
+                  darkMode 
+                    ? 'bg-[#1c1c1e] text-white border border-white/5' 
+                    : 'bg-white text-slate-900 border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.05)]'
+                } placeholder-slate-400 dark:placeholder-slate-500 text-sm font-medium rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all`}
               />
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-4.5 p-0.5 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-full transition-colors"
+                  className="absolute right-3 p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors flex items-center justify-center"
                 >
-                  <span className="text-xs opacity-60">✕</span>
+                  <span className="text-[10px] leading-none text-slate-500">✕</span>
                 </button>
               )}
             </div>
 
             {/* SEARCH RESULTS VIEW */}
             {searchQuery.trim() !== '' ? (
-              <div className="space-y-2 px-1">
-                <h3 className="text-xs font-bold uppercase tracking-wider opacity-50 px-2">
+              <div className="space-y-2">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">
                   Resultados da busca
                 </h3>
                 {filteredSearch.length > 0 ? (
-                  <div className={`rounded-2xl overflow-hidden p-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
+                  <div className={`rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] border ${
+                    darkMode ? 'bg-[#1c1c1e] border-white/5 divide-y divide-white/5' : 'bg-white border-slate-200/60 divide-y divide-slate-100'
                   }`}>
                     {filteredSearch.map(item => (
                       <button 
@@ -321,325 +330,379 @@ export default function SettingsApp({
                           setCurrentPanel(item.id);
                           setSearchQuery('');
                         }}
-                        className="w-full flex items-center justify-between p-3 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all"
+                        className={`w-full flex items-center justify-between p-4 transition-all text-left ${
+                          darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
+                        }`}
                       >
-                        <div className="text-left">
-                          <div className="text-sm font-semibold">{item.label}</div>
-                          <div className="text-xs opacity-60 mt-0.5">{item.description}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{item.label}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">{item.description}</div>
                         </div>
-                        <ChevronRight size={16} className="opacity-40" />
+                        <ChevronRight size={16} className="text-slate-400 shrink-0 ml-2" />
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <div className="p-8 text-center text-xs opacity-50 font-medium">
+                  <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 font-medium">
                     Nenhuma configuração encontrada para "{searchQuery}"
                   </div>
                 )}
               </div>
             ) : (
-              // DEFAULT MENU
-              <div className="space-y-4 px-1">
-                {/* 1. Profile User Card */}
-                <button 
-                  onClick={() => {
-                    setCurrentPanel('perfil');
-                    playTone(440, 'sine', 0.08, 0.03);
-                  }}
-                  className={`w-full flex items-center justify-between py-4.5 px-4 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] active:scale-[0.98] transition-all text-left ${
-                    darkMode ? 'bg-[#1c1c1e] hover:bg-[#2c2c2e]' : 'bg-white hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-11 h-11 rounded-full bg-slate-400 dark:bg-slate-600 flex items-center justify-center text-white shrink-0 shadow-sm">
-                      <User size={22} fill="white" className="opacity-95" />
+              // DEFAULT MENU WITH GAPS AND SECTION HEADINGS
+              <div className="flex flex-col gap-6">
+                
+                {/* 1. Profile / ID Apple Section */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase px-1">
+                    Conta e Perfil
+                  </span>
+                  <button 
+                    onClick={() => {
+                      setCurrentPanel('perfil');
+                      playTone(440, 'sine', 0.08, 0.03);
+                    }}
+                    className={`w-full flex items-center justify-between py-5.5 px-4.5 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] active:scale-[0.98] transition-all text-left border ${
+                      darkMode 
+                        ? 'bg-[#1c1c1e] border-white/5 hover:bg-[#2c2c2e]' 
+                        : 'bg-white border-slate-200/60 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-13 h-13 rounded-full bg-blue-500 flex items-center justify-center text-white shrink-0 shadow-md">
+                        <User size={26} fill="white" className="opacity-95" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-extrabold text-slate-900 dark:text-white text-[16.5px] leading-tight truncate">{userName}</h3>
+                        <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-1 font-medium truncate">Apple ID, iCloud, Mídia e Compras</p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-slate-900 dark:text-white text-[15.5px] leading-tight truncate">{userName}</h3>
-                      <p className="text-[11.5px] opacity-50 leading-none mt-1.5 truncate">Apple ID, iCloud, Mídia e Compras</p>
-                    </div>
-                  </div>
-                  <ChevronRight size={18} className="text-slate-400 shrink-0 ml-2" />
-                </button>
+                    <ChevronRight size={18} className="text-slate-400 shrink-0 ml-2" />
+                  </button>
+                </div>
 
-                {/* 2. Connectivity Grid Container */}
-                <div className={`p-4 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] ${
-                  darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                }`}>
-                  <div className="grid grid-cols-2 gap-3.5">
-                    
-                    {/* Wi-Fi Card */}
+                {/* 2. Connectivity List Container */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase px-1">
+                    Rede e Conexões
+                  </span>
+                  <div className={`rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border divide-y ${
+                    darkMode ? 'bg-[#1c1c1e] border-white/5 divide-white/5' : 'bg-white border-slate-200/60 divide-slate-100'
+                  }`}>
+                    {/* Wi-Fi option */}
                     <button 
                       onClick={() => {
                         setCurrentPanel('wifi');
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
-                      className={`flex items-center gap-3 p-3 w-full rounded-xl active:scale-[0.97] transition-all text-left ${
-                        darkMode ? 'bg-[#2b2b2e] hover:bg-[#353538]' : 'bg-slate-50 hover:bg-slate-100/80 border border-slate-200/40'
+                      className={`flex items-center justify-between p-4 w-full rounded-t-2xl active:scale-[0.99] transition-all text-left ${
+                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
                       }`}
                     >
-                      <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors ${
-                        wifi ? 'bg-blue-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
-                      }`}>
-                        <Wifi size={17} />
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors ${
+                          wifi ? 'bg-blue-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
+                        }`}>
+                          <Wifi size={18} />
+                        </div>
+                        <div>
+                          <h4 className="text-[14px] font-bold leading-tight text-slate-900 dark:text-white">Wi-Fi</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[150px]">
+                            {wifi ? (connectedWifi || "Conectado") : "Inativo"}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white truncate">Wi-Fi</h4>
-                        <p className="text-[10px] opacity-50 truncate mt-0.5">
-                          {wifi ? (connectedWifi || "Ativo") : "Inativo"}
-                        </p>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                        <span className="truncate max-w-[100px]">{wifi ? (connectedWifi || "Ativo") : "Inativo"}</span>
+                        <ChevronRight size={16} />
                       </div>
                     </button>
 
-                    {/* Mobile Data Card */}
+                    {/* Cellular option */}
                     <button 
                       onClick={() => {
                         setCurrentPanel('celular');
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
-                      className={`flex items-center gap-3 p-3 w-full rounded-xl active:scale-[0.97] transition-all text-left ${
-                        darkMode ? 'bg-[#2b2b2e] hover:bg-[#353538]' : 'bg-slate-50 hover:bg-slate-100/80 border border-slate-200/40'
+                      className={`flex items-center justify-between p-4 w-full active:scale-[0.99] transition-all text-left ${
+                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
                       }`}
                     >
-                      <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors ${
-                        cellular ? 'bg-green-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
-                      }`}>
-                        <Activity size={17} />
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors ${
+                          cellular ? 'bg-green-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
+                        }`}>
+                          <Activity size={18} />
+                        </div>
+                        <div>
+                          <h4 className="text-[14px] font-bold leading-tight text-slate-900 dark:text-white">Rede móvel</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            {cellular ? "Dados móveis ativos" : "Inativo"}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white truncate">Rede móvel</h4>
-                        <p className="text-[10px] opacity-50 truncate mt-0.5">
-                          {cellular ? "5G Ativo" : "Inativo"}
-                        </p>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                        <span>{cellular ? "5G Ativo" : "Inativo"}</span>
+                        <ChevronRight size={16} />
                       </div>
                     </button>
 
-                    {/* Bluetooth Card */}
+                    {/* Bluetooth option */}
                     <button 
                       onClick={() => {
                         setCurrentPanel('bluetooth');
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
-                      className={`flex items-center gap-3 p-3 w-full rounded-xl active:scale-[0.97] transition-all text-left ${
-                        darkMode ? 'bg-[#2b2b2e] hover:bg-[#353538]' : 'bg-slate-50 hover:bg-slate-100/80 border border-slate-200/40'
+                      className={`flex items-center justify-between p-4 w-full active:scale-[0.99] transition-all text-left ${
+                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
                       }`}
                     >
-                      <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors ${
-                        bluetooth ? 'bg-indigo-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
-                      }`}>
-                        <Bluetooth size={17} />
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors ${
+                          bluetooth ? 'bg-[#007aff] text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
+                        }`}>
+                          <Bluetooth size={18} />
+                        </div>
+                        <div>
+                          <h4 className="text-[14px] font-bold leading-tight text-slate-900 dark:text-white">Bluetooth</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            {bluetooth ? "Ativado" : "Inativo"}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white truncate">Bluetooth</h4>
-                        <p className="text-[10px] opacity-50 truncate mt-0.5">
-                          {bluetooth ? "Ativo" : "Inativo"}
-                        </p>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                        <span>{bluetooth ? "Ativo" : "Inativo"}</span>
+                        <ChevronRight size={16} />
                       </div>
                     </button>
 
-                    {/* Airplane Mode Card */}
+                    {/* Airplane Mode option */}
                     <button 
                       onClick={() => {
                         setCurrentPanel('aviao');
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
-                      className={`flex items-center gap-3 p-3 w-full rounded-xl active:scale-[0.97] transition-all text-left ${
-                        darkMode ? 'bg-[#2b2b2e] hover:bg-[#353538]' : 'bg-slate-50 hover:bg-slate-100/80 border border-slate-200/40'
+                      className={`flex items-center justify-between p-4 w-full rounded-b-2xl active:scale-[0.99] transition-all text-left ${
+                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
                       }`}
                     >
-                      <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors ${
-                        airplaneMode ? 'bg-amber-500 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
-                      }`}>
-                        <span className="text-[14px] leading-none">✈️</span>
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors ${
+                          airplaneMode ? 'bg-amber-500 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
+                        }`}>
+                          <span className="text-[14px] leading-none">✈️</span>
+                        </div>
+                        <div>
+                          <h4 className="text-[14px] font-bold leading-tight text-slate-900 dark:text-white">Modo avião</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            {airplaneMode ? "Todas as conexões pausadas" : "Desativado"}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-[13px] font-bold leading-tight text-slate-900 dark:text-white truncate">Modo avião</h4>
-                        <p className="text-[10px] opacity-50 truncate mt-0.5">
-                          {airplaneMode ? "Ativo" : "Inativo"}
-                        </p>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                        <span>{airplaneMode ? "Ativo" : "Inativo"}</span>
+                        <ChevronRight size={16} />
                       </div>
                     </button>
                   </div>
                 </div>
 
-                {/* 3. Main System Options List (Individual premium cards with elegant spacing) */}
-                <div className="space-y-3 pb-8">
-                  
-                  {/* Notifications Card */}
-                  <button 
-                    onClick={() => {
-                      setCurrentPanel('notificacoes');
-                      playTone(440, 'sine', 0.08, 0.03);
-                    }}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-[0.99] transition-all text-left ${
-                      darkMode ? 'bg-[#1c1c1e] hover:bg-[#2c2c2e]' : 'bg-white hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-red-500 text-white flex items-center justify-center relative shadow-sm shrink-0">
-                        <Bell size={17} />
-                        <div className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-[#1c1c1e]" />
+                {/* 3. Main System Options List - Stacked Group 1 (Display, Sounds, Accessibility) */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase px-1">
+                    Geral e Aparência
+                  </span>
+                  <div className={`rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border divide-y ${
+                    darkMode ? 'bg-[#1c1c1e] border-white/5 divide-white/5' : 'bg-white border-slate-200/60 divide-slate-100'
+                  }`}>
+                    {/* Notifications option */}
+                    <button 
+                      onClick={() => {
+                        setCurrentPanel('notificacoes');
+                        playTone(440, 'sine', 0.08, 0.03);
+                      }}
+                      className={`w-full flex items-center justify-between p-4 rounded-t-2xl active:scale-[0.99] transition-all text-left ${
+                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-red-500 text-white flex items-center justify-center relative shadow-sm shrink-0">
+                          <Bell size={17} />
+                          <div className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-[#1c1c1e]" />
+                        </div>
+                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Notificações</span>
                       </div>
-                      <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Notificações</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs opacity-50 shrink-0 ml-2">
-                      <span>Ativadas</span>
-                      <ChevronRight size={16} />
-                    </div>
-                  </button>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                        <span>Ativadas</span>
+                        <ChevronRight size={16} />
+                      </div>
+                    </button>
 
-                  {/* Display Settings Card */}
-                  <button 
-                    onClick={() => {
-                      setCurrentPanel('tela');
-                      playTone(440, 'sine', 0.08, 0.03);
-                    }}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-[0.99] transition-all text-left ${
-                      darkMode ? 'bg-[#1c1c1e] hover:bg-[#2c2c2e]' : 'bg-white hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-amber-400 text-white flex items-center justify-center shadow-sm shrink-0">
-                        <Sun size={17} />
+                    {/* Display Settings option */}
+                    <button 
+                      onClick={() => {
+                        setCurrentPanel('tela');
+                        playTone(440, 'sine', 0.08, 0.03);
+                      }}
+                      className={`w-full flex items-center justify-between p-4 active:scale-[0.99] transition-all text-left ${
+                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-amber-400 text-white flex items-center justify-center shadow-sm shrink-0">
+                          <Sun size={17} />
+                        </div>
+                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Configurações da tela</span>
                       </div>
-                      <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Configurações da tela</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs opacity-50 shrink-0 ml-2">
-                      <span>{darkMode ? "Escuro" : "Claro"}</span>
-                      <ChevronRight size={16} />
-                    </div>
-                  </button>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                        <span>{darkMode ? "Escuro" : "Claro"}</span>
+                        <ChevronRight size={16} />
+                      </div>
+                    </button>
 
-                  {/* Battery Card */}
-                  <button 
-                    onClick={() => {
-                      setCurrentPanel('bateria');
-                      playTone(440, 'sine', 0.08, 0.03);
-                    }}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-[0.99] transition-all text-left ${
-                      darkMode ? 'bg-[#1c1c1e] hover:bg-[#2c2c2e]' : 'bg-white hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-green-500 text-white flex items-center justify-center shadow-sm shrink-0">
-                        <BatteryCharging size={17} />
+                    {/* Sound & Vibration option */}
+                    <button 
+                      onClick={() => {
+                        setCurrentPanel('som');
+                        playTone(440, 'sine', 0.08, 0.03);
+                      }}
+                      className={`w-full flex items-center justify-between p-4 active:scale-[0.99] transition-all text-left ${
+                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                          <Volume2 size={17} />
+                        </div>
+                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Som e vibração</span>
                       </div>
-                      <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Bateria</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-green-500 shrink-0 ml-2">
-                      <span>{simulatedLevel}%</span>
-                      <ChevronRight size={16} className="text-slate-400" />
-                    </div>
-                  </button>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                        <span>{volume}%</span>
+                        <ChevronRight size={16} />
+                      </div>
+                    </button>
 
-                  {/* Privacy & Security Card */}
-                  <button 
-                    onClick={() => {
-                      setCurrentPanel('privacidade');
-                      playTone(440, 'sine', 0.08, 0.03);
-                    }}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-[0.99] transition-all text-left ${
-                      darkMode ? 'bg-[#1c1c1e] hover:bg-[#2c2c2e]' : 'bg-white hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 text-white flex items-center justify-center shadow-sm shrink-0">
-                        <Lock size={17} />
+                    {/* Accessibility option */}
+                    <button 
+                      onClick={() => {
+                        setCurrentPanel('acessibilidade');
+                        playTone(440, 'sine', 0.08, 0.03);
+                      }}
+                      className={`w-full flex items-center justify-between p-4 rounded-b-2xl active:scale-[0.99] transition-all text-left ${
+                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-cyan-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                          <Accessibility size={17} />
+                        </div>
+                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Acessibilidade</span>
                       </div>
-                      <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Privacidade e segurança</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs opacity-50 shrink-0 ml-2">
-                      <ChevronRight size={16} />
-                    </div>
-                  </button>
-
-                  {/* Sound & Vibration Card */}
-                  <button 
-                    onClick={() => {
-                      setCurrentPanel('som');
-                      playTone(440, 'sine', 0.08, 0.03);
-                    }}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-[0.99] transition-all text-left ${
-                      darkMode ? 'bg-[#1c1c1e] hover:bg-[#2c2c2e]' : 'bg-white hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-sm shrink-0">
-                        <Volume2 size={17} />
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                        <span>Inativo</span>
+                        <ChevronRight size={16} />
                       </div>
-                      <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Som e vibração</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs opacity-50 shrink-0 ml-2">
-                      <span>{volume}%</span>
-                      <ChevronRight size={16} />
-                    </div>
-                  </button>
-
-                  {/* Applications List Card */}
-                  <button 
-                    onClick={() => {
-                      setCurrentPanel('apps');
-                      playTone(440, 'sine', 0.08, 0.03);
-                    }}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-[0.99] transition-all text-left ${
-                      darkMode ? 'bg-[#1c1c1e] hover:bg-[#2c2c2e]' : 'bg-white hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-indigo-500 text-white flex items-center justify-center shadow-sm shrink-0">
-                        <Grid size={17} />
-                      </div>
-                      <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Aplicativos</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs opacity-50 shrink-0 ml-2">
-                      <span>7 instalados</span>
-                      <ChevronRight size={16} />
-                    </div>
-                  </button>
-
-                  {/* Accessibility Card */}
-                  <button 
-                    onClick={() => {
-                      setCurrentPanel('acessibilidade');
-                      playTone(440, 'sine', 0.08, 0.03);
-                    }}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-[0.99] transition-all text-left ${
-                      darkMode ? 'bg-[#1c1c1e] hover:bg-[#2c2c2e]' : 'bg-white hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-cyan-500 text-white flex items-center justify-center shadow-sm shrink-0">
-                        <Accessibility size={17} />
-                      </div>
-                      <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Acessibilidade</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs opacity-50 shrink-0 ml-2">
-                      <ChevronRight size={16} />
-                    </div>
-                  </button>
-
-                  {/* About the device Card */}
-                  <button 
-                    onClick={() => {
-                      setCurrentPanel('sobre');
-                      playTone(440, 'sine', 0.08, 0.03);
-                    }}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.03)] active:scale-[0.99] transition-all text-left ${
-                      darkMode ? 'bg-[#1c1c1e] hover:bg-[#2c2c2e]' : 'bg-white hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-purple-500 text-white flex items-center justify-center shadow-sm shrink-0">
-                        <Info size={17} />
-                      </div>
-                      <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Sobre o Aparelho</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs opacity-50 shrink-0 ml-2">
-                      <span>v1.0.4</span>
-                      <ChevronRight size={16} />
-                    </div>
-                  </button>
+                    </button>
+                  </div>
                 </div>
+
+                {/* 4. Main System Options List - Stacked Group 2 (Battery, Apps, Privacy, About) */}
+                <div className="flex flex-col gap-1.5 pb-6">
+                  <span className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase px-1">
+                    Sistema e Outros
+                  </span>
+                  <div className={`rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border divide-y ${
+                    darkMode ? 'bg-[#1c1c1e] border-white/5 divide-white/5' : 'bg-white border-slate-200/60 divide-slate-100'
+                  }`}>
+                    {/* Battery option */}
+                    <button 
+                      onClick={() => {
+                        setCurrentPanel('bateria');
+                        playTone(440, 'sine', 0.08, 0.03);
+                      }}
+                      className={`w-full flex items-center justify-between p-4 rounded-t-2xl active:scale-[0.99] transition-all text-left ${
+                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-green-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                          <BatteryCharging size={17} />
+                        </div>
+                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Bateria</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                        <span className="font-bold text-green-500">{simulatedLevel}%</span>
+                        <ChevronRight size={16} />
+                      </div>
+                    </button>
+
+                    {/* Privacy & Security option */}
+                    <button 
+                      onClick={() => {
+                        setCurrentPanel('privacidade');
+                        playTone(440, 'sine', 0.08, 0.03);
+                      }}
+                      className={`w-full flex items-center justify-between p-4 active:scale-[0.99] transition-all text-left ${
+                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 text-white flex items-center justify-center shadow-sm shrink-0">
+                          <Lock size={17} />
+                        </div>
+                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Privacidade e segurança</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                        <ChevronRight size={16} />
+                      </div>
+                    </button>
+
+                    {/* Applications List option */}
+                    <button 
+                      onClick={() => {
+                        setCurrentPanel('apps');
+                        playTone(440, 'sine', 0.08, 0.03);
+                      }}
+                      className={`w-full flex items-center justify-between p-4 active:scale-[0.99] transition-all text-left ${
+                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                          <Grid size={17} />
+                        </div>
+                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Aplicativos</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                        <span>{installedApps.length} instalados</span>
+                        <ChevronRight size={16} />
+                      </div>
+                    </button>
+
+                    {/* About the device option */}
+                    <button 
+                      onClick={() => {
+                        setCurrentPanel('sobre');
+                        playTone(440, 'sine', 0.08, 0.03);
+                      }}
+                      className={`w-full flex items-center justify-between p-4 rounded-b-2xl active:scale-[0.99] transition-all text-left ${
+                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-purple-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                          <Info size={17} />
+                        </div>
+                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Sobre o Aparelho</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                        <span>v1.0.4</span>
+                        <ChevronRight size={16} />
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
               </div>
             )}
           </div>
@@ -1125,6 +1188,29 @@ export default function SettingsApp({
                         playTone(e.target.checked ? 600 : 400, 'sine', 0.05);
                       }}
                       className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-amber-500 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
+                    />
+                  </div>
+
+                  {/* Modo Tela Cheia / Esconder Barra de Status (Android) */}
+                  <div className={`p-4 rounded-2.5xl flex items-center justify-between shadow-sm ${
+                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
+                  }`}>
+                    <div>
+                      <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                        <Maximize size={15} className="text-blue-500" /> Esconder Barra de Status (Android)
+                      </h3>
+                      <p className="text-[11px] opacity-50 mt-0.5">Força o app a ocupar toda a tela (Modo Nativo)</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isFullscreen}
+                      onChange={() => {
+                        if (onToggleFullscreen) {
+                          onToggleFullscreen();
+                        }
+                        playTone(isFullscreen ? 400 : 600, 'sine', 0.05);
+                      }}
+                      className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-blue-600 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
                     />
                   </div>
 

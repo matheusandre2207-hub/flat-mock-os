@@ -15,7 +15,27 @@ export default function MessagesApp({ chats, setChats, darkMode, isActive = fals
   const [typingChatId, setTypingChatId] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  const selectedChatIdRef = useRef(selectedChatId);
+  const pendingResponsesRef = useRef<Record<string, { typingId: any; responseId: any }>>({});
+
   const activeChat = chats.find(c => c.id === selectedChatId) || null;
+
+  // Sync selectedChatId with a mutable ref for background callbacks
+  useEffect(() => {
+    selectedChatIdRef.current = selectedChatId;
+  }, [selectedChatId]);
+
+  // Clean up all pending timeouts on unmount to prevent state memory leaks
+  useEffect(() => {
+    return () => {
+      Object.values(pendingResponsesRef.current).forEach((p: any) => {
+        if (p) {
+          clearTimeout(p.typingId);
+          clearTimeout(p.responseId);
+        }
+      });
+    };
+  }, []);
 
   // Auto-scroll to bottom of conversation safely
   useEffect(() => {
@@ -53,6 +73,21 @@ export default function MessagesApp({ chats, setChats, darkMode, isActive = fals
     return () => window.removeEventListener('mockos-back', handleBack);
   }, [selectedChatId, isActive]);
 
+  // Custom delay logic:
+  // - 70% chance of fast reply (2s - 10s)
+  // - 20% chance of medium reply (10s - 30s)
+  // - 10% chance of long reply (30s - 120s, up to 2 mins)
+  const getRandomDelay = () => {
+    const rand = Math.random();
+    if (rand < 0.70) {
+      return Math.floor(Math.random() * 8000) + 2000; // 2s - 10s
+    } else if (rand < 0.90) {
+      return Math.floor(Math.random() * 20000) + 10000; // 10s - 30s
+    } else {
+      return Math.floor(Math.random() * 90000) + 30000; // 30s - 120s (up to 2m)
+    }
+  };
+
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!textInput.trim() || !selectedChatId || !activeChat) return;
@@ -70,23 +105,38 @@ export default function MessagesApp({ chats, setChats, darkMode, isActive = fals
       timestamp
     };
 
+    const targetChatId = selectedChatId;
+
     // 1. Add user message to active chat
     setChats(prev => prev.map(c => {
-      if (c.id === selectedChatId) {
+      if (c.id === targetChatId) {
         return { ...c, messages: [...c.messages, userMsg] };
       }
       return c;
     }));
 
-    // 2. Trigger chatbot simulated typing & response
-    setTypingChatId(selectedChatId);
+    // Clear any previous scheduled responses for this specific contact to avoid overlap
+    if (pendingResponsesRef.current[targetChatId]) {
+      clearTimeout(pendingResponsesRef.current[targetChatId].typingId);
+      clearTimeout(pendingResponsesRef.current[targetChatId].responseId);
+    }
 
-    setTimeout(() => {
+    // Determine the response delay (up to 2 minutes, mostly < 10s)
+    const delay = getRandomDelay();
+
+    // typing bubble triggers 6s before sending, or immediately if delay is smaller
+    const typingStartTime = Math.max(0, delay - 6000);
+
+    const typingId = setTimeout(() => {
+      setTypingChatId(targetChatId);
+    }, typingStartTime);
+
+    const responseId = setTimeout(() => {
       let responseText = '';
       const query = userMsgText.toLowerCase();
 
       // Simple keyword triggers for the AI Assistant Chatbot
-      if (selectedChatId === 'ai-assistant') {
+      if (targetChatId === 'ai-assistant') {
         if (query.includes('ajuda') || query.includes('como funciona')) {
           responseText = "Comandos do Mock OS! Você pode abrir o painel deslizando ou clicando na hora (Notificações) ou nos ícones da direita (Painel de Atalhos). Use o app de Configurações para simular a bateria.";
         } else if (query.includes('bateria') || query.includes('pontos') || query.includes('carregar')) {
@@ -102,21 +152,83 @@ export default function MessagesApp({ chats, setChats, darkMode, isActive = fals
         }
       } 
       // Mom replies
-      else if (selectedChatId === 'mother') {
-        if (query.includes('comi') || query.includes('almoço') || query.includes('janta') || query.includes('comida')) {
-          responseText = "Que bom meu filho! Come bastante salada também tá? Se cuida e não dorme muito tarde! Beijo 😘";
-        } else if (query.includes('estudando') || query.includes('trabalho') || query.includes('programando')) {
-          responseText = "Estou tão orgulhosa de você! Sei que vai dar tudo certo nesse projeto. Te amo! ❤️";
+      else if (targetChatId === 'mother') {
+        if (query.includes('oi') || query.includes('olá') || query.includes('tudo bem') || query.includes('bom dia') || query.includes('boa tarde') || query.includes('boa noite')) {
+          responseText = "Oi meu filho lindo! Tudo ótimo por aqui graças a Deus. E com você, tudo bem? Já comeu alguma coisa hoje? ❤️";
+        } else if (query.includes('comi') || query.includes('almoço') || query.includes('janta') || query.includes('comida') || query.includes('fome')) {
+          responseText = "Que bom meu filho! Fico mais tranquila. Come bastante salada e toma uma aguinha também, viu? Se cuida e não fica só comendo besteira! Beijo 😘";
+        } else if (query.includes('trabalho') || query.includes('trabalhando') || query.includes('estudo') || query.includes('estudando') || query.includes('programando')) {
+          responseText = "Deus abençoe seu trabalho meu filho, você é muito inteligente e esforçado! Só não vai dormir muito tarde hoje hein, o descanso também é importante. Te amo! 🥰🙏";
+        } else if (query.includes('te amo') || query.includes('amo você')) {
+          responseText = "Eu também te amo mais que tudo nessa vida, meu amor! Você é a minha maior riqueza. Que Deus te abençoe e te proteja sempre! Mãe te ama ❤️😘";
+        } else if (query.includes('vó') || query.includes('vovó') || query.includes('avó')) {
+          responseText = "A vovó estava comentando ontem mesmo de você, disse que fez aquele bolo de cenoura delicioso. Manda uma mensagem pra ela, ela vai amar receber notícias suas! 👵💖";
         } else {
-          responseText = "Que legal! Depois vem me visitar para comer um bolo de cenoura fresquinho. Te amo, Deus te abençoe! 🙏👵";
+          responseText = "Que bom meu amor! Fico muito feliz. Qualquer coisa me liga tá? Não esquece de levar o casaco que o tempo pode mudar! Beijos, te amo muito ❤️";
         }
       } 
+      // Love replies
+      else if (targetChatId === 'love') {
+        if (query.includes('oi') || query.includes('olá') || query.includes('amor') || query.includes('vida') || query.includes('lindo')) {
+          responseText = "Oi meu amor!!! ❤️ Que saudade de você! Como tá sendo seu dia? Estava pensando na gente agorinha mesmo 🥰";
+        } else if (query.includes('tudo bem') || query.includes('como vc ta') || query.includes('como você está')) {
+          responseText = "Tudo ótimo por aqui amor, só com um pouquinho de preguiça hj kkkk e vc? Tudo certinho? 😘";
+        } else if (query.includes('trabalho') || query.includes('trabalhando') || query.includes('estudo') || query.includes('estudando') || query.includes('programando') || query.includes('projeto')) {
+          responseText = "Ahhh vc trabalha demais hein! Mas fico muito orgulhosa de ver vc focado assim, vc é incrível de verdade! Bom trabalho vida, não esquece de descansar um pouco tá? Me avisa quando terminar! 💕";
+        } else if (query.includes('comer') || query.includes('fome') || query.includes('jantar') || query.includes('almoçar') || query.includes('pizza') || query.includes('lanche')) {
+          responseText = "Nossa, me deu uma fome agora tbm kkkk 😋 Que tal a gente pedir um japa ou uma pizza hj de noite pra assistir um filme? Vc escolhe o sabor! 🍕🍿";
+        } else if (query.includes('saudade') || query.includes('saudades')) {
+          responseText = "Eu também tô morrendo de saudade de vc, amor! Não vejo a hora da gente se encontrar pra te dar aquele abraço bem gostoso... Quando vamos nos ver? 🥺❤️";
+        } else if (query.includes('te amo') || query.includes('amo você')) {
+          responseText = "Ahhh eu te amo muito mais, sabia? Vc é a melhor parte do meu dia. Sou muito sortuda de ter vc comigo 🥰💖";
+        } else if (query.includes('bom dia')) {
+          responseText = "Bom dia meu amor! Que seu dia seja maravilhoso e bem produtivo. Se cuida tá? Te amooo! ☀️💋";
+        } else if (query.includes('boa noite')) {
+          responseText = "Boa noite vida! Durma bem e sonha comigo hein! Te amo demais, até amanhã 😘💤";
+        } else {
+          responseText = "Amei vida! Vc é um fofo msm. Vamos nos falando, daqui a pouco te mando mais mensagem pq tô terminando uma coisinha aqui. Te amo muito! 😘❤️";
+        }
+      }
+      // Grandmother replies
+      else if (targetChatId === 'grandmother') {
+        if (query.includes('oi') || query.includes('olá') || query.includes('vó') || query.includes('vovó') || query.includes('avó') || query.includes('tudo bem')) {
+          responseText = "Oi meu netinho querido... a bênção de Deus... Por aqui está tudo bem graças ao bom Deus... Como você está? Se cuidando?... ❤️👵";
+        } else if (query.includes('benção') || query.includes('bênção') || query.includes('bencao')) {
+          responseText = "Deus te abençoe muito meu filho... que ele ilumine seus caminhos sempre... amém... 🙏✨";
+        } else if (query.includes('comer') || query.includes('comida') || query.includes('almoço') || query.includes('fome') || query.includes('bolo') || query.includes('janta')) {
+          responseText = "Vem aqui na casa da vovó... fiz aquele bolo de cenoura com cobertura de chocolate bem quentinho... fiz pensando em você... vem lanchar comigo hoje meu querido... 👵🍰";
+        } else if (query.includes('trabalho') || query.includes('trabalhando') || query.includes('estudo') || query.includes('estudando') || query.includes('programando')) {
+          responseText = "Que orgulho que a vovó tem de você... sempre tão trabalhador e estudioso... Deus te dê muita saúde para vencer na vida... mas não canse muito os olhos nesse computador hein... 💻🙏";
+        } else if (query.includes('te amo') || query.includes('amo você')) {
+          responseText = "A vovó também te ama demais... você mora no meu coração meu anjo... você é a alegria da minha vida... Deus te guarde... 😘👵";
+        } else {
+          responseText = "Fico muito feliz meu netinho... o importante é ter saúde e paz... vou rezar por você hoje na igreja... manda um beijo para todos por aí... Deus te acompanhe... 🙏🌸";
+        }
+      }
+      // Lucas Friend replies
+      else if (targetChatId === 'friend-lucas') {
+        if (query.includes('oi') || query.includes('eae') || query.includes('fala') || query.includes('mano') || query.includes('salve') || query.includes('beleza')) {
+          responseText = "Eae mano! Beleza pura? O que tá aprontando de bom por aí?";
+        } else if (query.includes('tudo bem') || query.includes('tudo certo') || query.includes('tranquilo')) {
+          responseText = "Tudo tranquilo por aqui tbm, mano! Só de boa kkk e aí?";
+        } else if (query.includes('bora') || query.includes('sair') || query.includes('cerveja') || query.includes('role') || query.includes('rolê') || query.includes('futebol') || query.includes('fut') || query.includes('jogar')) {
+          responseText = "Bora sim, demorou! Só marcar o dia. Se for rolar aquele futebol ou um chopp de lei me avisa que tô dentro total kkk ⚽🍻";
+        } else if (query.includes('trabalho') || query.includes('trabalhando') || query.includes('estudo') || query.includes('estudando') || query.includes('programando') || query.includes('projeto')) {
+          responseText = "Eita cara, só trampo e foco kkkk tá certo! Tem que garantir o sustento do homem. Mas descansa um pouco aí senão a cabeça pifa mano. Sucesso no código!";
+        } else if (query.includes('jogar') || query.includes('game') || query.includes('pc') || query.includes('discord')) {
+          responseText = "Bora fechar um game mais tarde então! Me grita no Discord quando vc entrar que eu puxo a call 🎮⚡";
+        } else if (query.includes('kkk') || query.includes('haha') || query.includes('rs')) {
+          responseText = "kkkkkkkk caraca mano, rindo alto aqui. Vc é figura demais!";
+        } else {
+          responseText = "Show de bola mano! Tamo junto demais. Qualquer coisa me dá um salve por aqui ou liga pra gente agilizar. Abraço! 👊";
+        }
+      }
       // Tech Support replies
-      else if (selectedChatId === 'tech-support') {
+      else if (targetChatId === 'tech-support') {
         responseText = "Olá! Obrigado pelo retorno. O sistema de gerenciamento de bateria e o filtro de brilho estão 100% calibrados. Caso encontre problemas, por favor limpe o cache do app de arquivos ou mude de wallpaper!";
       } 
       // Notes replies (notes to self, repeats)
-      else if (selectedChatId === 'self-notes') {
+      else if (targetChatId === 'self-notes') {
         responseText = "📝 Nota registrada nas anotações do sistema.";
       }
 
@@ -128,14 +240,22 @@ export default function MessagesApp({ chats, setChats, darkMode, isActive = fals
       };
 
       setChats(prev => prev.map(c => {
-        if (c.id === selectedChatId) {
-          return { ...c, messages: [...c.messages, botMsg] };
+        if (c.id === targetChatId) {
+          const isCurrentlyViewing = (selectedChatIdRef.current === targetChatId);
+          return { 
+            ...c, 
+            unread: !isCurrentlyViewing, 
+            messages: [...c.messages, botMsg] 
+          };
         }
         return c;
       }));
 
-      setTypingChatId(null);
-    }, 1200);
+      setTypingChatId(prev => prev === targetChatId ? null : prev);
+    }, delay);
+
+    // Save both timeouts to control the typing bubble and response accurately
+    pendingResponsesRef.current[targetChatId] = { typingId, responseId };
   };
 
   return (

@@ -6,7 +6,7 @@ import {
   Image as ImageIcon, Music as MusicIcon, Globe, Settings, 
   ChevronRight, ChevronLeft, X, Play, Pause, SkipForward, SkipBack, 
   Send, Trash2, Clock, Smartphone, Bell, MessageSquare, Plus, Minus,
-  Grid, Compass, FolderClosed, PlayCircle, Eye, EyeOff
+  Grid, Compass, FolderClosed, PlayCircle, Eye, EyeOff, Maximize, Minimize
 } from 'lucide-react';
 
 import { Wallpaper, NotificationItem, Track, Chat, Folder as FolderType } from './types';
@@ -25,6 +25,9 @@ import NotesApp from './components/NotesApp';
 import FlappyApp from './components/FlappyApp';
 import WeatherApp from './components/WeatherApp';
 import PaintApp from './components/PaintApp';
+import PhoneApp from './components/PhoneApp';
+import ContactsApp from './components/ContactsApp';
+import CameraApp from './components/CameraApp';
 
 const appMetadata: Record<string, { label: string; icon: string; iconBgClass: string }> = {
   arquivos: { label: 'Arquivos', icon: '📁', iconBgClass: 'bg-blue-600' },
@@ -38,7 +41,10 @@ const appMetadata: Record<string, { label: string; icon: string; iconBgClass: st
   notas: { label: 'Bloco de Notas', icon: '📝', iconBgClass: 'bg-yellow-500' },
   flappy: { label: 'Flappy Bird', icon: '🐦', iconBgClass: 'bg-blue-500' },
   clima: { label: 'Previsão do Tempo', icon: '☀️', iconBgClass: 'bg-gradient-to-tr from-sky-400 to-amber-400' },
-  paint: { label: 'Mini Paint', icon: '🎨', iconBgClass: 'bg-purple-500' }
+  paint: { label: 'Mini Paint', icon: '🎨', iconBgClass: 'bg-purple-500' },
+  telefone: { label: 'Telefone', icon: '📞', iconBgClass: 'bg-emerald-500' },
+  contatos: { label: 'Contatos', icon: '👥', iconBgClass: 'bg-sky-500' },
+  camera: { label: 'Câmera', icon: '📷', iconBgClass: 'bg-zinc-700' }
 };
 
 export default function App() {
@@ -86,17 +92,18 @@ export default function App() {
 
   // Installed Apps State
   const [installedApps, setInstalledApps] = useState<string[]>([
-    'arquivos', 'calculadora', 'configuracoes', 'galeria', 'mensagens', 'musica', 'navegador', 'loja'
+    'arquivos', 'calculadora', 'configuracoes', 'galeria', 'mensagens', 'musica', 'navegador', 'loja', 'telefone', 'contatos', 'camera'
   ]);
 
   const handleInstallApp = (appId: string) => {
-    if (!installedApps.includes(appId)) {
-      setInstalledApps(prev => [...prev, appId]);
-    }
+    setInstalledApps(prev => {
+      if (prev.includes(appId)) return prev;
+      return [...prev, appId];
+    });
   };
 
   const handleUninstallApp = (appId: string) => {
-    if (appId === 'configuracoes' || appId === 'loja') return;
+    if (appId === 'configuracoes' || appId === 'loja' || appId === 'telefone' || appId === 'contatos' || appId === 'camera') return;
     setInstalledApps(prev => prev.filter(id => id !== appId));
     if (activeApp === appId) {
       setActiveApp(null);
@@ -116,6 +123,59 @@ export default function App() {
   // Multitasking & Recent Apps states
   const [openedApps, setOpenedApps] = useState<string[]>([]);
   const [recentAppsOpen, setRecentAppsOpen] = useState(false);
+
+  // Fullscreen state & native browser control (força a esconder a barra de status do celular Android)
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      ));
+    };
+
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    document.addEventListener('mozfullscreenchange', handleFsChange);
+    document.addEventListener('MSFullscreenChange', handleFsChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+      document.removeEventListener('mozfullscreenchange', handleFsChange);
+      document.removeEventListener('MSFullscreenChange', handleFsChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    const docEl = document.documentElement as any;
+    const doc = document as any;
+
+    if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.mozFullScreenElement && !doc.msFullscreenElement) {
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen();
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        docEl.mozRequestFullScreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
+      }
+    } else {
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen();
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) {
+        doc.mozCancelFullScreen();
+      } else if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
+      }
+    }
+  };
   const [swipeUpStartY, setSwipeUpStartY] = useState<number | null>(null);
   const [swipeUpCurrentY, setSwipeUpCurrentY] = useState<number | null>(null);
   const swipeUpTimerRef = useRef<any>(null);
@@ -218,23 +278,32 @@ export default function App() {
 
   // 4. Real battery connector fallback
   useEffect(() => {
+    let batteryObj: any = null;
+    let onLevelChange: (() => void) | null = null;
+    let onChargingChange: (() => void) | null = null;
+
     if (!useManualBattery && typeof navigator !== 'undefined' && 'getBattery' in navigator) {
       (navigator as any).getBattery().then((battery: any) => {
+        batteryObj = battery;
         setBatteryLevel(Math.round(battery.level * 100));
         setIsCharging(battery.charging);
 
-        const onLevelChange = () => setBatteryLevel(Math.round(battery.level * 100));
-        const onChargingChange = () => setIsCharging(battery.charging);
+        onLevelChange = () => setBatteryLevel(Math.round(battery.level * 100));
+        onChargingChange = () => setIsCharging(battery.charging);
 
         battery.addEventListener('levelchange', onLevelChange);
         battery.addEventListener('chargingchange', onChargingChange);
-
-        return () => {
-          battery.removeEventListener('levelchange', onLevelChange);
-          battery.removeEventListener('chargingchange', onChargingChange);
-        };
+      }).catch((err: any) => {
+        console.warn("Battery API not supported or blocked by policy:", err);
       });
     }
+
+    return () => {
+      if (batteryObj) {
+        if (onLevelChange) batteryObj.removeEventListener('levelchange', onLevelChange);
+        if (onChargingChange) batteryObj.removeEventListener('chargingchange', onChargingChange);
+      }
+    };
   }, [useManualBattery]);
 
   // 5. Helper callbacks for cross-app communication
@@ -283,9 +352,10 @@ export default function App() {
     setNotificationsOpen(false);
     setUtilitiesOpen(false);
     setRecentAppsOpen(false);
-    if (!openedApps.includes(appName)) {
-      setOpenedApps(prev => [...prev, appName]);
-    }
+    setOpenedApps(prev => {
+      if (prev.includes(appName)) return prev;
+      return [...prev, appName];
+    });
   };
 
   // Close active app
@@ -302,8 +372,8 @@ export default function App() {
     touchCurrentYRef.current = y;
     isHoldingBottomSwipeRef.current = false;
 
-    // Se o toque iniciar próximo à borda inferior da tela
-    if (y > window.innerHeight - 80) {
+    // Se o toque iniciar muito próximo à borda inferior da tela (evita conflitos com scrolls longos nos apps)
+    if (y > window.innerHeight - 25) {
       setSwipeUpStartY(y);
       setSwipeUpCurrentY(y);
       
@@ -322,8 +392,8 @@ export default function App() {
           }
         }
       }, 350);
-    } else if (x > window.innerWidth - 45 && activeApp !== null) {
-      // Começou na borda direita (gesto de voltar do Android/iOS)
+    } else if (x > window.innerWidth - 20 && activeApp !== null) {
+      // Começou bem na borda direita (gesto de voltar do Android/iOS)
       setSwipeBackStartX(x);
       setSwipeBackCurrentX(x);
       setIsSwipingBack(true);
@@ -393,6 +463,133 @@ export default function App() {
       setAppDrawerOpen(true);
       setNotificationsOpen(false);
       setUtilitiesOpen(false);
+    }
+  };
+
+  const renderAppPreviewContent = (appName: string) => {
+    switch (appName) {
+      case 'configuracoes':
+        return (
+          <SettingsApp
+            userName={userName}
+            setUserName={setUserName}
+            wifi={wifiActive}
+            setWifi={setWifiActive}
+            bluetooth={bluetoothActive}
+            setBluetooth={setBluetoothActive}
+            cellular={cellularActive}
+            setCellular={setCellularActive}
+            airplaneMode={airplaneMode}
+            setAirplaneMode={setAirplaneMode}
+            darkMode={darkMode}
+            setDarkMode={setDarkMode}
+            nightMode={nightMode}
+            setNightMode={setNightMode}
+            brightness={brightness}
+            setBrightness={setBrightness}
+            volume={volume}
+            setVolume={setVolume}
+            useManualBattery={useManualBattery}
+            setUseManualBattery={setUseManualBattery}
+            simulatedLevel={batteryLevel}
+            setSimulatedLevel={setBatteryLevel}
+            simulatedCharging={isCharging}
+            setSimulatedCharging={setIsCharging}
+            wallpapers={wallpapersList}
+            currentWallpaperIndex={wallpaperIndex}
+            setWallpaperIndex={setWallpaperIndex}
+            isActive={false}
+            installedApps={installedApps}
+            onUninstall={handleUninstallApp}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={toggleFullscreen}
+          />
+        );
+      case 'calculadora':
+        return <Calculator />;
+      case 'galeria':
+        return (
+          <div className={`no-scrollbar pt-4 pb-24 px-5 space-y-4 overflow-y-auto h-full ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+            <div className="space-y-1">
+              <h3 className="font-bold text-base">Minha Galeria</h3>
+              <p className="text-xs opacity-65">Escolha um gradiente para ser seu papel de parede.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3.5 pt-2">
+              {wallpapersList.map((wp, idx) => (
+                <div
+                  key={idx}
+                  className="aspect-[9/16] rounded-2xl overflow-hidden relative shadow-md border border-white/5"
+                  style={{ background: wp.gradient }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-3 text-white">
+                    <p className="font-bold text-xs leading-tight">{wp.name}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 'mensagens':
+        return (
+          <MessagesApp
+            chats={chats}
+            setChats={setChats}
+            darkMode={darkMode}
+            isActive={false}
+          />
+        );
+      case 'musica':
+        return (
+          <MusicPlayer
+            tracks={tracksList}
+            isPlaying={musicPlaying}
+            setIsPlaying={setMusicPlaying}
+            currentTrackIndex={currentTrackIndex}
+            setCurrentTrackIndex={setCurrentTrackIndex}
+            volume={volume}
+            setVolume={setVolume}
+            darkMode={darkMode}
+          />
+        );
+      case 'navegador':
+        return <Browser darkMode={darkMode} isActive={false} />;
+      case 'arquivos':
+        return (
+          <FilesApp
+            folders={folders}
+            setFolders={setFolders}
+            darkMode={darkMode}
+            onSetWallpaper={handleSetWallpaperFromFile}
+            onPlayTrack={handlePlayTrackFromFile}
+            isActive={false}
+          />
+        );
+      case 'loja':
+        return (
+          <StoreApp
+            darkMode={darkMode}
+            installedApps={installedApps}
+            onInstall={handleInstallApp}
+            onUninstall={handleUninstallApp}
+            onOpenApp={openApp}
+          />
+        );
+      case 'notas':
+        return <NotesApp darkMode={darkMode} />;
+      case 'flappy':
+        return <FlappyApp darkMode={darkMode} isActive={false} />;
+      case 'clima':
+        return <WeatherApp darkMode={darkMode} />;
+      case 'paint':
+        return <PaintApp darkMode={darkMode} />;
+      case 'telefone':
+        return <PhoneApp darkMode={darkMode} onOpenApp={openApp} />;
+      case 'contatos':
+        return <ContactsApp darkMode={darkMode} onOpenApp={openApp} />;
+      case 'camera':
+        return <CameraApp darkMode={darkMode} isActive={false} />;
+      default:
+        return null;
     }
   };
 
@@ -635,6 +832,14 @@ export default function App() {
                   <Sun size={16} />
                   <span>Modo Noturno</span>
                 </button>
+                <button 
+                  onClick={() => toggleFullscreen()}
+                  className={`toggle-btn ${isFullscreen ? 'active bg-blue-600 text-white' : ''}`}
+                  title="Esconder barra de status do celular Android (Tela Cheia)"
+                >
+                  {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+                  <span>{isFullscreen ? 'Minimizar' : 'Tela Cheia'}</span>
+                </button>
               </div>
               
               <div className="panel-media-player">
@@ -689,23 +894,29 @@ export default function App() {
           </div>
 
           {/* Apps List */}
-          <div className="drawer-list no-scrollbar">
-            {installedApps.map((appName) => {
-              const meta = appMetadata[appName];
-              if (!meta) return null;
-              return (
-                <button 
-                  key={appName} 
-                  className="drawer-item flex flex-col items-center justify-center p-2.5 transition-transform active:scale-95 cursor-pointer" 
-                  onClick={() => openApp(appName)}
-                >
-                  <div className={`app-icon flex items-center justify-center text-xl shadow-sm ${meta.iconBgClass} rounded-2xl w-12 h-12`}>
-                    {meta.icon}
-                  </div>
-                  <span className="app-label text-[10px] mt-1.5 font-bold text-center truncate w-full">{meta.label}</span>
-                </button>
-              );
-            })}
+          <div className="drawer-list no-scrollbar flex flex-col gap-1">
+            {[...installedApps]
+              .sort((a, b) => {
+                const labelA = appMetadata[a]?.label || '';
+                const labelB = appMetadata[b]?.label || '';
+                return labelA.localeCompare(labelB, 'pt-BR');
+              })
+              .map((appName) => {
+                const meta = appMetadata[appName];
+                if (!meta) return null;
+                return (
+                  <button 
+                    key={appName} 
+                    className="drawer-item flex items-center p-2.5 transition-transform active:scale-95 cursor-pointer text-left w-full hover:bg-white/10" 
+                    onClick={() => openApp(appName)}
+                  >
+                    <div className={`app-icon flex items-center justify-center text-xl shadow-sm ${meta.iconBgClass} rounded-2xl w-11 h-11 flex-shrink-0`}>
+                      {meta.icon}
+                    </div>
+                    <span className="app-label text-[11px] font-bold text-white truncate flex-1">{meta.label}</span>
+                  </button>
+                );
+              })}
           </div>
 
           {/* Drawer Footer */}
@@ -758,6 +969,8 @@ export default function App() {
               isActive={activeApp === 'configuracoes'}
               installedApps={installedApps}
               onUninstall={handleUninstallApp}
+              isFullscreen={isFullscreen}
+              onToggleFullscreen={toggleFullscreen}
             />
           </div>
         </div>
@@ -984,6 +1197,45 @@ export default function App() {
           </div>
         </div>
 
+        {/* APP M: TELEFONE */}
+        <div className={`app-window ${activeApp === 'telefone' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+          <div className="app-window-header">
+            <div className="app-window-drag-handle" />
+            <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
+              <X size={14} />
+            </button>
+          </div>
+          <div className="app-content no-scrollbar p-0">
+            <PhoneApp darkMode={darkMode} onOpenApp={openApp} />
+          </div>
+        </div>
+
+        {/* APP N: CONTATOS */}
+        <div className={`app-window ${activeApp === 'contatos' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+          <div className="app-window-header">
+            <div className="app-window-drag-handle" />
+            <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
+              <X size={14} />
+            </button>
+          </div>
+          <div className="app-content no-scrollbar p-0">
+            <ContactsApp darkMode={darkMode} onOpenApp={openApp} />
+          </div>
+        </div>
+
+        {/* APP O: CÂMERA */}
+        <div className={`app-window ${activeApp === 'camera' ? '' : 'closed'} dark bg-black text-white`}>
+          <div className="app-window-header">
+            <div className="app-window-drag-handle" />
+            <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
+              <X size={14} />
+            </button>
+          </div>
+          <div className="app-content no-scrollbar p-0">
+            <CameraApp darkMode={darkMode} isActive={activeApp === 'camera'} />
+          </div>
+        </div>
+
         {/* ==========================================
            8. BOTTOM DOCK (Visual e Formato Original do Usuário)
            ========================================== */}
@@ -1042,28 +1294,16 @@ export default function App() {
         {recentAppsOpen && (
           <div 
             onClick={() => setRecentAppsOpen(false)}
-            className="absolute inset-0 bg-slate-950/85 backdrop-blur-2xl z-40 flex flex-col justify-between p-6 text-white select-none transition-all duration-300"
+            className="absolute inset-0 bg-black/75 backdrop-blur-2xl z-40 flex flex-col justify-between p-6 text-white select-none transition-all duration-300"
           >
             
-            {/* Top header */}
-            <div className="pt-10 flex justify-between items-center px-2" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping" />
-                <span className="font-bold text-xs tracking-wider uppercase text-slate-400">Segundo Plano</span>
-              </div>
-            </div>
-
             {/* Middle Carousel of cards */}
             <div 
               className="flex-1 flex items-center justify-start overflow-x-auto gap-5 py-8 no-scrollbar px-6 w-full snap-x snap-mandatory"
-              onClick={(e) => e.stopPropagation()}
             >
               {openedApps.length === 0 ? (
-                <div className="text-center space-y-2 w-full flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-lg opacity-50">
-                    📭
-                  </div>
-                  <p className="text-xs text-slate-400 font-medium">Nenhum aplicativo recente aberto</p>
+                <div className="text-center w-full flex flex-col items-center justify-center">
+                  <p className="text-sm text-slate-400 font-medium tracking-wide">nenhum app aberto</p>
                 </div>
               ) : (
                 openedApps.map((appName) => {
@@ -1092,24 +1332,38 @@ export default function App() {
                         setRecentAppsOpen(false);
                       }}
                     >
-                      {/* Top App Header inside card */}
-                      <div className="p-3 bg-black/40 border-b border-white/5 flex items-center gap-2">
-                        <div className={`w-6 h-6 rounded-lg ${meta.iconBgClass} flex items-center justify-center text-xs shadow`}>
-                          {meta.icon}
+                       {/* Top App Header inside card */}
+                      <div className="p-3 bg-black/40 border-b border-white/5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={`w-6 h-6 rounded-lg ${meta.iconBgClass} flex items-center justify-center text-xs shadow`}>
+                            {meta.icon}
+                          </div>
+                          <span className="font-bold text-[11px] truncate text-white">{meta.label}</span>
                         </div>
-                        <span className="font-bold text-[11px] truncate text-white">{meta.label}</span>
+                        
+                        {isActive ? (
+                          <span className="flex items-center gap-1 text-[8px] font-bold text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded-full border border-green-500/20">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                            Ativo
+                          </span>
+                        ) : (
+                          <span className="text-[8px] font-medium text-slate-400 bg-slate-500/10 px-1.5 py-0.5 rounded-full border border-slate-500/10">
+                            2º Plano
+                          </span>
+                        )}
                       </div>
 
-                      {/* Mock Preview Content */}
-                      <div className="flex-1 bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col justify-center items-center p-4 text-center space-y-3">
-                        <div className="text-4xl filter drop-shadow-md group-hover:scale-110 transition-transform duration-300">
-                          {meta.icon}
-                        </div>
-                        <div className="space-y-1">
-                          <p className="font-semibold text-xs text-slate-300">{meta.label}</p>
-                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/5 border border-white/5 text-slate-400 font-mono">
-                            {isActive ? 'Ativo' : 'Em segundo plano'}
-                          </span>
+                      {/* Real Preview Content */}
+                      <div className="flex-1 overflow-hidden pointer-events-none select-none relative bg-slate-900">
+                        <div 
+                          className="absolute top-0 left-0 origin-top-left" 
+                          style={{ 
+                            width: '384px', 
+                            height: '488px', 
+                            transform: 'scale(0.5)',
+                          }}
+                        >
+                          {renderAppPreviewContent(appName)}
                         </div>
                       </div>
 
@@ -1124,12 +1378,12 @@ export default function App() {
             {/* Bottom Actions - Center round 'X' button to clear everything */}
             <div 
               className="pb-8 flex flex-col items-center gap-2 w-full"
-              onClick={(e) => e.stopPropagation()}
             >
-              {openedApps.length > 0 ? (
+              {openedApps.length > 0 && (
                 <>
                   <button 
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setOpenedApps([]);
                       setActiveApp(null);
                       setRecentAppsOpen(false);
@@ -1141,13 +1395,6 @@ export default function App() {
                   </button>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Fechar Tudo</span>
                 </>
-              ) : (
-                <button 
-                  onClick={() => setRecentAppsOpen(false)}
-                  className="text-xs text-slate-400 hover:text-white transition-colors tracking-wide underline decoration-white/10 bg-transparent border-none cursor-pointer"
-                >
-                  Voltar à Tela Inicial
-                </button>
               )}
             </div>
           </div>

@@ -163,18 +163,19 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
     setInstallProgress(0);
     playTone(440, 'sine', 0.05);
 
-    // Animate progress bar over 1.5 seconds
+    let currentVal = 0;
+    // Animate progress bar over 1.2 seconds
     const interval = setInterval(() => {
-      setInstallProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          onInstall(appId);
-          setInstallingId(null);
-          playTone(880, 'sine', 0.15); // success beep
-          return 100;
-        }
-        return prev + 10;
-      });
+      currentVal += 10;
+      if (currentVal >= 100) {
+        clearInterval(interval);
+        setInstallProgress(100);
+        onInstall(appId);
+        setInstallingId(null);
+        playTone(880, 'sine', 0.15); // success beep
+      } else {
+        setInstallProgress(currentVal);
+      }
     }, 120);
   };
 
