@@ -7,7 +7,14 @@ export const wallpapersList: Wallpaper[] = [
   { name: "Pôr do Sol Minimalista", gradient: "linear-gradient(135deg, #f43f5e, #ec4899, #d946ef, #8b5cf6, #3b82f6)", isDark: false },
   { name: "Nebula Cósmica", gradient: "linear-gradient(135deg, #020617, #0f172a, #1e1b4b, #020617)", isDark: true },
   { name: "Floresta Sombria", gradient: "linear-gradient(135deg, #14532d, #064e3b, #022c22, #020617)", isDark: true },
-  { name: "Lofi Vibes", gradient: "linear-gradient(135deg, #ff9a9e, #fecfef, #a1c4fd, #c2e9fb)", isDark: false }
+  { name: "Lofi Vibes", gradient: "linear-gradient(135deg, #ff9a9e, #fecfef, #a1c4fd, #c2e9fb)", isDark: false },
+  { name: "★ Aurora Boreal Animada", gradient: "linear-gradient(135deg, #050515, #0a1128)", isDark: true, isAnimated: true, animatedType: "aurora" },
+  { name: "★ Matrix Code Animado", gradient: "linear-gradient(180deg, #020202, #050505)", isDark: true, isAnimated: true, animatedType: "matrix" },
+  { name: "★ Estrelas Flutuantes Animadas", gradient: "linear-gradient(135deg, #0b0f19, #111827, #030712)", isDark: true, isAnimated: true, animatedType: "particles" },
+  { name: "★ Ondas de Luz Animadas", gradient: "linear-gradient(270deg, #4f46e5, #06b6d4, #3b82f6)", isDark: true, isAnimated: true, animatedType: "waves" },
+  { name: "Oceano Profundo", gradient: "linear-gradient(135deg, #0f172a, #0369a1, #0c4a6e)", isDark: true },
+  { name: "Algodão Doce", gradient: "linear-gradient(135deg, #fbcfe8, #fbcfe8, #c084fc, #818cf8)", isDark: false },
+  { name: "Cyberpunk Neon", gradient: "linear-gradient(135deg, #2e0854, #d946ef, #06b6d4, #050515)", isDark: true }
 ];
 
 export const initialNotifications: NotificationItem[] = [

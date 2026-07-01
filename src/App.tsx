@@ -6,7 +6,7 @@ import {
   Image as ImageIcon, Music as MusicIcon, Globe, Settings, 
   ChevronRight, ChevronLeft, X, Play, Pause, SkipForward, SkipBack, 
   Send, Trash2, Clock, Smartphone, Bell, MessageSquare, Plus, Minus,
-  Grid, Compass, FolderClosed, PlayCircle, Eye, EyeOff, Maximize, Minimize
+  Grid, Compass, FolderClosed, PlayCircle, Eye, EyeOff, Maximize, Minimize, Check
 } from 'lucide-react';
 
 import { Wallpaper, NotificationItem, PopupNotification, Track, Chat, Folder as FolderType, Contact } from './types';
@@ -28,6 +28,133 @@ import PaintApp from './components/PaintApp';
 import PhoneApp from './components/PhoneApp';
 import ContactsApp from './components/ContactsApp';
 import CameraApp from './components/CameraApp';
+
+// Animated Matrix Code wallpaper component
+function MatrixWallpaper() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const resize = () => {
+      canvas.width = canvas.parentElement?.clientWidth || 360;
+      canvas.height = canvas.parentElement?.clientHeight || 740;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$@#&%';
+    const fontSize = 11;
+    const columns = Math.floor(canvas.width / fontSize) + 1;
+    const ypos = Array(columns).fill(0);
+    
+    let animationId: number;
+    const draw = () => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.fillStyle = '#10b981'; // beautiful emerald green
+      ctx.font = `${fontSize}px monospace`;
+      
+      for (let i = 0; i < ypos.length; i++) {
+        const text = chars[Math.floor(Math.random() * chars.length)];
+        const x = i * fontSize;
+        const y = ypos[i];
+        
+        ctx.fillText(text, x, y);
+        
+        if (y > 100 + Math.random() * 10000) {
+          ypos[i] = 0;
+        } else {
+          ypos[i] = y + fontSize;
+        }
+      }
+      animationId = requestAnimationFrame(draw);
+    };
+    
+    let lastTime = 0;
+    const tick = (time: number) => {
+      if (time - lastTime > 40) {
+        draw();
+        lastTime = time;
+      } else {
+        animationId = requestAnimationFrame(tick);
+      }
+    };
+    animationId = requestAnimationFrame(tick);
+    
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+  
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-35" />;
+}
+
+// Animated floating particles wallpaper component
+function ParticlesWallpaper() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const resize = () => {
+      canvas.width = canvas.parentElement?.clientWidth || 360;
+      canvas.height = canvas.parentElement?.clientHeight || 740;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    
+    const count = 35;
+    const particles: Array<{ x: number; y: number; r: number; d: number; speed: number; color: string }> = [];
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * (canvas.width || 360),
+        y: Math.random() * (canvas.height || 740),
+        r: Math.random() * 2 + 1,
+        d: Math.random() * count,
+        speed: Math.random() * 0.4 + 0.1,
+        color: `rgba(${Math.floor(Math.random() * 50 + 205)}, ${Math.floor(Math.random() * 100 + 155)}, 255, ${Math.random() * 0.5 + 0.35})`
+      });
+    }
+    
+    let animationId: number;
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < count; i++) {
+        const p = particles[i];
+        ctx.beginPath();
+        ctx.fillStyle = p.color;
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = p.color;
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true);
+        ctx.fill();
+        
+        p.y -= p.speed;
+        p.x += Math.sin(p.d) * 0.15;
+        
+        if (p.y < -10) {
+          p.y = canvas.height + 10;
+          p.x = Math.random() * canvas.width;
+        }
+      }
+      animationId = requestAnimationFrame(draw);
+    };
+    draw();
+    
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+  
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-65" />;
+}
 
 const appMetadata: Record<string, { label: string; icon: string; iconBgClass: string }> = {
   arquivos: { label: 'Arquivos', icon: '📁', iconBgClass: 'bg-blue-600' },
@@ -110,6 +237,41 @@ export default function App() {
   // Wallpaper manager
   const [wallpaperIndex, setWallpaperIndex] = useState(0);
   const currentWallpaper = wallpapersList[wallpaperIndex] || wallpapersList[0];
+
+  // Shortcuts on home screen
+  const [homeApps, setHomeApps] = useState<string[]>([]);
+  
+  // Home Edit Mode (Jiggle Mode like iOS)
+  const [isEditingHome, setIsEditingHome] = useState(false);
+
+  // Drawer Long press state for adding shortcuts
+  const [longPressActiveApp, setLongPressActiveApp] = useState<string | null>(null);
+  const drawerLongPressTimerRef = useRef<any>(null);
+  
+  // Apps in the dock (Max 4)
+  const [dockApps, setDockApps] = useState<string[]>([
+    'mensagens', 'loja', 'arquivos'
+  ]);
+
+  // Drag and Drop State
+  const [draggedApp, setDraggedApp] = useState<{
+    appId: string;
+    isNew: boolean;
+    origin: 'drawer' | 'home' | 'dock';
+    offsetX: number;
+    offsetY: number;
+  } | null>(null);
+
+  const [dragPosition, setDragPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [dragOverZone, setDragOverZone] = useState<'home' | 'dock' | 'remove' | null>(null);
+  
+  const [dragHasMoved, setDragHasMoved] = useState(false);
+  const dragStartCoordsRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const drawerPressCoordsRef = useRef<{ startX: number; startY: number; currentX: number; currentY: number }>({ startX: 0, startY: 0, currentX: 0, currentY: 0 });
+
+  // Wallpaper Long-press Picker state
+  const [wallpaperPickerOpen, setWallpaperPickerOpen] = useState(false);
+  const longPressTimerRef = useRef<any>(null);
 
   // Shell Navigation & Dropdowns
   const [appDrawerOpen, setAppDrawerOpen] = useState(false);
@@ -237,21 +399,14 @@ export default function App() {
     const doc = document as any;
 
     if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.mozFullScreenElement && !doc.msFullscreenElement) {
-      const requestFS = docEl.requestFullscreen || 
-                        docEl.webkitRequestFullscreen || 
-                        docEl.mozRequestFullScreen || 
-                        docEl.msRequestFullscreen;
-      if (requestFS) {
-        requestFS.call(docEl).then(() => {
-          const screenObj = window.screen as any;
-          if (screenObj && screenObj.orientation && typeof screenObj.orientation.lock === 'function') {
-            screenObj.orientation.lock('portrait').catch((err: any) => {
-              console.warn("Falha ao travar orientação em modo retrato:", err);
-            });
-          }
-        }).catch((err: any) => {
-          console.warn("Falha ao entrar em tela inteira:", err);
-        });
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen();
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        docEl.mozRequestFullScreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
       }
     } else {
       if (doc.exitFullscreen) {
@@ -262,36 +417,6 @@ export default function App() {
         doc.mozCancelFullScreen();
       } else if (doc.msExitFullscreen) {
         doc.msExitFullscreen();
-      }
-    }
-  };
-
-  const handleScreenClick = () => {
-    const doc = document as any;
-    const isCurrentlyFullscreen = !!(
-      doc.fullscreenElement ||
-      doc.webkitFullscreenElement ||
-      doc.mozFullScreenElement ||
-      doc.msFullscreenElement
-    );
-    
-    if (!isCurrentlyFullscreen) {
-      const docEl = document.documentElement as any;
-      const requestFS = docEl.requestFullscreen || 
-                        docEl.webkitRequestFullscreen || 
-                        docEl.mozRequestFullScreen || 
-                        docEl.msRequestFullscreen;
-      if (requestFS) {
-        requestFS.call(docEl).then(() => {
-          const screenObj = window.screen as any;
-          if (screenObj && screenObj.orientation && typeof screenObj.orientation.lock === 'function') {
-            screenObj.orientation.lock('portrait').catch((err: any) => {
-              console.warn("Falha ao travar orientação em modo retrato:", err);
-            });
-          }
-        }).catch((err: any) => {
-          console.warn("Falha ao entrar em tela inteira:", err);
-        });
       }
     }
   };
@@ -532,16 +657,12 @@ export default function App() {
   // 5. Helper callbacks for cross-app communication
   const handleSetWallpaperFromFile = (idx: number) => {
     setWallpaperIndex(idx);
-    setNotifications(prev => [
-      {
-        id: `sys-${Date.now()}`,
-        title: "Papel de Parede",
-        body: `Papel de parede alterado para "${wallpapersList[idx].name}"!`,
-        time: "Agora",
-        app: "galeria"
-      },
-      ...prev
-    ]);
+    triggerNotification(
+      "Papel de Parede Alterado", 
+      `Plano de fundo atualizado para "${wallpapersList[idx].name}"!`, 
+      "galeria", 
+      "🖼️"
+    );
   };
 
   const handlePlayTrackFromFile = (trackTitle: string) => {
@@ -591,6 +712,274 @@ export default function App() {
     });
   };
 
+  // Drag and Drop & Shortcuts customization helpers
+  const handleStartDrag = (e: React.MouseEvent | React.TouchEvent, appId: string, isNew: boolean, origin: 'drawer' | 'home' | 'dock') => {
+    // If dragging from home or dock, only allow if already in edit mode
+    if ((origin === 'home' || origin === 'dock') && !isEditingHome) {
+      return;
+    }
+    
+    // Avoid dragging core apps off the system entirely
+    if (e.cancelable) e.preventDefault();
+    
+    let clientX = 0;
+    let clientY = 0;
+    if ('touches' in e) {
+      if (e.touches.length === 0) return;
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    setDraggedApp({
+      appId,
+      isNew,
+      origin,
+      offsetX: 24,
+      offsetY: 24
+    });
+
+    setDragPosition({ x: clientX, y: clientY });
+    dragStartCoordsRef.current = { x: clientX, y: clientY };
+    setDragHasMoved(origin === 'drawer'); // If originating from drawer, long press already occurred so we drag immediately
+    
+    // Automatically close slide-out drawer if dragging from there
+    if (origin === 'drawer') {
+      setAppDrawerOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!draggedApp) return;
+
+    const handleGlobalMove = (e: MouseEvent | TouchEvent) => {
+      let clientX = 0;
+      let clientY = 0;
+      if ('touches' in e) {
+        if (e.touches.length === 0) return;
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+
+      setDragPosition({ x: clientX, y: clientY });
+
+      if (!dragHasMoved) {
+        const dx = Math.abs(clientX - dragStartCoordsRef.current.x);
+        const dy = Math.abs(clientY - dragStartCoordsRef.current.y);
+        if (dx > 8 || dy > 8) {
+          setDragHasMoved(true);
+        }
+      }
+
+      // Determine drop zones relative to the screen-container
+      const phoneEl = document.getElementById('screen-container');
+      if (phoneEl) {
+        const rect = phoneEl.getBoundingClientRect();
+        const relY = clientY - rect.top;
+        
+        // No delete zone on top anymore as requested
+        if (relY > rect.height - 110) {
+          setDragOverZone('dock');
+        } else {
+          setDragOverZone('home');
+        }
+      }
+    };
+
+    const handleGlobalUp = () => {
+      const appId = draggedApp.appId;
+      const origin = draggedApp.origin;
+      
+      if (!dragHasMoved) {
+        setDraggedApp(null);
+        setDragOverZone(null);
+        setDragHasMoved(false);
+        return;
+      }
+
+      if (dragOverZone === 'dock') {
+        // Drop shortcut in the bottom dock
+        setDockApps(prev => {
+          if (prev.includes(appId)) return prev; // Avoid duplicates
+          if (prev.length >= 4) {
+            return prev; // Dock supports max 4 shortcuts, no notification as requested
+          }
+          
+          // Remove from home screen grid if it was dragged from there
+          if (origin === 'home') {
+            setHomeApps(h => h.filter(id => id !== appId));
+          }
+          return [...prev, appId];
+        });
+      } else if (dragOverZone === 'home' || !dragOverZone) {
+        // Drop shortcut in the home screen grid
+        setHomeApps(prev => {
+          if (prev.includes(appId)) return prev; // Avoid duplicates
+          
+          // Remove from bottom dock if it was dragged from there
+          if (origin === 'dock') {
+            setDockApps(d => d.filter(id => id !== appId));
+          }
+          return [...prev, appId];
+        });
+      }
+
+      setDraggedApp(null);
+      setDragOverZone(null);
+      setDragHasMoved(false);
+    };
+
+    window.addEventListener('mousemove', handleGlobalMove);
+    window.addEventListener('touchmove', handleGlobalMove, { passive: false });
+    window.addEventListener('mouseup', handleGlobalUp);
+    window.addEventListener('touchend', handleGlobalUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMove);
+      window.removeEventListener('touchmove', handleGlobalMove);
+      window.removeEventListener('mouseup', handleGlobalUp);
+      window.removeEventListener('touchend', handleGlobalUp);
+    };
+  }, [draggedApp, dragOverZone, dragHasMoved]);
+
+  // Home screen long press triggers
+  const handleHomePressStart = (e: React.MouseEvent | React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    // Trigger selector only if clicked on empty areas or status bar triggers
+    if (target.id !== 'home-screen' && !target.classList.contains('home-bg-area') && target.id !== 'swipe-trigger') {
+      return;
+    }
+
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    
+    longPressTimerRef.current = setTimeout(() => {
+      setIsEditingHome(true);
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 650);
+  };
+
+  const handleHomePressEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  // Shortcut icon long press triggers (Home Screen)
+  const handleShortcutPressStart = (e: React.MouseEvent | React.TouchEvent, appId: string) => {
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    
+    longPressTimerRef.current = setTimeout(() => {
+      setIsEditingHome(true);
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 650);
+  };
+
+  const handleShortcutPressEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  // Drawer Long Press logic to add shortcuts
+  const handleDrawerPressStart = (e: React.MouseEvent | React.TouchEvent, appName: string) => {
+    if (drawerLongPressTimerRef.current) clearTimeout(drawerLongPressTimerRef.current);
+    
+    let clientX = 0;
+    let clientY = 0;
+    if ('touches' in e) {
+      if (e.touches.length === 0) return;
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    drawerPressCoordsRef.current = { startX: clientX, startY: clientY, currentX: clientX, currentY: clientY };
+
+    drawerLongPressTimerRef.current = setTimeout(() => {
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+      
+      // Start drag from drawer immediately!
+      setDraggedApp({
+        appId: appName,
+        isNew: true,
+        origin: 'drawer',
+        offsetX: 24,
+        offsetY: 24
+      });
+      setDragPosition({ x: drawerPressCoordsRef.current.currentX, y: drawerPressCoordsRef.current.currentY });
+      dragStartCoordsRef.current = { x: drawerPressCoordsRef.current.startX, y: drawerPressCoordsRef.current.startY };
+      setDragHasMoved(true); // From drawer long press, we drag immediately!
+      setAppDrawerOpen(false); // Close drawer
+      
+      setLongPressActiveApp(null);
+    }, 600); // 600ms long press
+    
+    setLongPressActiveApp(appName);
+  };
+
+  const handleDrawerPressMove = (e: React.MouseEvent | React.TouchEvent) => {
+    let clientX = 0;
+    let clientY = 0;
+    if ('touches' in e) {
+      if (e.touches.length === 0) return;
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    drawerPressCoordsRef.current.currentX = clientX;
+    drawerPressCoordsRef.current.currentY = clientY;
+
+    // If they moved significantly, cancel long press (they are scrolling)
+    const diffX = Math.abs(clientX - drawerPressCoordsRef.current.startX);
+    const diffY = Math.abs(clientY - drawerPressCoordsRef.current.startY);
+    if (diffX > 15 || diffY > 15) {
+      if (drawerLongPressTimerRef.current) {
+        clearTimeout(drawerLongPressTimerRef.current);
+        drawerLongPressTimerRef.current = null;
+      }
+      setLongPressActiveApp(null);
+    }
+  };
+
+  const handleDrawerPressEnd = (appName: string) => {
+    if (drawerLongPressTimerRef.current) {
+      clearTimeout(drawerLongPressTimerRef.current);
+      drawerLongPressTimerRef.current = null;
+    }
+    
+    // If released before 600ms, open the app
+    if (longPressActiveApp === appName) {
+      openApp(appName);
+    }
+    setLongPressActiveApp(null);
+  };
+
+  const handleDrawerPressCancel = () => {
+    if (drawerLongPressTimerRef.current) {
+      clearTimeout(drawerLongPressTimerRef.current);
+      drawerLongPressTimerRef.current = null;
+    }
+    setLongPressActiveApp(null);
+  };
+
   // Handle click or swipe-down action on popup notification
   const handlePopupAction = (popup: PopupNotification) => {
     if (popup.app === 'mensagens') {
@@ -631,8 +1020,13 @@ export default function App() {
     touchCurrentYRef.current = y;
     isHoldingBottomSwipeRef.current = false;
 
-    // Se o toque iniciar muito próximo à borda inferior da tela (evita conflitos com scrolls longos nos apps)
-    if (y > window.innerHeight - 25) {
+    const target = e.target as HTMLElement;
+    const isDrawingOrGameCanvas = target && (target.tagName === 'CANVAS' || target.closest('canvas'));
+    const isInteractiveApp = activeApp === 'paint' || activeApp === 'flappy';
+
+    // Se o toque iniciar muito próximo à borda inferior da tela, e na parte central (evitando conflitos com scrolls longos nos apps)
+    const isNearCenterBottom = Math.abs(x - window.innerWidth / 2) < 80;
+    if (y > window.innerHeight - 30 && isNearCenterBottom && !isDrawingOrGameCanvas && !isInteractiveApp) {
       setSwipeUpStartY(y);
       setSwipeUpCurrentY(y);
       
@@ -651,7 +1045,7 @@ export default function App() {
           }
         }
       }, 350);
-    } else if (x > window.innerWidth - 45 && activeApp !== null) {
+    } else if (x > window.innerWidth - 25 && activeApp !== null && !isDrawingOrGameCanvas && !isInteractiveApp) {
       // Começou bem na borda direita (gesto de voltar do Android/iOS)
       setSwipeBackStartX(x);
       setSwipeBackCurrentX(x);
@@ -703,7 +1097,7 @@ export default function App() {
       setSwipeBackStartX(null);
       
       // Puxando da direita para a esquerda: volta a página ou fecha o app
-      if (dragDistance > 65) {
+      if (dragDistance > 75) {
         if (activeApp === 'galeria' && selectedGalleryImg !== null) {
           setSelectedGalleryImg(null);
         } else {
@@ -863,7 +1257,7 @@ export default function App() {
   };
 
   return (
-    <div onClick={handleScreenClick} className="w-screen h-screen overflow-hidden select-none bg-black">
+    <div className="w-screen h-screen overflow-hidden select-none bg-black">
       <div 
         id="screen-container"
         onTouchStart={handleTouchStart}
@@ -888,9 +1282,26 @@ export default function App() {
            ========================================== */}
         <div 
           id="wallpaper"
-          className="metal-shift-anim"
+          className={`transition-all duration-500 overflow-hidden relative ${
+            currentWallpaper.isAnimated && currentWallpaper.animatedType === 'waves' ? 'animated-waves-bg' : 'metal-shift-anim'
+          }`}
           style={{ background: currentWallpaper.gradient }}
-        />
+        >
+          {/* Animated elements based on type */}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'aurora' && (
+            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
+              <div className="absolute w-[240px] h-[240px] rounded-full bg-emerald-500/30 blur-[60px] top-[10%] left-[10%] animate-[float1_12s_infinite_alternate]" />
+              <div className="absolute w-[280px] h-[280px] rounded-full bg-teal-500/25 blur-[70px] bottom-[15%] right-[5%] animate-[float2_18s_infinite_alternate]" />
+              <div className="absolute w-[200px] h-[200px] rounded-full bg-purple-500/20 blur-[50px] top-[40%] right-[25%] animate-[float3_15s_infinite_alternate]" />
+            </div>
+          )}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'matrix' && (
+            <MatrixWallpaper />
+          )}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'particles' && (
+            <ParticlesWallpaper />
+          )}
+        </div>
 
         {/* Background visual blur overlay when utilities, notifications or app drawer is open */}
         {(notificationsOpen || utilitiesOpen || appDrawerOpen) && (
@@ -1129,7 +1540,117 @@ export default function App() {
         {/* ==========================================
            5. SYSTEM HOME SCREEN
            ========================================== */}
-        <main id="home-screen">
+        <main 
+          id="home-screen"
+          className="home-bg-area relative p-4 pt-3 flex flex-col justify-start gap-3"
+          onMouseDown={handleHomePressStart}
+          onMouseUp={handleHomePressEnd}
+          onTouchStart={handleHomePressStart}
+          onTouchEnd={handleHomePressEnd}
+          onClick={() => {
+            if (isEditingHome) {
+              setIsEditingHome(false);
+            }
+          }}
+        >
+          {/* iOS style Edit Mode active badge */}
+          {isEditingHome && (
+            <div 
+              className="w-full bg-slate-950/90 backdrop-blur-md rounded-2xl px-4 py-2.5 flex items-center justify-between border border-white/10 shadow-lg z-50 animate-pulse shrink-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="text-[10px] font-black text-amber-400 tracking-wider uppercase flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                Modo de Edição
+              </span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setWallpaperPickerOpen(true)}
+                  className="px-2.5 py-1 text-[9px] font-extrabold bg-white/10 hover:bg-white/20 text-white rounded-full transition-all border-none cursor-pointer"
+                >
+                  🖼️ Papel de Parede
+                </button>
+                <button 
+                  onClick={() => setIsEditingHome(false)}
+                  className="px-3 py-1 text-[9px] font-extrabold bg-emerald-500 hover:bg-emerald-600 text-white rounded-full transition-all border-none cursor-pointer"
+                >
+                  Pronto
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop Apps Shortcuts Grid */}
+          <div className="home-bg-area grid grid-cols-4 gap-x-3 gap-y-5 max-h-[78%] overflow-y-auto no-scrollbar pt-2 z-10 select-none">
+            {homeApps
+              .filter(appId => installedApps.includes(appId))
+              .map((appId, index) => {
+                const meta = appMetadata[appId];
+                if (!meta) return null;
+                return (
+                  <div
+                    key={appId}
+                    onMouseDown={(e) => {
+                      handleShortcutPressStart(e, appId);
+                      handleStartDrag(e, appId, false, 'home');
+                    }}
+                    onTouchStart={(e) => {
+                      handleShortcutPressStart(e, appId);
+                      handleStartDrag(e, appId, false, 'home');
+                    }}
+                    onMouseUp={handleShortcutPressEnd}
+                    onTouchEnd={handleShortcutPressEnd}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isEditingHome && (!draggedApp || !dragHasMoved)) {
+                        openApp(appId);
+                      }
+                    }}
+                    className={`flex flex-col items-center gap-1.5 cursor-pointer relative text-center select-none group ${
+                      isEditingHome 
+                        ? (index % 2 === 0 ? 'jiggle' : 'jiggle-alt') 
+                        : 'hover:scale-105 active:scale-95 transition-all'
+                    }`}
+                  >
+                    {/* iOS style delete button */}
+                    {isEditingHome && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setHomeApps(prev => prev.filter(id => id !== appId));
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        className="absolute w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border border-white shadow-md z-30 cursor-pointer active:scale-90 select-none"
+                        style={{ right: 'calc(50% - 24px)', top: '-2px' }}
+                        title="Remover atalho"
+                      >
+                        ✕
+                      </button>
+                    )}
+
+                    <div className={`w-11 h-11 rounded-[14px] ${meta.iconBgClass} flex items-center justify-center text-2xl shadow-md border border-white/5`}>
+                      {meta.icon}
+                    </div>
+                    <span 
+                      className="text-[9.5px] font-black text-white leading-tight truncate w-full max-w-[62px]"
+                      style={{ textShadow: '0 1.5px 3px rgba(0,0,0,0.85)' }}
+                    >
+                      {meta.label}
+                    </span>
+                  </div>
+                );
+              })}
+              
+            {/* Dashed visual slot when dragging an item */}
+            {draggedApp && dragHasMoved && (
+              <div className="border border-dashed border-white/25 rounded-[14px] w-11 h-11 flex items-center justify-center text-white/20 text-lg bg-white/5 animate-pulse">
+                +
+              </div>
+            )}
+          </div>
+
           <div 
             id="swipe-trigger"
             onClick={() => setAppDrawerOpen(true)}
@@ -1167,8 +1688,15 @@ export default function App() {
                 return (
                   <button 
                     key={appName} 
-                    className="drawer-item flex items-center p-2.5 transition-transform active:scale-95 cursor-pointer text-left w-full hover:bg-white/10" 
-                    onClick={() => openApp(appName)}
+                    className="drawer-item flex items-center p-2.5 transition-all active:scale-95 cursor-pointer text-left w-full hover:bg-white/10 select-none border-none outline-none bg-transparent" 
+                    onMouseDown={(e) => handleDrawerPressStart(e, appName)}
+                    onTouchStart={(e) => handleDrawerPressStart(e, appName)}
+                    onMouseMove={(e) => handleDrawerPressMove(e)}
+                    onTouchMove={(e) => handleDrawerPressMove(e)}
+                    onMouseUp={() => handleDrawerPressEnd(appName)}
+                    onTouchEnd={() => handleDrawerPressEnd(appName)}
+                    onMouseLeave={handleDrawerPressCancel}
+                    onContextMenu={(e) => e.preventDefault()}
                   >
                     <div className={`app-icon flex items-center justify-center text-xl shadow-sm ${meta.iconBgClass} rounded-2xl w-11 h-11 flex-shrink-0`}>
                       {meta.icon}
@@ -1511,32 +2039,66 @@ export default function App() {
         {/* ==========================================
            8. BOTTOM DOCK (Visual e Formato Original do Usuário)
            ========================================== */}
-        <footer id="bottom-dock">
-          
-          <button 
-            onClick={() => openApp('mensagens')}
-            className="dock-icon flex items-center justify-center bg-green-500 text-white rounded-2xl shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
-            title="Mensagens"
-          >
-            💬
-          </button>
+        <footer 
+          id="bottom-dock"
+          className={`flex items-center justify-center gap-5 transition-all duration-200 select-none ${
+            dragOverZone === 'dock' ? 'bg-white/20 scale-[1.05] ring-2 ring-white/10' : ''
+          }`}
+        >
+          {dockApps
+            .filter(appId => installedApps.includes(appId))
+            .map((appId, index) => {
+              const meta = appMetadata[appId];
+              if (!meta) return null;
+              return (
+                <div 
+                  key={appId}
+                  onClick={() => {
+                    if (!draggedApp || !dragHasMoved) {
+                      openApp(appId);
+                    }
+                  }}
+                  onMouseDown={(e) => handleStartDrag(e, appId, false, 'dock')}
+                  onTouchStart={(e) => handleStartDrag(e, appId, false, 'dock')}
+                  className={`dock-icon flex items-center justify-center text-3xl shadow-md cursor-pointer relative group ${
+                    isEditingHome 
+                      ? (index % 2 === 0 ? 'jiggle' : 'jiggle-alt') 
+                      : 'hover:scale-105 active:scale-95 transition-all'
+                  }`}
+                  style={{ backgroundColor: 'transparent' }}
+                  title={meta.label}
+                >
+                  {/* iOS style delete button */}
+                  {isEditingHome && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setDockApps(prev => prev.filter(id => id !== appId));
+                      }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      className="absolute w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border border-white shadow-md z-30 cursor-pointer active:scale-90 select-none"
+                      style={{ right: '-4px', top: '-4px' }}
+                      title="Remover atalho"
+                    >
+                      ✕
+                    </button>
+                  )}
 
-          <button 
-            onClick={() => openApp('loja')}
-            className="dock-icon flex items-center justify-center bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white rounded-2xl shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
-            title="App Store"
-          >
-            🛍️
-          </button>
-
-          <button 
-            onClick={() => openApp('arquivos')}
-            className="dock-icon flex items-center justify-center bg-blue-500 text-white rounded-2xl shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
-            title="Arquivos"
-          >
-            🖋️
-          </button>
-
+                  <div className={`w-11 h-11 flex items-center justify-center rounded-[14px] ${meta.iconBgClass} text-white`}>
+                    {meta.icon}
+                  </div>
+                </div>
+              );
+            })}
+            
+          {/* Visual slot indicator if dock has space */}
+          {dockApps.filter(appId => installedApps.includes(appId)).length < 4 && (
+            <div className="w-11 h-11 border border-dashed border-white/20 rounded-[14px] flex items-center justify-center text-xs text-white/30 pointer-events-none bg-white/5 select-none">
+              +
+            </div>
+          )}
         </footer>
 
         {/* Animated gesture back indicator on the right edge */}
@@ -1751,6 +2313,139 @@ export default function App() {
           }}
           title="Toque para Voltar à Tela Inicial / Ver Aplicativos Recentes"
         />
+
+        {/* Wallpaper Picker Sheet (Long-Press Home Screen overlay) */}
+        <AnimatePresence>
+          {wallpaperPickerOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md z-[250] flex flex-col justify-end"
+              onClick={() => setWallpaperPickerOpen(false)}
+            >
+              <motion.div 
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+                className="w-full bg-slate-900/95 border-t border-white/10 rounded-t-[32px] p-6 pb-8 flex flex-col gap-5 max-h-[80%] overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-white font-black text-base tracking-tight">Alterar Papel de Parede</span>
+                    <span className="text-slate-400 text-[10px] tracking-wide uppercase font-bold">Toque para selecionar</span>
+                  </div>
+                  <button 
+                    onClick={() => setWallpaperPickerOpen(false)}
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer border-none transition-all"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto no-scrollbar pr-1 flex flex-col gap-6">
+                  {/* Animados Section */}
+                  <div className="flex flex-col gap-2.5">
+                    <span className="text-emerald-400 text-[10px] font-black tracking-wider uppercase flex items-center gap-1">
+                      <span>✨</span> Papéis de Parede Animados
+                    </span>
+                    <div className="grid grid-cols-2 gap-3">
+                      {wallpapersList
+                        .map((w, idx) => ({ ...w, originalIdx: idx }))
+                        .filter(w => w.isAnimated)
+                        .map((w) => {
+                          const isSelected = wallpaperIndex === w.originalIdx;
+                          return (
+                            <button
+                              key={w.name}
+                              onClick={() => {
+                                handleSetWallpaperFromFile(w.originalIdx);
+                                setWallpaperPickerOpen(false);
+                              }}
+                              className={`group relative h-20 rounded-2xl border text-left overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
+                                isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/25' : 'border-white/10 hover:border-white/20'
+                              }`}
+                              style={{ background: w.gradient }}
+                            >
+                              <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-2.5">
+                                <span className="text-white text-[10.5px] font-extrabold truncate w-full group-hover:text-emerald-300 transition-colors">
+                                  {w.name.replace('★ ', '')}
+                                </span>
+                                {isSelected && (
+                                  <div className="absolute top-2 right-2 bg-emerald-500 text-white p-0.5 rounded-full">
+                                    <Check size={10} strokeWidth={4} />
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+
+                  {/* Estáticos Section */}
+                  <div className="flex flex-col gap-2.5">
+                    <span className="text-sky-400 text-[10px] font-black tracking-wider uppercase flex items-center gap-1">
+                      <span>🖼️</span> Estáticos Clássicos
+                    </span>
+                    <div className="grid grid-cols-2 gap-3">
+                      {wallpapersList
+                        .map((w, idx) => ({ ...w, originalIdx: idx }))
+                        .filter(w => !w.isAnimated)
+                        .map((w) => {
+                          const isSelected = wallpaperIndex === w.originalIdx;
+                          return (
+                            <button
+                              key={w.name}
+                              onClick={() => {
+                                handleSetWallpaperFromFile(w.originalIdx);
+                                setWallpaperPickerOpen(false);
+                              }}
+                              className={`group relative h-20 rounded-2xl border text-left overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
+                                isSelected ? 'border-sky-500 ring-2 ring-sky-500/25' : 'border-white/10 hover:border-white/20'
+                              }`}
+                              style={{ background: w.gradient }}
+                            >
+                              <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-2.5">
+                                <span className="text-white text-[10.5px] font-extrabold truncate w-full group-hover:text-sky-300 transition-colors">
+                                  {w.name}
+                                </span>
+                                {isSelected && (
+                                  <div className="absolute top-2 right-2 bg-sky-500 text-white p-0.5 rounded-full">
+                                    <Check size={10} strokeWidth={4} />
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Global Floating Draggable App Shortcut visual feedback */}
+        {draggedApp && dragHasMoved && (
+          <div 
+            className="fixed pointer-events-none z-[9999] flex flex-col items-center gap-1.5 -translate-x-1/2 -translate-y-1/2 select-none"
+            style={{
+              left: dragPosition.x,
+              top: dragPosition.y,
+            }}
+          >
+            <div className={`w-12 h-12 rounded-2xl ${appMetadata[draggedApp.appId]?.iconBgClass || 'bg-slate-500'} flex items-center justify-center text-3xl shadow-[0_15px_30px_rgba(0,0,0,0.4)] ring-4 ring-white/20 scale-110 opacity-90 animate-bounce`}>
+              {appMetadata[draggedApp.appId]?.icon}
+            </div>
+            <span className="text-[9px] font-black tracking-wider uppercase text-white bg-slate-950/80 px-2 py-0.5 rounded-md border border-white/10 shadow-lg leading-none">
+              {appMetadata[draggedApp.appId]?.label}
+            </span>
+          </div>
+        )}
 
       </div>
     </div>

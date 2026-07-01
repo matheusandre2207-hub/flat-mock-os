@@ -50,6 +50,15 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
     };
   }, [callState]);
 
+  // Cleanup AudioContext on unmount
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
+
   // Play a mock dual-tone multi-frequency (DTMF) sound or dialing beep
   const playDialBeep = (freq1: number, freq2: number = 0) => {
     try {
@@ -208,22 +217,22 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
         {activeTab === 'keypad' ? (
           <div className="flex-1 flex flex-col justify-between max-w-sm mx-auto w-full">
             {/* Number Display */}
-            <div className="h-24 flex flex-col items-center justify-center px-4 relative">
-              <span className="text-3xl font-semibold tracking-wide font-mono truncate max-w-full">
-                {dialNumber || <span className="text-slate-400 font-sans text-lg">Discar número</span>}
+            <div className="h-16 flex flex-col items-center justify-center px-4 relative">
+              <span className="text-2xl font-semibold tracking-wide font-mono truncate max-w-full">
+                {dialNumber || <span className="text-slate-400 font-sans text-sm">Discar número</span>}
               </span>
               {dialNumber && (
                 <button 
                   onClick={handleBackspace}
-                  className="absolute right-2 p-2 text-slate-400 hover:text-white bg-transparent border-none cursor-pointer"
+                  className="absolute right-2 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white bg-transparent border-none cursor-pointer"
                 >
-                  <Delete size={20} />
+                  <Delete size={18} />
                 </button>
               )}
             </div>
 
             {/* Dialpad Matrix */}
-            <div className="grid grid-cols-3 gap-4 px-2">
+            <div className="grid grid-cols-3 gap-2.5 px-2">
               {[
                 { n: '1', l: ' ' }, { n: '2', l: 'A B C' }, { n: '3', l: 'D E F' },
                 { n: '4', l: 'G H I' }, { n: '5', l: 'J K L' }, { n: '6', l: 'M N O' },
@@ -233,30 +242,30 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
                 <button
                   key={item.n}
                   onClick={() => handleKeyPress(item.n)}
-                  className={`h-16 rounded-full flex flex-col items-center justify-center transition-all duration-150 active:scale-95 border-none cursor-pointer ${
+                  className={`h-12 rounded-full flex flex-col items-center justify-center transition-all duration-150 active:scale-95 border-none cursor-pointer ${
                     darkMode 
                       ? 'bg-slate-900/60 hover:bg-slate-800 text-white border border-white/5' 
                       : 'bg-white hover:bg-slate-100 text-slate-900 shadow-sm border border-slate-200'
                   }`}
                 >
-                  <span className="text-2xl font-semibold leading-none">{item.n}</span>
-                  <span className={`text-[8px] font-bold tracking-wider uppercase mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.l}</span>
+                  <span className="text-xl font-semibold leading-none">{item.n}</span>
+                  <span className={`text-[8px] font-bold tracking-wider uppercase mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.l}</span>
                 </button>
               ))}
             </div>
 
             {/* Bottom Dialer Action Button */}
-            <div className="flex justify-center mt-6">
+            <div className="flex justify-center mt-3">
               <button
                 onClick={() => startCall(dialNumber)}
                 disabled={!dialNumber}
-                className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all border-none ${
+                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all border-none ${
                   dialNumber 
                     ? 'bg-green-500 hover:bg-green-600 active:scale-95 text-white cursor-pointer' 
                     : 'bg-slate-300 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
                 }`}
               >
-                <Phone size={24} />
+                <Phone size={20} />
               </button>
             </div>
           </div>

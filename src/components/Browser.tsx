@@ -173,7 +173,7 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
       </div>
 
       {/* WEB VIEWPORT SCREEN AREA */}
-      <div className={`flex-1 overflow-y-auto no-scrollbar bg-white text-slate-800`}>
+      <div className="flex-1 overflow-y-auto no-scrollbar bg-white text-slate-800 pb-24">
         
         {/* VIEW 1: HOME/SHORTCUTS SCREEN */}
         {currentPage.type === 'home' && (

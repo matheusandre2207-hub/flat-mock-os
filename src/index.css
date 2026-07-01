@@ -389,18 +389,19 @@ body, html {
 #home-screen {
     position: absolute;
     width: 100%;
-    height: 100%;
-    top: 0;
+    height: calc(100% - 44px - 84px);
+    top: 44px;
     left: 0;
     z-index: 2;
+    overflow: hidden;
 }
 
 #swipe-trigger {
     position: absolute;
-    top: 44px;
+    top: 0;
     left: 0;
     width: 24px;
-    height: calc(100% - 134px);
+    height: 100%;
     z-index: 4;
 }
 
@@ -927,3 +928,25 @@ body, html {
   z-index: 9999;
   transition: opacity 0.5s ease;
 }
+
+/* iOS Jiggle Animation for Edit Mode */
+@keyframes ios-jiggle {
+  0% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.5deg); }
+  100% { transform: rotate(-1.5deg); }
+}
+
+@keyframes ios-jiggle-alt {
+  0% { transform: rotate(1.5deg) scale(0.99); }
+  50% { transform: rotate(-1.5deg) scale(1.01); }
+  100% { transform: rotate(1.5deg) scale(0.99); }
+}
+
+.jiggle {
+  animation: ios-jiggle 0.24s ease-in-out infinite alternate;
+}
+
+.jiggle-alt {
+  animation: ios-jiggle-alt 0.24s ease-in-out infinite alternate;
+}
+

@@ -2,6 +2,8 @@ export interface Wallpaper {
   name: string;
   gradient: string;
   isDark: boolean;
+  isAnimated?: boolean;
+  animatedType?: string;
 }
 
 export interface NotificationItem {

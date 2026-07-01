@@ -312,7 +312,7 @@ export default function MessagesApp({
   };
 
   return (
-    <div className={`h-full flex rounded-none overflow-hidden ${darkMode ? 'text-white bg-slate-950' : 'text-slate-900 bg-white'}`}>
+    <div className={`h-full flex rounded-none overflow-hidden pb-24 ${darkMode ? 'text-white bg-slate-950' : 'text-slate-900 bg-white'}`}>
       
       {/* 1. CHATS SIDEBAR LIST (Shown when no chat selected on small, or split) */}
       <div className={`w-full md:w-80 flex flex-col border-r ${darkMode ? 'border-white/10 bg-slate-950' : 'border-slate-100 bg-slate-50'} ${selectedChatId ? 'hidden md:flex' : 'flex'}`}>
@@ -354,26 +354,30 @@ export default function MessagesApp({
       </div>
 
       {/* 2. CHAT DETAILS BOX */}
-      <div className={`flex-1 flex flex-col ${selectedChatId ? 'flex' : 'hidden md:flex bg-slate-900/10 justify-center items-center'}`}>
+      <div className={`flex-1 flex flex-col justify-center ${selectedChatId ? 'flex' : 'hidden md:flex bg-slate-900/10 items-center'}`}>
         {activeChat ? (
-          <>
+          <div className={`flex-1 flex flex-col w-full max-w-xl mx-auto border-l border-r h-full ${
+            darkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-100 bg-white shadow-xs'
+          }`}>
             {/* Conversation Header */}
-            <div className={`pt-3 pb-3 px-5 border-b flex items-center gap-3 ${darkMode ? 'border-white/10 bg-slate-900/40' : 'border-slate-100 bg-slate-50'}`}>
-              <button 
-                onClick={() => setSelectedChatId(null)}
-                className="md:hidden p-1 hover:bg-black/10 rounded-lg"
-              >
-                <ArrowLeft size={18} />
-              </button>
-              <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-base">
-                {activeChat.avatar}
-              </div>
-              <div>
-                <h3 className="font-bold text-xs">{activeChat.name}</h3>
-                <p className="text-[10px] opacity-60 flex items-center gap-1">
-                  {activeChat.id === 'ai-assistant' && <Bot size={10} className="text-blue-500" />}
-                  {activeChat.role}
-                </p>
+            <div className={`pt-3 pb-3 px-5 border-b flex items-center justify-between ${darkMode ? 'border-white/10 bg-slate-900/40' : 'border-slate-100 bg-slate-50'}`}>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setSelectedChatId(null)}
+                  className="md:hidden p-1 hover:bg-black/10 rounded-lg text-current"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+                <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-base border border-white/5">
+                  {activeChat.avatar}
+                </div>
+                <div>
+                  <h3 className="font-bold text-xs text-left">{activeChat.name}</h3>
+                  <p className="text-[10px] opacity-60 flex items-center gap-1">
+                    {activeChat.id === 'ai-assistant' && <Bot size={10} className="text-blue-500" />}
+                    {activeChat.role}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -385,15 +389,15 @@ export default function MessagesApp({
               {activeChat.messages.map(msg => (
                 <div 
                   key={msg.id} 
-                  className={`flex flex-col max-w-[80%] ${
+                  className={`flex flex-col max-w-[85%] ${
                     msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
                   }`}
                 >
                   <div 
-                    className={`p-3 rounded-2xl text-xs leading-relaxed shadow-sm ${
+                    className={`p-3 rounded-2xl text-xs leading-relaxed shadow-xs ${
                       msg.sender === 'user' 
                         ? 'bg-blue-600 text-white rounded-tr-none' 
-                        : (darkMode ? 'bg-white/10 text-white rounded-tl-none' : 'bg-white text-slate-900 border border-slate-200 rounded-tl-none')
+                        : (darkMode ? 'bg-white/10 text-white rounded-tl-none border border-white/5' : 'bg-white text-slate-900 border border-slate-200 rounded-tl-none')
                     }`}
                   >
                     {msg.text}
@@ -430,12 +434,12 @@ export default function MessagesApp({
               />
               <button 
                 type="submit" 
-                className="w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 flex-shrink-0"
+                className="w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 flex-shrink-0 border-none"
               >
                 <Send size={14} />
               </button>
             </form>
-          </>
+          </div>
         ) : (
           <div className="text-center p-6 opacity-40">
             <Bot size={40} className="mx-auto mb-2 text-blue-500 animate-pulse" />

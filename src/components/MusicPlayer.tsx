@@ -98,7 +98,7 @@ export default function MusicPlayer({
   };
 
   return (
-    <div className={`h-full flex flex-col md:flex-row rounded-none overflow-hidden ${
+    <div className={`h-full flex flex-col md:flex-row rounded-none overflow-y-auto no-scrollbar pb-24 ${
       darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
     }`}>
       

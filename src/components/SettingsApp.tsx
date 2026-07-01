@@ -52,10 +52,18 @@ interface SettingsAppProps {
   onToggleFullscreen?: () => void;
 }
 
+let sharedAudioContext: AudioContext | null = null;
+
 // Simple synthesizer for audio feedback using Web Audio API
 const playTone = (frequency: number, type: OscillatorType = 'sine', duration = 0.15, volume = 0.08) => {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    if (!sharedAudioContext) {
+      sharedAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    const ctx = sharedAudioContext;
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
     const osc = ctx.createOscillator();
     const gainNode = ctx.createGain();
     
@@ -278,7 +286,7 @@ export default function SettingsApp({
     } ${grayscaleMode ? 'grayscale' : ''}`}>
       
       {/* HEADER BAR (Customizable transition sliding pages) */}
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-10">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
         
         {/* MAIN PANEL */}
         {currentPanel === null && (

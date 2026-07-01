@@ -316,7 +316,7 @@ export default function ContactsApp({
         </div>
 
         {/* Contacts Grid/List */}
-        <div className="space-y-2">
+        <div className="space-y-2 pb-28">
           {filteredContacts.length === 0 ? (
             <div className="text-center py-12 text-slate-400">
               <p className="text-xs">Nenhum contato encontrado.</p>

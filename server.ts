@@ -228,6 +228,41 @@ function getLocalFallbackReply(contactId: string, contactName: string, contactRo
   return customMessages[Math.floor(Math.random() * customMessages.length)];
 }
 
+// Helper to format history and merge consecutive turns of the same role for Gemini API compliance
+function cleanAndFormatHistory(messageHistory: any[], currentMsgText?: string, promptText?: string) {
+  const rawHistory = (messageHistory || []).map((msg: any) => ({
+    role: msg.sender === 'user' ? 'user' : 'model',
+    parts: [{ text: msg.text || "" }]
+  }));
+
+  if (currentMsgText) {
+    rawHistory.push({
+      role: 'user',
+      parts: [{ text: currentMsgText }]
+    });
+  }
+
+  if (promptText) {
+    rawHistory.push({
+      role: 'user',
+      parts: [{ text: promptText }]
+    });
+  }
+
+  const cleaned: any[] = [];
+  let lastRole: string | null = null;
+  for (const item of rawHistory) {
+    if (!item.parts || !item.parts[0] || !item.parts[0].text) continue;
+    if (item.role === lastRole && cleaned.length > 0) {
+      cleaned[cleaned.length - 1].parts[0].text += "\n" + item.parts[0].text;
+    } else {
+      cleaned.push(item);
+      lastRole = item.role;
+    }
+  }
+  return cleaned;
+}
+
 // API Health check
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
@@ -244,21 +279,10 @@ app.post("/api/chat", async (req, res) => {
     }
 
     const systemInstruction = getSystemInstruction(contactId, contactName || "Contato", contactRole || "Amigo");
-
-    // Convert and filter previous message history for model contents
-    const formattedHistory = (messageHistory || []).map((msg: any) => ({
-      role: msg.sender === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.text }]
-    }));
-
-    // Add current userMessage
-    formattedHistory.push({
-      role: 'user',
-      parts: [{ text: userMessage }]
-    });
+    const formattedHistory = cleanAndFormatHistory(messageHistory, userMessage);
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: formattedHistory,
       config: {
         systemInstruction,
@@ -269,7 +293,7 @@ app.post("/api/chat", async (req, res) => {
     const replyText = response.text || "Sem resposta.";
     res.json({ reply: replyText.trim() });
   } catch (error: any) {
-    console.warn("Gemini API error in /api/chat (using beautiful in-character fallback):", error.message || error);
+    console.log(`[Chat Fallback] Using character-based response for ${contactName || "Contato"} due to API rate limits.`);
     const reply = getLocalFallbackReply(contactId, contactName || "Contato", contactRole || "Amigo", userMessage);
     res.json({ reply });
   }
@@ -286,21 +310,15 @@ app.post("/api/chat/background", async (req, res) => {
     }
 
     const systemInstruction = getSystemInstruction(contactId, contactName || "Contato", contactRole || "Amigo");
-
-    const formattedHistory = (messageHistory || []).map((msg: any) => ({
-      role: msg.sender === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.text }]
-    }));
+    const formattedHistory = cleanAndFormatHistory(
+      messageHistory,
+      undefined,
+      "[Gere apenas uma única mensagem que você enviaria espontaneamente agora para o Mateus, considerando nosso histórico. Não mencione esta instrução. Seja breve, informal, e condizente com seu personagem]"
+    );
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [
-        ...formattedHistory,
-        {
-          role: 'user',
-          parts: [{ text: "[Gere apenas uma única mensagem que você enviaria espontaneamente agora para o Mateus, considerando nosso histórico. Não mencione esta instrução. Seja breve, informal, e condizente com seu personagem]" }]
-        }
-      ],
+      model: "gemini-3.5-flash",
+      contents: formattedHistory,
       config: {
         systemInstruction,
         temperature: 0.85,
@@ -310,7 +328,7 @@ app.post("/api/chat/background", async (req, res) => {
     const replyText = response.text || "";
     res.json({ reply: replyText.trim() });
   } catch (error: any) {
-    console.warn("Gemini API error in /api/chat/background (using beautiful in-character fallback):", error.message || error);
+    console.log(`[Chat Background Fallback] Using character-based response for ${contactName || "Contato"} due to API rate limits.`);
     const reply = getLocalFallbackReply(contactId, contactName || "Contato", contactRole || "Amigo");
     res.json({ reply });
   }

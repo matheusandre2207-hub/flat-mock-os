@@ -144,7 +144,7 @@ export default function FilesApp({
       </div>
 
       {/* 2. EXPLORER WORKSPACE */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 no-scrollbar">
+      <div className="flex-1 overflow-y-auto px-5 pt-4 pb-28 no-scrollbar">
         {currentFolder === null ? (
           /* Folders Root Grid view */
           <div className="grid grid-cols-2 gap-4">

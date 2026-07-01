@@ -132,7 +132,7 @@ export default function PaintApp({ darkMode }: PaintAppProps) {
   const activeColorValue = isEraser ? 'transparent' : currentColor;
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full overflow-hidden select-none relative bg-slate-900">
+    <div ref={containerRef} className="flex flex-col h-full overflow-hidden select-none relative bg-slate-900 pb-24">
       
       {/* Canvas Area */}
       <div className="flex-1 w-full bg-slate-950">

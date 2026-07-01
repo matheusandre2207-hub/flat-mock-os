@@ -30,6 +30,9 @@ export default function FlappyApp({ darkMode, isActive = false }: FlappyAppProps
     highScore: 0,
   });
 
+  // Reusable AudioContext to avoid crash on multiple jumps
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
   // Load HighScore
   useEffect(() => {
     const saved = localStorage.getItem('mockos_flappy_highscore');
@@ -39,11 +42,26 @@ export default function FlappyApp({ darkMode, isActive = false }: FlappyAppProps
     }
   }, []);
 
+  // Cleanup AudioContext on unmount
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
+
   // Beep Sound Helper
   const playBeep = (freq: number, type: OscillatorType, duration: number) => {
     if (!soundEnabled) return;
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const audioCtx = audioCtxRef.current;
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = type;
@@ -319,7 +337,7 @@ export default function FlappyApp({ darkMode, isActive = false }: FlappyAppProps
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 select-none overflow-hidden text-white relative">
+    <div className="flex flex-col h-full pb-24 bg-slate-950 select-none overflow-hidden text-white relative">
       {/* Mini App Header */}
       <div className={`px-4 py-3 shrink-0 flex justify-between items-center ${
         darkMode ? 'bg-slate-900/90 border-b border-white/5' : 'bg-slate-800 text-white'

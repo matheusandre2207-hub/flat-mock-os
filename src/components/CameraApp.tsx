@@ -75,6 +75,15 @@ export default function CameraApp({ darkMode, isActive = true }: CameraAppProps)
     }
   }, [hasCamera, stream]);
 
+  // Cleanup AudioContext on unmount
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
+
   const toggleFacingMode = () => {
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
   };
@@ -164,7 +173,7 @@ export default function CameraApp({ darkMode, isActive = true }: CameraAppProps)
   };
 
   return (
-    <div className="w-full h-full bg-black text-white flex flex-col justify-between font-sans select-none relative overflow-hidden">
+    <div className="w-full h-full pb-24 bg-black text-white flex flex-col justify-between font-sans select-none relative overflow-hidden">
       
       {/* Lightbox Photo Viewer overlay */}
       {viewingPhoto && (
@@ -327,7 +336,8 @@ export default function CameraApp({ darkMode, isActive = true }: CameraAppProps)
             {capturedPhotos.length > 0 ? (
               <button 
                 onClick={() => setViewingPhoto(capturedPhotos[0])}
-                className={`w-full h-full bg-gradient-to-tr ${capturedPhotos[0].url} border-none cursor-pointer`}
+                className="w-full h-full bg-gradient-to-tr border-none cursor-pointer"
+                style={{ backgroundImage: `linear-gradient(to top right, ${capturedPhotos[0].url.split(' ')[1] || '#3b82f6'}, ${capturedPhotos[0].url.split(' ')[3] || '#8b5cf6'})` }}
               />
             ) : (
               <span className="text-xs text-slate-600">📁</span>

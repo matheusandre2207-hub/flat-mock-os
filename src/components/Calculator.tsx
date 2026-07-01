@@ -77,78 +77,78 @@ export default function Calculator() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col justify-end p-6 bg-slate-950 pb-24 pt-16">
+    <div className="w-full h-full flex flex-col justify-end p-4 bg-slate-950 pb-20 pt-4">
       {/* Display screen */}
-      <div className="mb-6 text-right p-6 bg-black/35 rounded-2xl border border-white/5 min-h-[140px] flex flex-col justify-end">
-        <div className="text-sm text-white/50 font-mono h-5 mb-1 truncate">
+      <div className="mb-3 text-right p-4 bg-black/35 rounded-2xl border border-white/5 min-h-[110px] flex flex-col justify-end">
+        <div className="text-xs text-white/50 font-mono h-4 mb-1 truncate">
           {equation}
         </div>
-        <div className="text-5xl font-semibold text-white font-mono tracking-wider truncate">
+        <div className="text-4xl font-semibold text-white font-mono tracking-wider truncate">
           {display}
         </div>
       </div>
 
       {/* Keyboard Grid */}
-      <div className="grid grid-cols-4 gap-3.5">
-        <button onClick={clear} className="h-14 rounded-full bg-slate-700/60 hover:bg-slate-700/80 active:scale-95 text-yellow-400 font-bold transition-all text-base">
+      <div className="grid grid-cols-4 gap-2.5">
+        <button onClick={clear} className="h-12 rounded-full bg-slate-700/60 hover:bg-slate-700/80 active:scale-95 text-yellow-400 font-bold transition-all text-sm">
           AC
         </button>
-        <button onClick={toggleSign} className="h-14 rounded-full bg-slate-700/60 hover:bg-slate-700/80 active:scale-95 text-white font-medium transition-all text-base">
+        <button onClick={toggleSign} className="h-12 rounded-full bg-slate-700/60 hover:bg-slate-700/80 active:scale-95 text-white font-medium transition-all text-sm">
           +/-
         </button>
-        <button onClick={handlePercent} className="h-14 rounded-full bg-slate-700/60 hover:bg-slate-700/80 active:scale-95 text-white font-medium transition-all text-base">
+        <button onClick={handlePercent} className="h-12 rounded-full bg-slate-700/60 hover:bg-slate-700/80 active:scale-95 text-white font-medium transition-all text-sm">
           %
         </button>
-        <button onClick={() => handleOp('÷')} className="h-14 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold transition-all text-xl">
+        <button onClick={() => handleOp('÷')} className="h-12 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold transition-all text-lg">
           ÷
         </button>
 
-        <button onClick={() => handleNum('7')} className="h-14 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-lg">
+        <button onClick={() => handleNum('7')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
           7
         </button>
-        <button onClick={() => handleNum('8')} className="h-14 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-lg">
+        <button onClick={() => handleNum('8')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
           8
         </button>
-        <button onClick={() => handleNum('9')} className="h-14 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-lg">
+        <button onClick={() => handleNum('9')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
           9
         </button>
-        <button onClick={() => handleOp('×')} className="h-14 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold transition-all text-lg">
+        <button onClick={() => handleOp('×')} className="h-12 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold transition-all text-lg">
           ×
         </button>
 
-        <button onClick={() => handleNum('4')} className="h-14 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-lg">
+        <button onClick={() => handleNum('4')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
           4
         </button>
-        <button onClick={() => handleNum('5')} className="h-14 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-lg">
+        <button onClick={() => handleNum('5')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
           5
         </button>
-        <button onClick={() => handleNum('6')} className="h-14 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-lg">
+        <button onClick={() => handleNum('6')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
           6
         </button>
-        <button onClick={() => handleOp('-')} className="h-14 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold transition-all text-xl">
+        <button onClick={() => handleOp('-')} className="h-12 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold transition-all text-lg">
           -
         </button>
 
-        <button onClick={() => handleNum('1')} className="h-14 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-lg">
+        <button onClick={() => handleNum('1')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
           1
         </button>
-        <button onClick={() => handleNum('2')} className="h-14 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-lg">
+        <button onClick={() => handleNum('2')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
           2
         </button>
-        <button onClick={() => handleNum('3')} className="h-14 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-lg">
+        <button onClick={() => handleNum('3')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
           3
         </button>
-        <button onClick={() => handleOp('+')} className="h-14 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold transition-all text-lg">
+        <button onClick={() => handleOp('+')} className="h-12 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold transition-all text-lg">
           +
         </button>
 
-        <button onClick={() => handleNum('0')} className="col-span-2 h-14 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-lg text-left pl-6">
+        <button onClick={() => handleNum('0')} className="col-span-2 h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base text-left pl-6">
           0
         </button>
-        <button onClick={handleDecimal} className="h-14 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-lg">
+        <button onClick={handleDecimal} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
           ,
         </button>
-        <button onClick={calculate} className="h-14 rounded-full bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold transition-all text-xl">
+        <button onClick={calculate} className="h-12 rounded-full bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold transition-all text-lg">
           =
         </button>
       </div>
