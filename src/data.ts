@@ -14,7 +14,12 @@ export const wallpapersList: Wallpaper[] = [
   { name: "★ Ondas de Luz Animadas", gradient: "linear-gradient(270deg, #4f46e5, #06b6d4, #3b82f6)", isDark: true, isAnimated: true, animatedType: "waves" },
   { name: "Oceano Profundo", gradient: "linear-gradient(135deg, #0f172a, #0369a1, #0c4a6e)", isDark: true },
   { name: "Algodão Doce", gradient: "linear-gradient(135deg, #fbcfe8, #fbcfe8, #c084fc, #818cf8)", isDark: false },
-  { name: "Cyberpunk Neon", gradient: "linear-gradient(135deg, #2e0854, #d946ef, #06b6d4, #050515)", isDark: true }
+  { name: "Cyberpunk Neon", gradient: "linear-gradient(135deg, #2e0854, #d946ef, #06b6d4, #050515)", isDark: true },
+  { name: "Neon Future", gradient: "linear-gradient(135deg, #08f, #0072ff, #000)", isDark: true },
+  { name: "Cyberpunk Cityscape", gradient: "linear-gradient(135deg, #0f172a, #1e2225, #2c2f33, #4d566d, #8b9cb5, #add1e6)", isDark: true },
+  { name: "Ocean Blue", gradient: "linear-gradient(135deg, #0072ff, #009aff, #ffffff)", isDark: false },
+  { name: "Midnight Sky", gradient: "linear-gradient(135deg, #1a1a1d, #3e4856, #3c4858, #61728a, #78879f)", isDark: true },
+  { name: "Mountain Sunrise", gradient: "linear-gradient(135deg, #ff7e5f, #feb47b, #ffc107)", isDark: false },
 ];
 
 export const initialNotifications: NotificationItem[] = [
