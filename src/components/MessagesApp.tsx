@@ -317,7 +317,7 @@ export default function MessagesApp({
           };
         }
         return c;
-});
+      }));
 
       if (!isActiveRef.current && onIncomingMessage) {
         const chatObj = chatsRef.current.find(c => c.id === targetChatId);
