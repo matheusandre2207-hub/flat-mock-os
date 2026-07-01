@@ -338,7 +338,7 @@ export default function BootSetupScreen({
               <label className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider mb-2 block">
                 {language === 'en' ? '4-Digit PIN (Optional)' : 'PIN de 4 dígitos (Opcional)'}
               </label>
-              <div className="relative">
+              <form onSubmit={(e) => { e.preventDefault(); if (localName.trim()) handleNext(); }} className="relative">
                 <input
                   type={showPin ? 'text' : 'password'}
                   maxLength={4}
@@ -356,11 +356,11 @@ export default function BootSetupScreen({
                 <button
                   type="button"
                   onClick={() => setShowPin(!showPin)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer border-none bg-transparent"
                 >
                   {showPin ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
-              </div>
+              </form>
             </div>
 
             <button

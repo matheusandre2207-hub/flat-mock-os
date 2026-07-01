@@ -11,6 +11,7 @@ import {
 
 import { Wallpaper, NotificationItem, PopupNotification, Track, Chat, Folder as FolderType, Contact, CapturedPhoto } from './types';
 import { wallpapersList, initialNotifications, tracksList, initialChats, initialFolders } from './data';
+import { generateBackgroundCheckIn } from './ai/LocalAIEngine';
 
 // Component imports
 import BatteryDots from './components/BatteryDots';
@@ -1160,9 +1161,8 @@ export default function App() {
                 console.warn("Background AI message generation failed, using static fallback:", err);
               }
             }
-            // Static fallback
-            const staticContact = randomIncomingMessages.find(rc => rc.chatId === targetChat.id) || randomIncomingMessages[0];
-            return staticContact.texts[Math.floor(Math.random() * staticContact.texts.length)];
+            // Offline Local AI background check-in
+            return generateBackgroundCheckIn(targetChat.id);
           };
 
           getBgMessage().then(text => {
