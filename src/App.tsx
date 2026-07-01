@@ -1137,25 +1137,28 @@ export default function App() {
           const targetChat = availableChats[Math.floor(Math.random() * availableChats.length)];
 
           const getBgMessage = async () => {
-            try {
-              const res = await fetch('/api/chat/background', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  contactId: targetChat.id,
-                  contactName: targetChat.name,
-                  contactRole: targetChat.role,
-                  messageHistory: targetChat.messages
-                })
-              });
-              if (res.ok) {
-                const data = await res.json();
-                if (data && data.reply) {
-                  return data.reply;
+            const isStaticHost = window.location.hostname.includes('github.io') || window.location.protocol === 'file:';
+            if (!isStaticHost) {
+              try {
+                const res = await fetch('/api/chat/background', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contactId: targetChat.id,
+                    contactName: targetChat.name,
+                    contactRole: targetChat.role,
+                    messageHistory: targetChat.messages
+                  })
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data && data.reply) {
+                    return data.reply;
+                  }
                 }
+              } catch (err) {
+                console.warn("Background AI message generation failed, using static fallback:", err);
               }
-            } catch (err) {
-              console.warn("Background AI message generation failed, using static fallback:", err);
             }
             // Static fallback
             const staticContact = randomIncomingMessages.find(rc => rc.chatId === targetChat.id) || randomIncomingMessages[0];
