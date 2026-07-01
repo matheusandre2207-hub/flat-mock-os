@@ -87,18 +87,18 @@ export default function ContactsApp({
     <div className={`w-full h-full flex flex-col ${darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} font-sans select-none`}>
       {/* Detail View Overlay */}
       {selectedContact && (
-        <div className="absolute inset-0 z-50 flex flex-col bg-slate-900 text-white animate-fade-in p-6">
+        <div className={`absolute inset-0 z-50 flex flex-col ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'} animate-fade-in p-6`}>
           <div className="flex justify-between items-center pb-6">
             <button 
               onClick={() => setSelectedContact(null)}
-              className="p-2 -ml-2 rounded-full hover:bg-white/10 text-white flex items-center gap-1.5 border-none cursor-pointer bg-transparent"
+              className="p-2 -ml-2 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-slate-800 dark:text-white flex items-center gap-1.5 border-none cursor-pointer bg-transparent"
             >
               <ArrowLeft size={16} />
               <span className="text-xs font-semibold">Voltar</span>
             </button>
             <button 
               onClick={() => handleDeleteContact(selectedContact.id)}
-              className="p-2 rounded-full hover:bg-red-500/20 text-red-400 border-none cursor-pointer bg-transparent"
+              className="p-2 rounded-full hover:bg-red-500/20 text-red-500 dark:text-red-400 border-none cursor-pointer bg-transparent"
               title="Excluir Contato"
             >
               <Trash2 size={16} />
@@ -106,13 +106,13 @@ export default function ContactsApp({
           </div>
 
           <div className="flex-1 flex flex-col items-center justify-start space-y-6 pt-4">
-            <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center text-5xl shadow-lg border border-white/10">
+            <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-5xl shadow-lg border border-slate-300 dark:border-white/10">
               {selectedContact.avatar}
             </div>
             
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold tracking-tight">{selectedContact.name}</h2>
-              <span className="inline-block bg-white/10 text-white/80 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+              <span className="inline-block bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-white/80 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
                 {selectedContact.role}
               </span>
             </div>
@@ -142,7 +142,7 @@ export default function ContactsApp({
 
             {/* Info Fields Grid */}
             <div className="w-full max-w-sm space-y-2.5 pt-6 text-left">
-              <div className="bg-white/5 rounded-2xl p-4 border border-white/5 space-y-4">
+              <div className="bg-slate-100 dark:bg-white/5 rounded-2xl p-4 border border-slate-200 dark:border-white/5 space-y-4">
                 <div className="flex items-center gap-3">
                   <Phone size={14} className="text-slate-400" />
                   <div>
@@ -177,14 +177,14 @@ export default function ContactsApp({
         <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-5">
           <form 
             onSubmit={handleAddContact}
-            className="w-full max-w-sm bg-slate-900 rounded-3xl p-6 border border-white/10 space-y-4 text-white shadow-2xl"
+            className={`w-full max-w-sm ${darkMode ? 'bg-slate-900 text-white border-white/10' : 'bg-white text-slate-900 border-slate-200'} rounded-3xl p-6 border space-y-4 shadow-2xl`}
           >
             <div className="flex justify-between items-center pb-1">
               <h3 className="font-bold text-sm">Novo Contato</h3>
               <button 
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 bg-transparent border-none cursor-pointer"
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 bg-transparent border-none cursor-pointer"
               >
                 <X size={16} />
               </button>
@@ -198,7 +198,7 @@ export default function ContactsApp({
                   key={em}
                   onClick={() => setNewAvatar(em)}
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all border-none cursor-pointer ${
-                    newAvatar === em ? 'bg-blue-600 scale-110' : 'bg-slate-800 hover:bg-slate-700'
+                    newAvatar === em ? 'bg-blue-600 scale-110' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
                   {em}
@@ -215,7 +215,7 @@ export default function ContactsApp({
                   placeholder="Nome do contato" 
                   value={newName}
                   onChange={e => setNewName(e.target.value)}
-                  className="w-full bg-slate-800 border border-white/5 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/5 rounded-xl px-3.5 py-2.5 text-slate-950 dark:text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -227,7 +227,7 @@ export default function ContactsApp({
                     placeholder="Ex: Amigo, Família" 
                     value={newRole}
                     onChange={e => setNewRole(e.target.value)}
-                    className="w-full bg-slate-800 border border-white/5 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/5 rounded-xl px-3.5 py-2.5 text-slate-950 dark:text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-1">
@@ -237,7 +237,7 @@ export default function ContactsApp({
                     placeholder="(11) 99999-9999" 
                     value={newPhone}
                     onChange={e => setNewPhone(e.target.value)}
-                    className="w-full bg-slate-800 border border-white/5 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/5 rounded-xl px-3.5 py-2.5 text-slate-950 dark:text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -249,7 +249,7 @@ export default function ContactsApp({
                   placeholder="email@exemplo.com" 
                   value={newEmail}
                   onChange={e => setNewEmail(e.target.value)}
-                  className="w-full bg-slate-800 border border-white/5 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/5 rounded-xl px-3.5 py-2.5 text-slate-950 dark:text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -260,7 +260,7 @@ export default function ContactsApp({
                   placeholder="Ex: São Paulo, SP" 
                   value={newLocation}
                   onChange={e => setNewLocation(e.target.value)}
-                  className="w-full bg-slate-800 border border-white/5 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/5 rounded-xl px-3.5 py-2.5 text-slate-950 dark:text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
@@ -269,7 +269,7 @@ export default function ContactsApp({
               <button 
                 type="button" 
                 onClick={() => setShowAddModal(false)}
-                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold border-none cursor-pointer text-white text-center"
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl font-bold border-none cursor-pointer text-slate-800 dark:text-white text-center"
               >
                 Cancelar
               </button>

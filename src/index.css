@@ -950,3 +950,210 @@ body, html {
   animation: ios-jiggle-alt 0.24s ease-in-out infinite alternate;
 }
 
+/* ==========================================================================
+   THEMING & CUSTOM THEME SUPPORT (FlatOS Adaptativo)
+   ========================================================================== */
+
+/* 1. CLARO (Light Theme) */
+#screen-container.theme-light .app-window {
+    background-color: #f4f4f5 !important;
+    color: #18181b !important;
+}
+#screen-container.theme-light .app-window-header {
+    border-bottom-color: rgba(24, 24, 27, 0.08) !important;
+    background-color: #e4e4e7 !important;
+}
+#screen-container.theme-light .app-window-drag-handle {
+    background-color: rgba(24, 24, 27, 0.2) !important;
+}
+#screen-container.theme-light .app-window-close-btn {
+    background-color: rgba(24, 24, 27, 0.08) !important;
+    color: #18181b !important;
+}
+#screen-container.theme-light .app-window-close-btn:hover {
+    background-color: rgba(24, 24, 27, 0.15) !important;
+}
+#screen-container.theme-light .widget-box {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    color: #18181b !important;
+    border-color: rgba(24, 24, 27, 0.08) !important;
+}
+#screen-container.theme-light .dock-bar {
+    background-color: rgba(255, 255, 255, 0.5) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Status Bar in Light Mode */
+#screen-container.theme-light #status-bar {
+    color: #0f172a !important;
+    mix-blend-mode: normal !important;
+}
+#screen-container.theme-light .status-pill {
+    background-color: rgba(241, 245, 249, 0.85) !important;
+    border-color: rgba(15, 23, 42, 0.12) !important;
+}
+#screen-container.theme-light .pill-svg {
+    stroke: #0f172a !important;
+}
+#screen-container.theme-light .cellular-bars .bar {
+    background-color: #0f172a !important;
+}
+
+/* Bottom Dock in Light Mode */
+#screen-container.theme-light #bottom-dock {
+    background-color: rgba(241, 245, 249, 0.85) !important;
+    border-top-color: rgba(15, 23, 42, 0.12) !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* App Drawer (Grade de Apps) in Light Mode */
+#screen-container.theme-light #app-drawer {
+    background-color: rgba(248, 250, 252, 0.92) !important;
+    border-color: rgba(15, 23, 42, 0.12) !important;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15) !important;
+}
+#screen-container.theme-light .drawer-header {
+    color: #0f172a !important;
+    border-bottom-color: rgba(15, 23, 42, 0.08) !important;
+}
+#screen-container.theme-light .drawer-title {
+    color: #0f172a !important;
+}
+#screen-container.theme-light .drawer-time {
+    color: rgba(15, 23, 42, 0.6) !important;
+}
+#screen-container.theme-light .grid-icon {
+    color: rgba(15, 23, 42, 0.6) !important;
+}
+#screen-container.theme-light .drawer-item {
+    color: #0f172a !important;
+}
+#screen-container.theme-light .drawer-item:active,
+#screen-container.theme-light .drawer-item:hover {
+    background-color: rgba(15, 23, 42, 0.06) !important;
+}
+#screen-container.theme-light .app-label {
+    color: #0f172a !important;
+}
+#screen-container.theme-light .drawer-footer {
+    color: rgba(15, 23, 42, 0.5) !important;
+    border-top-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Control Panels in Light Mode */
+#screen-container.theme-light #panel-utilities,
+#screen-container.theme-light #panel-notifications {
+    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.18) !important;
+}
+#screen-container.theme-light .panel-top-cap,
+#screen-container.theme-light .panel-bottom-cap {
+    background-color: #e2e8f0 !important;
+}
+#screen-container.theme-light .panel-center-content {
+    background-color: rgba(241, 245, 249, 0.9) !important;
+    color: #0f172a !important;
+}
+#screen-container.theme-light .panel-header {
+    color: rgba(15, 23, 42, 0.5) !important;
+}
+#screen-container.theme-light .notification-item {
+    background: rgba(15, 23, 42, 0.05) !important;
+}
+#screen-container.theme-light .notification-item strong {
+    color: #0f172a !important;
+}
+#screen-container.theme-light .notification-item p {
+    color: rgba(15, 23, 42, 0.8) !important;
+}
+#screen-container.theme-light .notification-item span {
+    color: rgba(15, 23, 42, 0.4) !important;
+}
+#screen-container.theme-light .round-btn {
+    background-color: rgba(15, 23, 42, 0.06) !important;
+    color: #0f172a !important;
+}
+#screen-container.theme-light .round-btn.active {
+    background-color: #007aff !important;
+    color: #ffffff !important;
+}
+#screen-container.theme-light .panel-slider-row {
+    background-color: rgba(15, 23, 42, 0.06) !important;
+}
+#screen-container.theme-light .slider-glyph {
+    color: #0f172a !important;
+}
+#screen-container.theme-light .panel-slider-row input[type=range] {
+    accent-color: #007aff !important;
+    background: rgba(15, 23, 42, 0.15) !important;
+}
+#screen-container.theme-light #panel-utilities .toggle-btn {
+    background-color: rgba(15, 23, 42, 0.06) !important;
+    color: rgba(15, 23, 42, 0.8) !important;
+}
+#screen-container.theme-light #panel-utilities .toggle-btn.active {
+    background-color: #007aff !important;
+    color: #ffffff !important;
+}
+#screen-container.theme-light .panel-media-player {
+    background-color: rgba(15, 23, 42, 0.06) !important;
+    color: #0f172a !important;
+}
+#screen-container.theme-light .panel-media-player p {
+    color: #0f172a !important;
+}
+
+/* 2. TUDO ESCURO (All Dark Theme) */
+#screen-container.theme-all-dark .app-window {
+    background-color: #000000 !important;
+    color: #f4f4f5 !important;
+}
+#screen-container.theme-all-dark .app-window-header {
+    border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+    background-color: #121214 !important;
+}
+#screen-container.theme-all-dark .app-window-drag-handle {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+}
+#screen-container.theme-all-dark .app-window-close-btn {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #e4e4e7 !important;
+}
+#screen-container.theme-all-dark .widget-box {
+    background-color: rgba(18, 18, 20, 0.85) !important;
+    color: #f4f4f5 !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+#screen-container.theme-all-dark .dock-bar {
+    background-color: rgba(18, 18, 20, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* 3. DINÂMICO (Wallpaper Adaptive Theme) */
+#screen-container.theme-dynamic .app-window {
+    background-color: var(--theme-bg) !important;
+    backdrop-filter: blur(20px) saturate(120%);
+    -webkit-backdrop-filter: blur(20px) saturate(120%);
+    color: var(--theme-text) !important;
+}
+#screen-container.theme-dynamic .app-window-header {
+    border-bottom-color: var(--theme-border) !important;
+    background-color: var(--theme-panel) !important;
+}
+#screen-container.theme-dynamic .app-window-drag-handle {
+    background-color: var(--theme-accent) !important;
+}
+#screen-container.theme-dynamic .app-window-close-btn {
+    background-color: var(--theme-accent-bg) !important;
+    color: var(--theme-text) !important;
+}
+#screen-container.theme-dynamic .widget-box {
+    background-color: var(--theme-panel) !important;
+    backdrop-filter: blur(15px);
+    color: var(--theme-text) !important;
+    border-color: var(--theme-border) !important;
+}
+#screen-container.theme-dynamic .dock-bar {
+    background-color: var(--theme-panel) !important;
+    border-color: var(--theme-border) !important;
+}
+

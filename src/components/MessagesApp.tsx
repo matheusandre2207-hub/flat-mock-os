@@ -1,6 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, ArrowLeft, Bot, MessageSquare } from 'lucide-react';
+import { Send, ArrowLeft, Bot, MessageSquare, Sparkles, Heart, Wrench, FileText, User } from 'lucide-react';
 import { Chat, Message } from '../types';
+
+function renderAvatarIcon(avatarName: string, size: number = 18) {
+  switch (avatarName) {
+    case 'Sparkles': return <Sparkles size={size} className="text-blue-500 animate-pulse" />;
+    case 'Heart': return <Heart size={size} className="text-red-500" fill="currentColor" />;
+    case 'Wrench': return <Wrench size={size} className="text-slate-400" />;
+    case 'FileText': return <FileText size={size} className="text-yellow-500" />;
+    case 'User': return <User size={size} className="text-blue-400" />;
+    default: return <User size={size} className="text-blue-400" />;
+  }
+}
 
 interface MessagesAppProps {
   chats: Chat[];
@@ -30,9 +41,15 @@ export default function MessagesApp({
 
   const selectedChatIdRef = useRef(selectedChatId);
   const isActiveRef = useRef(isActive);
+  const chatsRef = useRef(chats);
   const pendingResponsesRef = useRef<Record<string, { typingId: any; responseId: any }>>({});
 
   const activeChat = chats.find(c => c.id === selectedChatId) || null;
+
+  // Sync chats state with a mutable ref to avoid stale closures in setTimeout
+  useEffect(() => {
+    chatsRef.current = chats;
+  }, [chats]);
 
   // Sync selectedChatId with a mutable ref for background callbacks
   useEffect(() => {
@@ -65,10 +82,19 @@ export default function MessagesApp({
 
   useEffect(() => {
     if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTo({
-        top: messagesContainerRef.current.scrollHeight,
-        behavior: 'smooth'
-      });
+      try {
+        if (typeof messagesContainerRef.current.scrollTo === 'function') {
+          messagesContainerRef.current.scrollTo({
+            top: messagesContainerRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        } else {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      } catch (err) {
+        console.warn("Smooth scroll failed, falling back to scrollTop:", err);
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }
     }
   }, [activeChat?.messages, typingChatId]);
 
@@ -92,19 +118,10 @@ export default function MessagesApp({
     return () => window.removeEventListener('mockos-back', handleBack);
   }, [selectedChatId, isActive]);
 
-  // Custom delay logic:
-  // - 70% chance of fast reply (2s - 10s)
-  // - 20% chance of medium reply (10s - 30s)
-  // - 10% chance of long reply (30s - 120s, up to 2 mins)
+  // Fast, conversational delay logic:
+  // Dynamically ranges between 1s and 2.5s to keep the conversation flowing smoothly.
   const getRandomDelay = () => {
-    const rand = Math.random();
-    if (rand < 0.70) {
-      return Math.floor(Math.random() * 8000) + 2000; // 2s - 10s
-    } else if (rand < 0.90) {
-      return Math.floor(Math.random() * 20000) + 10000; // 10s - 30s
-    } else {
-      return Math.floor(Math.random() * 90000) + 30000; // 30s - 120s (up to 2m)
-    }
+    return Math.floor(Math.random() * 1500) + 1000; // 1.0s - 2.5s
   };
 
   const handleSend = (e: React.FormEvent) => {
@@ -143,8 +160,8 @@ export default function MessagesApp({
     // Determine the response delay (up to 2 minutes, mostly < 10s)
     const delay = getRandomDelay();
 
-    // typing bubble triggers 6s before sending, or immediately if delay is smaller
-    const typingStartTime = Math.max(0, delay - 6000);
+    // typing bubble triggers almost immediately to simulate someone starting to type
+    const typingStartTime = 200;
 
     const typingId = setTimeout(() => {
       setTypingChatId(targetChatId);
@@ -154,6 +171,11 @@ export default function MessagesApp({
       let responseText = '';
       const query = userMsgText.toLowerCase();
 
+      // Retrieve the absolute freshest message history to avoid stale closures
+      const latestChats = chatsRef.current;
+      const latestActiveChat = latestChats.find(c => c.id === targetChatId);
+      if (!latestActiveChat) return;
+
       // Try fetching from the server-side Gemini API
       try {
         const res = await fetch('/api/chat', {
@@ -161,9 +183,9 @@ export default function MessagesApp({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contactId: targetChatId,
-            contactName: activeChat.name,
-            contactRole: activeChat.role,
-            messageHistory: activeChat.messages,
+            contactName: latestActiveChat.name,
+            contactRole: latestActiveChat.role,
+            messageHistory: latestActiveChat.messages.filter((m: Message) => m.id !== userMsg.id),
             userMessage: userMsgText
           })
         });
@@ -295,10 +317,10 @@ export default function MessagesApp({
           };
         }
         return c;
-      }));
+};
 
       if (!isActiveRef.current && onIncomingMessage) {
-        const chatObj = chats.find(c => c.id === targetChatId);
+        const chatObj = chatsRef.current.find(c => c.id === targetChatId);
         if (chatObj) {
           onIncomingMessage(chatObj.name, botMsg.text, targetChatId);
         }
@@ -312,40 +334,43 @@ export default function MessagesApp({
   };
 
   return (
-    <div className={`h-full flex rounded-none overflow-hidden pb-24 ${darkMode ? 'text-white bg-slate-950' : 'text-slate-900 bg-white'}`}>
+    <div className={`h-full flex overflow-hidden ${darkMode ? 'text-white bg-slate-950' : 'text-slate-900 bg-white'}`}>
       
       {/* 1. CHATS SIDEBAR LIST (Shown when no chat selected on small, or split) */}
-      <div className={`w-full md:w-80 flex flex-col border-r ${darkMode ? 'border-white/10 bg-slate-950' : 'border-slate-100 bg-slate-50'} ${selectedChatId ? 'hidden md:flex' : 'flex'}`}>
-        <div className="pt-3 pb-3 px-5 border-b border-white/5 flex items-center gap-2">
-          <MessageSquare className="text-blue-500" size={20} />
-          <h2 className="font-bold text-base">Conversas</h2>
+      <div className={`w-full md:w-80 flex flex-col border-r flex-shrink-0 ${darkMode ? 'border-white/10 bg-slate-950' : 'border-slate-100 bg-slate-50'} ${selectedChatId ? 'hidden md:flex' : 'flex'}`}>
+        <div className="pt-4 pb-3 px-5 border-b border-white/5 flex items-center gap-2.5">
+          <MessageSquare className="text-blue-500" size={22} />
+          <h2 className="font-extrabold text-lg tracking-tight">Conversas</h2>
         </div>
 
-        <div className="flex-1 overflow-y-auto divide-y divide-white/5 no-scrollbar">
+        <div className="flex-1 overflow-y-auto divide-y divide-white/5 no-scrollbar pb-20">
           {chats.map(chat => {
             const lastMsg = chat.messages[chat.messages.length - 1];
             return (
               <button
                 key={chat.id}
                 onClick={() => setSelectedChatId(chat.id)}
-                className={`w-full p-4 flex items-center gap-3 text-left transition-colors ${
+                className={`w-full p-4 text-left flex items-start gap-3.5 transition-colors cursor-pointer border-none ${
                   selectedChatId === chat.id 
-                    ? (darkMode ? 'bg-white/5' : 'bg-slate-200/50') 
-                    : (darkMode ? 'hover:bg-white/5' : 'hover:bg-slate-100')
+                    ? (darkMode ? 'bg-white/10' : 'bg-blue-50/80') 
+                    : (darkMode ? 'hover:bg-white/5 bg-transparent' : 'hover:bg-slate-100 bg-transparent')
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-lg shadow-sm">
-                  {chat.avatar}
+                <div className="w-12 h-12 rounded-2.5xl bg-gradient-to-tr from-slate-800 to-slate-700 flex items-center justify-center relative flex-shrink-0 shadow-sm border border-white/10">
+                  {renderAvatarIcon(chat.avatar, 22)}
+                  {chat.id !== 'self-notes' && (
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950"></span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-baseline">
-                    <h4 className="font-bold text-xs truncate">{chat.name}</h4>
-                    <span className="text-[9px] opacity-40 font-mono">{lastMsg?.timestamp || ''}</span>
+                  <div className="flex justify-between items-baseline mb-0.5">
+                    <span className="font-extrabold text-[13.5px] truncate text-slate-900 dark:text-white">{chat.name}</span>
+                    <span className="text-[10px] opacity-45 font-mono ml-2 shrink-0">{lastMsg?.timestamp || ''}</span>
                   </div>
-                  <p className="text-xs opacity-60 truncate mt-0.5">{lastMsg?.text || ''}</p>
+                  <p className="text-[12px] opacity-65 truncate leading-snug font-medium text-slate-600 dark:text-slate-300">{lastMsg?.text || ''}</p>
                 </div>
                 {chat.unread && (
-                  <div className="w-2.5 h-2.5 bg-blue-500 rounded-full self-center flex-shrink-0" />
+                  <div className="w-2.5 h-2.5 bg-blue-500 rounded-full self-center flex-shrink-0 shadow-sm animate-pulse" />
                 )}
               </button>
             );
@@ -354,28 +379,44 @@ export default function MessagesApp({
       </div>
 
       {/* 2. CHAT DETAILS BOX */}
-      <div className={`flex-1 flex flex-col justify-center ${selectedChatId ? 'flex' : 'hidden md:flex bg-slate-900/10 items-center'}`}>
+      <div className={`flex-1 flex flex-col h-full min-w-0 ${selectedChatId ? 'flex' : 'hidden md:flex bg-slate-900/10 items-center justify-center'}`}>
         {activeChat ? (
-          <div className={`flex-1 flex flex-col w-full max-w-xl mx-auto border-l border-r h-full ${
-            darkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-100 bg-white shadow-xs'
+          <div className={`flex-1 flex flex-col w-full h-full relative ${
+            darkMode ? 'bg-[#121214]' : 'bg-[#f8f9fa]'
           }`}>
             {/* Conversation Header */}
-            <div className={`pt-3 pb-3 px-5 border-b flex items-center justify-between ${darkMode ? 'border-white/10 bg-slate-900/40' : 'border-slate-100 bg-slate-50'}`}>
-              <div className="flex items-center gap-3">
+            <div className={`pt-3.5 pb-3.5 px-5 border-b flex items-center justify-between shrink-0 z-10 ${
+              darkMode ? 'border-white/10 bg-[#1c1c1e]/90 backdrop-blur-md' : 'border-slate-200/80 bg-white/90 backdrop-blur-md shadow-xs'
+            }`}>
+              <div className="flex items-center gap-3 min-w-0">
                 <button 
                   onClick={() => setSelectedChatId(null)}
-                  className="md:hidden p-1 hover:bg-black/10 rounded-lg text-current"
+                  className="md:hidden p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl text-current transition-colors border-none bg-transparent cursor-pointer mr-1"
                 >
-                  <ArrowLeft size={18} />
+                  <ArrowLeft size={20} />
                 </button>
-                <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-base border border-white/5">
-                  {activeChat.avatar}
+                <div className="w-10 h-10 rounded-2.5xl bg-gradient-to-tr from-slate-800 to-slate-700 flex items-center justify-center border border-white/10 shadow-sm shrink-0">
+                  {renderAvatarIcon(activeChat.avatar, 20)}
                 </div>
-                <div>
-                  <h3 className="font-bold text-xs text-left">{activeChat.name}</h3>
-                  <p className="text-[10px] opacity-60 flex items-center gap-1">
-                    {activeChat.id === 'ai-assistant' && <Bot size={10} className="text-blue-500" />}
-                    {activeChat.role}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-extrabold text-[14.5px] truncate text-slate-900 dark:text-white">{activeChat.name}</h3>
+                    {activeChat.id !== 'self-notes' && (
+                      <span className="flex h-2 w-2 relative shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] opacity-60 flex items-center gap-1.5 truncate mt-0.5 font-medium">
+                    {activeChat.id === 'ai-assistant' && <Bot size={12} className="text-blue-500 shrink-0" />}
+                    <span>{activeChat.role}</span>
+                    {activeChat.id !== 'self-notes' && (
+                      <>
+                        <span className="opacity-40">•</span>
+                        <span className="text-[10px] text-emerald-500 font-bold tracking-wide uppercase">Online</span>
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
@@ -384,66 +425,70 @@ export default function MessagesApp({
             {/* Conversation Messages area */}
             <div 
               ref={messagesContainerRef} 
-              className={`flex-1 px-5 py-4 overflow-y-auto space-y-3.5 no-scrollbar ${darkMode ? 'bg-slate-950/20' : 'bg-slate-50/50'}`}
+              className="flex-1 px-5 py-6 overflow-y-auto space-y-4 no-scrollbar"
             >
               {activeChat.messages.map(msg => (
                 <div 
                   key={msg.id} 
-                  className={`flex flex-col max-w-[85%] ${
+                  className={`flex flex-col max-w-[80%] ${
                     msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
                   }`}
                 >
                   <div 
-                    className={`p-3 rounded-2xl text-xs leading-relaxed shadow-xs ${
+                    className={`px-4 py-3 rounded-2.5xl text-[13.5px] font-medium leading-relaxed shadow-sm transition-all ${
                       msg.sender === 'user' 
-                        ? 'bg-blue-600 text-white rounded-tr-none' 
-                        : (darkMode ? 'bg-white/10 text-white rounded-tl-none border border-white/5' : 'bg-white text-slate-900 border border-slate-200 rounded-tl-none')
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-br-xs' 
+                        : (darkMode ? 'bg-[#262628] text-white rounded-bl-xs border border-white/10' : 'bg-white text-slate-800 rounded-bl-xs border border-slate-200/80 shadow-xs')
                     }`}
                   >
                     {msg.text}
                   </div>
-                  <span className="text-[8px] opacity-40 mt-1 font-mono">{msg.timestamp}</span>
+                  <span className="text-[9px] font-semibold opacity-45 px-1 mt-1.5 font-mono">{msg.timestamp}</span>
                 </div>
               ))}
 
               {/* Typing simulation feedback */}
               {typingChatId === activeChat.id && (
-                <div className="flex items-center gap-1 bg-white/5 p-2 rounded-xl text-[10px] opacity-60 max-w-max mr-auto">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce duration-500" />
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce duration-500 delay-150" />
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce duration-500 delay-300" />
+                <div className={`flex items-center gap-1.5 px-4 py-3 rounded-2.5xl rounded-bl-xs max-w-max mr-auto shadow-sm ${
+                  darkMode ? 'bg-[#262628] border border-white/10' : 'bg-white border border-slate-200/80'
+                }`}>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce duration-500" />
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce duration-500 delay-150" />
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce duration-500 delay-300" />
                 </div>
               )}
             </div>
 
-            {/* Message input bar */}
+            {/* Message input bar (Elevated above gestures with pb-8) */}
             <form 
               onSubmit={handleSend} 
-              className={`px-5 py-3.5 border-t flex gap-2.5 items-center ${darkMode ? 'border-white/10 bg-slate-900/20' : 'border-slate-100 bg-white'}`}
+              className={`px-5 pt-3.5 pb-8 border-t flex gap-3 items-center shrink-0 ${
+                darkMode ? 'border-white/10 bg-[#1c1c1e]/95 backdrop-blur-md' : 'border-slate-200/80 bg-white/95 backdrop-blur-md shadow-lg'
+              }`}
             >
-              <input
-                type="text"
-                placeholder={activeChat.id === 'self-notes' ? "Anotar lembrete..." : "Escreva uma mensagem..."}
-                value={textInput}
-                onChange={e => setTextInput(e.target.value)}
-                className={`flex-1 px-4 py-2.5 text-xs rounded-xl border outline-none focus:border-blue-500 ${
-                  darkMode 
-                    ? 'bg-black/30 border-white/10 text-white placeholder-white/35' 
-                    : 'bg-slate-100 border-slate-200 text-slate-900 placeholder-slate-400'
-                }`}
-              />
+              <div className={`flex-1 flex items-center rounded-2.5xl border px-4 py-1 transition-all focus-within:ring-2 focus-within:ring-blue-500/50 ${
+                darkMode ? 'bg-black/40 border-white/10 text-white' : 'bg-slate-100 border-slate-200/80 text-slate-900'
+              }`}>
+                <input
+                  type="text"
+                  placeholder={activeChat.id === 'self-notes' ? "Anotar lembrete..." : "Escreva uma mensagem..."}
+                  value={textInput}
+                  onChange={e => setTextInput(e.target.value)}
+                  className="w-full py-2.5 text-[13.5px] font-medium bg-transparent outline-none border-none placeholder:text-slate-400 dark:placeholder:text-white/40"
+                />
+              </div>
               <button 
                 type="submit" 
-                className="w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 flex-shrink-0 border-none"
+                className="w-11 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2.5xl flex items-center justify-center transition-all cursor-pointer active:scale-95 flex-shrink-0 shadow-md border-none"
               >
-                <Send size={14} />
+                <Send size={18} className="translate-x-[1px]" />
               </button>
             </form>
           </div>
         ) : (
           <div className="text-center p-6 opacity-40">
-            <Bot size={40} className="mx-auto mb-2 text-blue-500 animate-pulse" />
-            <p className="text-xs">Selecione uma conversa para começar a digitar</p>
+            <Bot size={44} className="mx-auto mb-3 text-blue-500 animate-pulse" />
+            <p className="text-sm font-semibold">Selecione uma conversa para começar a digitar</p>
           </div>
         )}
       </div>

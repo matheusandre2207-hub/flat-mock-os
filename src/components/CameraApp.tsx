@@ -1,26 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, RefreshCw, ZoomIn, ZoomOut, Sliders, Play, X, Zap, Maximize, Smile, Image } from 'lucide-react';
+import { CapturedPhoto } from '../types';
 
 interface CameraAppProps {
   darkMode: boolean;
   isActive?: boolean;
+  capturedPhotos?: CapturedPhoto[];
+  onCapturePhoto?: (photo: CapturedPhoto) => void;
 }
 
-interface CapturedPhoto {
-  id: string;
-  url: string;
-  filter: string;
-  timestamp: string;
-}
-
-export default function CameraApp({ darkMode, isActive = true }: CameraAppProps) {
+export default function CameraApp({ darkMode, isActive = true, capturedPhotos: propsPhotos, onCapturePhoto }: CameraAppProps) {
   const [hasCamera, setHasCamera] = useState<boolean>(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [activeFilter, setActiveFilter] = useState<'none' | 'retro' | 'cyber' | 'mono' | 'warm'>('none');
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
   const [flashOn, setFlashOn] = useState<boolean>(false);
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
-  const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
+  
+  const [localPhotos, setLocalPhotos] = useState<CapturedPhoto[]>(() => {
+    const saved = localStorage.getItem('mockos_captured_photos');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const capturedPhotos = propsPhotos || localPhotos;
+  
   const [viewingPhoto, setViewingPhoto] = useState<CapturedPhoto | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
@@ -158,7 +160,15 @@ export default function CameraApp({ darkMode, isActive = true }: CameraAppProps)
         timestamp: timeStr
       };
 
-      setCapturedPhotos(prev => [newPhoto, ...prev]);
+      if (onCapturePhoto) {
+        onCapturePhoto(newPhoto);
+      } else {
+        setLocalPhotos(prev => {
+          const updated = [newPhoto, ...prev];
+          localStorage.setItem('mockos_captured_photos', JSON.stringify(updated));
+          return updated;
+        });
+      }
     }, 150);
   };
 
@@ -207,7 +217,11 @@ export default function CameraApp({ darkMode, isActive = true }: CameraAppProps)
           <div className="flex justify-center gap-4 pt-4">
             <button 
               onClick={() => {
-                setCapturedPhotos(prev => prev.filter(p => p.id !== viewingPhoto.id));
+                setLocalPhotos(prev => {
+                  const updated = prev.filter(p => p.id !== viewingPhoto.id);
+                  localStorage.setItem('mockos_captured_photos', JSON.stringify(updated));
+                  return updated;
+                });
                 setViewingPhoto(null);
               }}
               className="px-6 py-2.5 rounded-full bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs font-bold border-none cursor-pointer"

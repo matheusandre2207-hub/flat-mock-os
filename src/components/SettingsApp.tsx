@@ -5,7 +5,7 @@ import {
   ChevronRight, ChevronLeft, Search, Bell, Lock, Grid,
   Accessibility, Play, Shield, Activity, Smartphone as PhoneIcon,
   Volume1, VolumeX, Eye, Sparkles, CheckCircle2, ChevronDown, Trash2,
-  Maximize
+  Maximize, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Wallpaper } from '../types';
@@ -29,6 +29,8 @@ interface SettingsAppProps {
   setBrightness: (n: number) => void;
   volume: number;
   setVolume: (n: number) => void;
+  selectedRingtone: string;
+  setSelectedRingtone: (s: string) => void;
   
   // Battery simulator controls
   useManualBattery: boolean;
@@ -50,6 +52,16 @@ interface SettingsAppProps {
   // Fullscreen controls
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
+
+  // System Setup & Boot Preferences
+  language: 'pt' | 'en';
+  setLanguage: (lang: 'pt' | 'en') => void;
+  pincode: string;
+  setPincode: (pin: string) => void;
+  userAvatar: string;
+  setUserAvatar: (avatar: string) => void;
+  onResetOS: () => void;
+  onOpenGallery?: () => void;
 }
 
 let sharedAudioContext: AudioContext | null = null;
@@ -100,6 +112,25 @@ const playRingtone = (type: string) => {
     scale.forEach((freq, idx) => {
       setTimeout(() => playTone(freq, 'sine', 0.15, 0.06), idx * 80);
     });
+  } else if (type === 'cyberpunk') {
+    const scale = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+    scale.forEach((freq, idx) => {
+      setTimeout(() => playTone(freq, idx % 2 === 0 ? 'sawtooth' : 'square', 0.1, 0.05), idx * 70);
+    });
+  } else if (type === 'diamond') {
+    const scale = [1046.50, 1318.51, 1567.98, 2093.00];
+    scale.forEach((freq, idx) => {
+      setTimeout(() => playTone(freq, 'sine', 0.25, 0.07), idx * 90);
+    });
+  } else if (type === 'crystal') {
+    playTone(1567.98, 'sine', 0.12, 0.06);
+    setTimeout(() => playTone(2093.00, 'triangle', 0.15, 0.08), 80);
+    setTimeout(() => playTone(2637.02, 'sine', 0.25, 0.05), 160);
+  } else if (type === 'gold') {
+    playTone(392.00, 'triangle', 0.12, 0.07);
+    setTimeout(() => playTone(523.25, 'triangle', 0.12, 0.07), 100);
+    setTimeout(() => playTone(659.25, 'triangle', 0.12, 0.07), 200);
+    setTimeout(() => playTone(1046.50, 'sine', 0.35, 0.09), 300);
   }
 };
 
@@ -111,17 +142,26 @@ export default function SettingsApp({
   airplaneMode, setAirplaneMode,
   darkMode, setDarkMode,
   nightMode, setNightMode,
-  brightness, setBrightness,
-  volume, setVolume,
+  brightness: brightness, setBrightness: setBrightness,
+  volume: volume, setVolume: setVolume,
+  selectedRingtone: selectedRingtone, setSelectedRingtone: setSelectedRingtone,
   useManualBattery, setUseManualBattery,
   simulatedLevel, setSimulatedLevel,
   simulatedCharging, setSimulatedCharging,
   wallpapers, currentWallpaperIndex, setWallpaperIndex,
   isActive = false,
+  onOpenGallery,
   installedApps,
   onUninstall,
   isFullscreen = false,
-  onToggleFullscreen
+  onToggleFullscreen,
+  language,
+  setLanguage,
+  pincode,
+  setPincode,
+  userAvatar,
+  setUserAvatar,
+  onResetOS
 }: SettingsAppProps) {
   
   const [currentPanel, setCurrentPanel] = useState<string | null>(null);
@@ -140,7 +180,6 @@ export default function SettingsApp({
     { id: '3', name: 'Car-Stereo System', type: 'audio', connected: false },
   ]);
   const [connectingBtId, setConnectingBtId] = useState<string | null>(null);
-  const [selectedRingtone, setSelectedRingtone] = useState('marimba');
   const [allowedNotifications, setAllowedNotifications] = useState(true);
   const [notificationStyle, setNotificationStyle] = useState<'stack' | 'list' | 'count'>('stack');
   const [locationServices, setLocationServices] = useState(true);
@@ -1122,40 +1161,40 @@ export default function SettingsApp({
                   <div className="space-y-2">
                     <h3 className="text-xs font-bold uppercase tracking-wider opacity-50 px-1">Aparência do Sistema</h3>
                     <div className="grid grid-cols-2 gap-3.5">
-                      {/* Light Card */}
+                      {/* Claro Card */}
                       <button
                         onClick={() => {
                           setDarkMode(false);
                           playTone(700, 'sine', 0.1, 0.05);
                         }}
-                        className={`p-4 rounded-2.5xl text-center space-y-3 border-3 transition-all ${
-                          !darkMode 
-                            ? 'border-blue-600 bg-white shadow-md' 
-                            : 'border-transparent bg-neutral-900 opacity-60 hover:opacity-85'
+                        className={`p-3 rounded-2.5xl text-center space-y-2 border-3 transition-all cursor-pointer ${
+                          !darkMode
+                            ? 'border-blue-600 bg-white shadow-md text-slate-900' 
+                            : 'border-transparent bg-white/5 opacity-65 hover:opacity-100 text-current'
                         }`}
                       >
-                        <div className="h-16 w-full rounded-lg bg-slate-100 flex items-center justify-center shadow-sm">
-                          <Sun size={24} className="text-amber-500" />
+                        <div className="h-12 w-full rounded-lg bg-slate-100 flex items-center justify-center shadow-xs">
+                          <Sun size={20} className="text-amber-500" />
                         </div>
-                        <span className="text-xs font-bold text-slate-900 dark:text-white">Claro</span>
+                        <span className="text-[11px] font-bold block text-slate-800 dark:text-slate-200">Claro</span>
                       </button>
 
-                      {/* Dark Card */}
+                      {/* Escuro Card */}
                       <button
                         onClick={() => {
                           setDarkMode(true);
                           playTone(300, 'sine', 0.1, 0.05);
                         }}
-                        className={`p-4 rounded-2.5xl text-center space-y-3 border-3 transition-all ${
-                          darkMode 
-                            ? 'border-blue-600 bg-[#1c1c1e] shadow-md' 
-                            : 'border-transparent bg-white opacity-60 hover:opacity-85'
+                        className={`p-3 rounded-2.5xl text-center space-y-2 border-3 transition-all cursor-pointer ${
+                          darkMode
+                            ? 'border-blue-600 bg-slate-900 shadow-md text-white' 
+                            : 'border-transparent bg-white/5 opacity-65 hover:opacity-100 text-current'
                         }`}
                       >
-                        <div className="h-16 w-full rounded-lg bg-black flex items-center justify-center shadow-sm">
-                          <Moon size={24} className="text-blue-500" />
+                        <div className="h-12 w-full rounded-lg bg-slate-950 flex items-center justify-center shadow-xs">
+                          <Moon size={20} className="text-blue-500" />
                         </div>
-                        <span className="text-xs font-bold text-slate-900 dark:text-white">Escuro</span>
+                        <span className="text-[11px] font-bold block text-slate-800 dark:text-slate-200">Escuro</span>
                       </button>
                     </div>
                   </div>
@@ -1222,10 +1261,22 @@ export default function SettingsApp({
                     />
                   </div>
 
-                  {/* Wallpapers Selection */}
+                   {/* Wallpapers Selection */}
                   <div className="space-y-2">
                     <h4 className="text-xs font-bold uppercase tracking-wider opacity-50 px-1">Papéis de Parede do Sistema</h4>
                     <div className="grid grid-cols-4 gap-2">
+                      {onOpenGallery && (
+                        <button
+                          onClick={() => {
+                            onOpenGallery();
+                            playTone(750, 'sine', 0.05);
+                          }}
+                          className="relative aspect-[9/15] rounded-xl overflow-hidden border-2 border-dashed border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-slate-800/50 flex flex-col items-center justify-center text-center transition-transform active:scale-95 shadow-sm text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 hover:border-blue-500 cursor-pointer"
+                        >
+                          <Plus size={18} />
+                          <span className="text-[8px] font-extrabold mt-1 uppercase tracking-wider">Galeria</span>
+                        </button>
+                      )}
                       {wallpapers.map((wp, idx) => (
                         <button
                           key={idx}
@@ -1423,6 +1474,123 @@ export default function SettingsApp({
                       ))}
                     </div>
                   </div>
+
+                  {/* System Setup Configuration */}
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider opacity-50 px-1">
+                      {language === 'en' ? 'System & Setup Preferences' : 'Preferências do Sistema'}
+                    </h3>
+                    
+                    <div className={`rounded-2.5xl overflow-hidden divide-y shadow-sm ${
+                      darkMode ? 'bg-[#1c1c1e] divide-white/5' : 'bg-white divide-slate-100'
+                    }`}>
+                      {/* Language Selection */}
+                      <div className="p-4 flex items-center justify-between">
+                        <div>
+                          <span className="text-sm font-semibold block">
+                            {language === 'en' ? 'System Language' : 'Idioma do Sistema'}
+                          </span>
+                          <span className="text-[10px] opacity-50">
+                            {language === 'en' ? 'Changes home labels and notifications' : 'Altera textos de notificações e aplicativos'}
+                          </span>
+                        </div>
+                        <div className="flex bg-slate-200 dark:bg-black/45 p-1 rounded-xl">
+                          <button
+                            onClick={() => { setLanguage('pt'); playTone(600, 'sine', 0.05); }}
+                            className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                              language === 'pt' ? 'bg-blue-600 text-white shadow' : 'opacity-60'
+                            }`}
+                          >
+                            PT
+                          </button>
+                          <button
+                            onClick={() => { setLanguage('en'); playTone(600, 'sine', 0.05); }}
+                            className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                              language === 'en' ? 'bg-blue-600 text-white shadow' : 'opacity-60'
+                            }`}
+                          >
+                            EN
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Lockscreen PIN */}
+                      <div className="p-4 flex items-center justify-between">
+                        <div>
+                          <span className="text-sm font-semibold block">
+                            {language === 'en' ? 'Lock Screen PIN' : 'Senha de Bloqueio (PIN)'}
+                          </span>
+                          <span className="text-[10px] opacity-50">
+                            {pincode 
+                              ? (language === 'en' ? 'Active security code' : 'Código de segurança ativo') 
+                              : (language === 'en' ? 'Slide to unlock (Insecure)' : 'Deslizar para desbloquear')}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              playTone(600, 'sine', 0.05);
+                              const newPin = window.prompt(language === 'en' ? 'Enter a new 4-digit PIN:' : 'Digite uma nova senha de 4 dígitos:', pincode);
+                              if (newPin !== null) {
+                                if (newPin.trim() === '') {
+                                  setPincode('');
+                                  alert(language === 'en' ? 'PIN lock removed.' : 'Senha de bloqueio removida.');
+                                } else if (/^\d{4}$/.test(newPin)) {
+                                  setPincode(newPin);
+                                  alert(language === 'en' ? 'PIN configured successfully!' : 'Senha configurada com sucesso!');
+                                } else {
+                                  alert(language === 'en' ? 'Invalid PIN. Must be 4 digits.' : 'Senha inválida. Deve conter 4 dígitos.');
+                                }
+                              }
+                            }}
+                            className="px-3 py-1 text-xs font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm transition-all"
+                          >
+                            {language === 'en' ? 'Configure' : 'Configurar'}
+                          </button>
+                          {pincode && (
+                            <button
+                              onClick={() => {
+                                playTone(300, 'sine', 0.05);
+                                setPincode('');
+                                alert(language === 'en' ? 'PIN lock removed.' : 'Senha de bloqueio removida.');
+                              }}
+                              className="px-3 py-1 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm transition-all"
+                            >
+                              {language === 'en' ? 'Remove' : 'Remover'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Factory Reset */}
+                      <div className="p-4 flex items-center justify-between">
+                        <div>
+                          <span className="text-sm font-semibold text-red-500 block">
+                            {language === 'en' ? 'Factory Reset OS' : 'Restaurar Padrão de Fábrica'}
+                          </span>
+                          <span className="text-[10px] opacity-50">
+                            {language === 'en' ? 'Format system and run setup again' : 'Formata o sistema e inicia a tela de boot'}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            playTone(200, 'triangle', 0.2);
+                            const confirmed = window.confirm(
+                              language === 'en' 
+                                ? 'Are you sure you want to completely reset Mock OS? This will wipe your files, preferences and trigger the boot sequence!' 
+                                : 'Deseja realmente redefinir o Mock OS? Isso apagará suas preferências, arquivos e reiniciará a tela de configuração inicial!'
+                            );
+                            if (confirmed) {
+                              onResetOS();
+                            }
+                          }}
+                          className="px-3.5 py-1.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm transition-all"
+                        >
+                          {language === 'en' ? 'Reset OS' : 'Resetar'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1461,6 +1629,10 @@ export default function SettingsApp({
                     }`}>
                       {[
                         { id: 'marimba', label: 'Marimba OS (Futurista)', desc: 'Sequência alegre senoidal' },
+                        { id: 'cyberpunk', label: 'Cyberpunk Neon (VIP Ostentação)', desc: 'Arpejo futurista synthwave' },
+                        { id: 'diamond', label: 'Diamond Harp (Luxo Harpa)', desc: 'Cascata de harpa harmoniosa' },
+                        { id: 'crystal', label: 'Crystal Drop (Gota de Cristal)', desc: 'Timbre cristalino de alta definição' },
+                        { id: 'gold', label: 'Golden Fanfare (Fanfarra Real)', desc: 'Acordes majestosos imperiais' },
                         { id: 'classic', label: 'Classic Chimes (Clássico)', desc: 'Notas musicais suaves' },
                         { id: 'synth', label: 'Digital Synth (Tecnológico)', desc: 'Onda dente-de-serra espacial' },
                         { id: 'bell', label: 'Triangle Bell (Sino)', desc: 'Timbre cristalino relaxante' }

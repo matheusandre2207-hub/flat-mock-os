@@ -6,9 +6,9 @@ interface BatteryDotsProps {
 }
 
 export default function BatteryDots({ level, isCharging }: BatteryDotsProps) {
-  let d1Class = "opacity-30 bg-white";
-  let d2Class = "opacity-30 bg-white";
-  let d3Class = "opacity-30 bg-white";
+  let d1Class = "opacity-30 bg-slate-900 dark:bg-white";
+  let d2Class = "opacity-30 bg-slate-900 dark:bg-white";
+  let d3Class = "opacity-30 bg-slate-900 dark:bg-white";
 
   if (isCharging) {
     if (level < 33) {
@@ -30,14 +30,14 @@ export default function BatteryDots({ level, isCharging }: BatteryDotsProps) {
     if (level <= 20) {
       d1Class = "bg-red-500 blink-fast";
     } else if (level > 20 && level <= 33) {
-      d1Class = "bg-white opacity-100";
+      d1Class = "bg-slate-900 dark:bg-white opacity-100";
     } else if (level > 33 && level <= 66) {
-      d1Class = "bg-white opacity-100";
-      d2Class = "bg-white opacity-100";
+      d1Class = "bg-slate-900 dark:bg-white opacity-100";
+      d2Class = "bg-slate-900 dark:bg-white opacity-100";
     } else {
-      d1Class = "bg-white opacity-100";
-      d2Class = "bg-white opacity-100";
-      d3Class = "bg-white opacity-100";
+      d1Class = "bg-slate-900 dark:bg-white opacity-100";
+      d2Class = "bg-slate-900 dark:bg-white opacity-100";
+      d3Class = "bg-slate-900 dark:bg-white opacity-100";
     }
   }
 

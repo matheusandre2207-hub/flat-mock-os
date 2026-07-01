@@ -71,3 +71,11 @@ export interface Folder {
   icon: string;
   files: SystemFile[];
 }
+
+export interface CapturedPhoto {
+  id: string;
+  url: string;
+  filter: string;
+  timestamp: string;
+}
+

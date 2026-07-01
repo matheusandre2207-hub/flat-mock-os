@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
 import { 
   Folder as FolderIcon, FileText, Image as ImageIcon, Music as MusicIcon, 
-  ArrowLeft, X, Check, FilePlus, Trash2 
+  ArrowLeft, X, Check, FilePlus, Trash2, Settings as SettingsIcon
 } from 'lucide-react';
+
+const renderFolderIcon = (iconName: string) => {
+  switch (iconName) {
+    case 'Folder': return <FolderIcon className="text-blue-500" size={32} />;
+    case 'Image': return <ImageIcon className="text-pink-500" size={32} />;
+    case 'Music': return <MusicIcon className="text-emerald-500" size={32} />;
+    case 'Settings': return <SettingsIcon className="text-slate-500" size={32} />;
+    default: return <FolderIcon className="text-blue-500" size={32} />;
+  }
+};
 import { Folder, SystemFile } from '../types';
 
 interface FilesAppProps {
@@ -158,7 +168,7 @@ export default function FilesApp({
                     : 'bg-slate-50 border-slate-100 hover:bg-slate-100/80 shadow-sm'
                 }`}
               >
-                <span className="text-3xl">{folder.icon}</span>
+                <span className="text-3xl">{renderFolderIcon(folder.icon)}</span>
                 <div>
                   <h4 className="font-bold text-xs">{folder.name}</h4>
                   <p className="text-[10px] opacity-50 font-medium">{folder.files.length} itens</p>
@@ -239,7 +249,9 @@ export default function FilesApp({
             darkMode ? 'bg-slate-900 text-white border border-white/10' : 'bg-white text-slate-950 shadow-2xl'
           }`}>
             <div className="p-3 border-b border-white/10 flex justify-between items-center bg-black/20">
-              <span className="font-bold text-xs truncate max-w-[70%]">🗒️ Notepad - {editingFile.file.name}</span>
+              <span className="font-bold text-xs truncate max-w-[70%] flex items-center gap-1.5">
+                <FileText size={14} className="text-yellow-500" /> Notepad - {editingFile.file.name}
+              </span>
               <button 
                 onClick={() => setEditingFile(null)}
                 className="p-1 hover:bg-white/10 rounded"

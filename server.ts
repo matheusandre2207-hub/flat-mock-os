@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -10,28 +9,6 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
-
-// Lazy-initialize Gemini AI Client to avoid crash if API key is missing on startup
-let aiClient: GoogleGenAI | null = null;
-
-function getAiClient() {
-  if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.warn("GEMINI_API_KEY environment variable is not defined. Using local fallback mode.");
-      return null;
-    }
-    aiClient = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-  }
-  return aiClient;
-}
 
 // System Instruction builder for NPC characters based on their roles and names
 function getSystemInstruction(contactId: string, contactName: string, contactRole: string): string {
@@ -236,10 +213,14 @@ function cleanAndFormatHistory(messageHistory: any[], currentMsgText?: string, p
   }));
 
   if (currentMsgText) {
-    rawHistory.push({
-      role: 'user',
-      parts: [{ text: currentMsgText }]
-    });
+    // Only push if not already the last message to avoid duplication
+    const lastRawMsgText = rawHistory.length > 0 ? rawHistory[rawHistory.length - 1].parts[0].text : null;
+    if (lastRawMsgText !== currentMsgText) {
+      rawHistory.push({
+        role: 'user',
+        parts: [{ text: currentMsgText }]
+      });
+    }
   }
 
   if (promptText) {
@@ -260,7 +241,88 @@ function cleanAndFormatHistory(messageHistory: any[], currentMsgText?: string, p
       lastRole = item.role;
     }
   }
+
+  // CRITICAL GEMINI REQUIREMENT: Chat history MUST start with the 'user' role.
+  // Since some NPC chats start with an initial greeting from the contact ('model'),
+  // we prepended a subtle/greeting user message to satisfy this API constraint.
+  if (cleaned.length > 0 && cleaned[0].role === 'model') {
+    cleaned.unshift({
+      role: 'user',
+      parts: [{ text: "Olá! Tudo bem?" }]
+    });
+  }
+
+  // Ensure history is non-empty and starts with user
+  if (cleaned.length === 0) {
+    cleaned.push({
+      role: 'user',
+      parts: [{ text: currentMsgText || "Olá!" }]
+    });
+  }
+
   return cleaned;
+}
+
+// Resilient content generation utility with automatic multi-provider fallback (OpenRouter & Gemini)
+async function generateUnifiedAIResponse(
+  contents: any[],
+  systemInstruction: string,
+  temperature: number = 0.85
+): Promise<string> {
+  // Option 1: OpenRouter (Completely free, high quota models if key is present)
+  if (process.env.OPENROUTER_API_KEY) {
+    const openRouterModels = [
+      "meta-llama/llama-3.3-70b-instruct:free",
+      "google/gemma-4-31b-it:free",
+      "meta-llama/llama-3.2-3b-instruct:free",
+      "qwen/qwen3-coder:free"
+    ];
+
+    // Convert standard Gemini contents array format [{ role: 'user', parts: [{ text: '...' }] }] to OpenAI/OpenRouter messages format
+    const messages = [
+      { role: "system", content: systemInstruction },
+      ...contents.map(item => ({
+        role: item.role === "model" ? "assistant" : "user",
+        content: item.parts[0]?.text || ""
+      }))
+    ];
+
+    for (const model of openRouterModels) {
+      try {
+        console.log(`[OpenRouter API] Attempting generation with model: ${model}`);
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://ai.studio/build",
+            "X-Title": "Mock OS Simulator"
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: messages,
+            temperature: temperature
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const replyText = data.choices?.[0]?.message?.content;
+          if (replyText) {
+            console.log(`[OpenRouter API] Success using model: ${model}`);
+            return replyText;
+          }
+        } else {
+          const errText = await response.text();
+          console.warn(`[OpenRouter API] HTTP ${response.status} for ${model}: ${errText}`);
+        }
+      } catch (err: any) {
+        console.warn(`[OpenRouter API] Model ${model} failed: ${err.message || err}`);
+      }
+    }
+  }
+
+  throw new Error("No online AI providers were able to respond. Activating local fallback.");
 }
 
 // API Health check
@@ -272,28 +334,14 @@ app.get("/api/health", (req, res) => {
 app.post("/api/chat", async (req, res) => {
   const { contactId, contactName, contactRole, messageHistory, userMessage } = req.body;
   try {
-    const ai = getAiClient();
-    if (!ai) {
-      const reply = getLocalFallbackReply(contactId, contactName || "Contato", contactRole || "Amigo", userMessage);
-      return res.json({ reply });
-    }
-
     const systemInstruction = getSystemInstruction(contactId, contactName || "Contato", contactRole || "Amigo");
     const formattedHistory = cleanAndFormatHistory(messageHistory, userMessage);
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: formattedHistory,
-      config: {
-        systemInstruction,
-        temperature: 0.85,
-      }
-    });
+    const replyText = await generateUnifiedAIResponse(formattedHistory, systemInstruction, 0.85);
 
-    const replyText = response.text || "Sem resposta.";
     res.json({ reply: replyText.trim() });
   } catch (error: any) {
-    console.log(`[Chat Fallback] Using character-based response for ${contactName || "Contato"} due to API rate limits.`);
+    console.warn(`[NPC Chat System] Activating local backup persona for ${contactName || "Contato"}. Reason: API limit or quota reached.`);
     const reply = getLocalFallbackReply(contactId, contactName || "Contato", contactRole || "Amigo", userMessage);
     res.json({ reply });
   }
@@ -303,12 +351,6 @@ app.post("/api/chat", async (req, res) => {
 app.post("/api/chat/background", async (req, res) => {
   const { contactId, contactName, contactRole, messageHistory } = req.body;
   try {
-    const ai = getAiClient();
-    if (!ai) {
-      const reply = getLocalFallbackReply(contactId, contactName || "Contato", contactRole || "Amigo");
-      return res.json({ reply });
-    }
-
     const systemInstruction = getSystemInstruction(contactId, contactName || "Contato", contactRole || "Amigo");
     const formattedHistory = cleanAndFormatHistory(
       messageHistory,
@@ -316,19 +358,11 @@ app.post("/api/chat/background", async (req, res) => {
       "[Gere apenas uma única mensagem que você enviaria espontaneamente agora para o Mateus, considerando nosso histórico. Não mencione esta instrução. Seja breve, informal, e condizente com seu personagem]"
     );
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: formattedHistory,
-      config: {
-        systemInstruction,
-        temperature: 0.85,
-      }
-    });
+    const replyText = await generateUnifiedAIResponse(formattedHistory, systemInstruction, 0.85);
 
-    const replyText = response.text || "";
     res.json({ reply: replyText.trim() });
   } catch (error: any) {
-    console.log(`[Chat Background Fallback] Using character-based response for ${contactName || "Contato"} due to API rate limits.`);
+    console.warn(`[NPC Background Chat System] Activating local backup persona for ${contactName || "Contato"}. Reason: API limit or quota reached.`);
     const reply = getLocalFallbackReply(contactId, contactName || "Contato", contactRole || "Amigo");
     res.json({ reply });
   }

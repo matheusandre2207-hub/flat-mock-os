@@ -1,31 +1,35 @@
 import { Wallpaper, Track, Chat, Folder, NotificationItem } from './types';
 
 export const wallpapersList: Wallpaper[] = [
-  { name: "Metal Shift", gradient: "linear-gradient(135deg, #a6afb8, #cbd4dc, #5e6468, #e3e9ed)", isDark: false },
-  { name: "Metal Shift Escuro", gradient: "linear-gradient(135deg, #121517, #1e2225, #0a0b0d, #252a2f)", isDark: true },
-  { name: "Aurora Violeta", gradient: "linear-gradient(135deg, #0f172a, #1e1b4b, #311042, #115e59)", isDark: true },
-  { name: "Pôr do Sol Minimalista", gradient: "linear-gradient(135deg, #f43f5e, #ec4899, #d946ef, #8b5cf6, #3b82f6)", isDark: false },
-  { name: "Nebula Cósmica", gradient: "linear-gradient(135deg, #020617, #0f172a, #1e1b4b, #020617)", isDark: true },
-  { name: "Floresta Sombria", gradient: "linear-gradient(135deg, #14532d, #064e3b, #022c22, #020617)", isDark: true },
-  { name: "Lofi Vibes", gradient: "linear-gradient(135deg, #ff9a9e, #fecfef, #a1c4fd, #c2e9fb)", isDark: false },
-  { name: "★ Aurora Boreal Animada", gradient: "linear-gradient(135deg, #050515, #0a1128)", isDark: true, isAnimated: true, animatedType: "aurora" },
+  // Static wallpapers (exactly 10)
+  { name: "Flat Charcoal", gradient: "linear-gradient(135deg, #18181b, #09090b, #18181b)", isDark: true },
+  { name: "Pure Sand", gradient: "linear-gradient(135deg, #f4f4f5, #e4e4e7, #f4f4f5)", isDark: false },
+  { name: "Deep Space", gradient: "linear-gradient(135deg, #0f172a, #1e1b4b, #0f172a)", isDark: true },
+  { name: "Muted Sage", gradient: "linear-gradient(135deg, #2e3f37, #1b2621, #2e3f37)", isDark: true },
+  { name: "Warm Terracotta", gradient: "linear-gradient(135deg, #e07a5f, #f4f1de, #3d405b)", isDark: false },
+  { name: "Ocean Abyss", gradient: "linear-gradient(135deg, #0c4a6e, #0369a1, #0c4a6e)", isDark: true },
+  { name: "Nordic Slate", gradient: "linear-gradient(135deg, #374151, #1f2937, #374151)", isDark: true },
+  { name: "Cosmic Plum", gradient: "linear-gradient(135deg, #4c1d95, #2e1065, #4c1d95)", isDark: true },
+  { name: "Minimalist Clay", gradient: "linear-gradient(135deg, #fafaf9, #e7e5e4, #fafaf9)", isDark: false },
+  { name: "Retro Mint", gradient: "linear-gradient(135deg, #ecfdf5, #d1fae5, #a7f3d0)", isDark: false },
+
+  // Animated wallpapers (exactly 10)
   { name: "★ Matrix Code Animado", gradient: "linear-gradient(180deg, #020202, #050505)", isDark: true, isAnimated: true, animatedType: "matrix" },
   { name: "★ Estrelas Flutuantes Animadas", gradient: "linear-gradient(135deg, #0b0f19, #111827, #030712)", isDark: true, isAnimated: true, animatedType: "particles" },
-  { name: "★ Ondas de Luz Animadas", gradient: "linear-gradient(270deg, #4f46e5, #06b6d4, #3b82f6)", isDark: true, isAnimated: true, animatedType: "waves" },
-  { name: "Oceano Profundo", gradient: "linear-gradient(135deg, #0f172a, #0369a1, #0c4a6e)", isDark: true },
-  { name: "Algodão Doce", gradient: "linear-gradient(135deg, #fbcfe8, #fbcfe8, #c084fc, #818cf8)", isDark: false },
-  { name: "Cyberpunk Neon", gradient: "linear-gradient(135deg, #2e0854, #d946ef, #06b6d4, #050515)", isDark: true },
-  { name: "Neon Future", gradient: "linear-gradient(135deg, #08f, #0072ff, #000)", isDark: true },
-  { name: "Cyberpunk Cityscape", gradient: "linear-gradient(135deg, #0f172a, #1e2225, #2c2f33, #4d566d, #8b9cb5, #add1e6)", isDark: true },
-  { name: "Ocean Blue", gradient: "linear-gradient(135deg, #0072ff, #009aff, #ffffff)", isDark: false },
-  { name: "Midnight Sky", gradient: "linear-gradient(135deg, #1a1a1d, #3e4856, #3c4858, #61728a, #78879f)", isDark: true },
-  { name: "Mountain Sunrise", gradient: "linear-gradient(135deg, #ff7e5f, #feb47b, #ffc107)", isDark: false },
+  { name: "★ Aurora Boreal Animada", gradient: "linear-gradient(135deg, #050515, #0a1128, #150525)", isDark: true, isAnimated: true, animatedType: "aurora" },
+  { name: "★ Metal Líquido Chrome", gradient: "linear-gradient(135deg, #111318, #2a2d34, #111318)", isDark: true, isAnimated: true, animatedType: "metal-liquid" },
+  { name: "★ Ondas de Luz Animadas", gradient: "linear-gradient(135deg, #020617, #0369a1, #0f172a)", isDark: true, isAnimated: true, animatedType: "waves" },
+  { name: "★ Saturno Geométrico", gradient: "linear-gradient(135deg, #08080a, #141418, #08080a)", isDark: true, isAnimated: true, animatedType: "geometric" },
+  { name: "★ Cyber Grid Neon", gradient: "linear-gradient(135deg, #050510, #180825, #050510)", isDark: true, isAnimated: true, animatedType: "cyber-neon" },
+  { name: "★ Starfield Warp Speed", gradient: "linear-gradient(135deg, #020205, #050508)", isDark: true, isAnimated: true, animatedType: "starfield" },
+  { name: "★ Lava Lamp Glow", gradient: "linear-gradient(135deg, #09090c, #1a0f25, #09090c)", isDark: true, isAnimated: true, animatedType: "lava-lamp" },
+  { name: "★ Shifting Gradient", gradient: "linear-gradient(135deg, #1e1b4b, #311042, #1e1b4b)", isDark: true, isAnimated: true, animatedType: "gradient-shift" }
 ];
 
 export const initialNotifications: NotificationItem[] = [
   {
     id: "fs-tip",
-    title: "Experiência Nativa 📱",
+    title: "Experiência Nativa",
     body: "Esconda a barra de status do seu smartphone Android e use como app nativo! Ative a 'Tela Cheia' no painel de atalhos rápidos do topo ou nas Configurações da Tela.",
     time: "Agora",
     app: "sistema"
@@ -39,14 +43,14 @@ export const initialNotifications: NotificationItem[] = [
   },
   {
     id: "2",
-    title: "Mãe ❤️",
+    title: "Mãe",
     body: "Oi meu filho, tudo bem? Me avisa quando chegar em casa!",
     time: "5m atrás",
     app: "mensagens"
   },
   {
     id: "3",
-    title: "Música 🎵",
+    title: "Música",
     body: "Inicie o app de Música para ver o analisador de espectro ativo!",
     time: "20m atrás",
     app: "musica"
@@ -64,7 +68,7 @@ export const initialChats: Chat[] = [
   {
     id: "ai-assistant",
     name: "Assistente IA",
-    avatar: "🤖",
+    avatar: "Sparkles",
     role: "Inteligência Artificial",
     unread: true,
     messages: [
@@ -73,8 +77,8 @@ export const initialChats: Chat[] = [
   },
   {
     id: "mother",
-    name: "Mãe ❤️",
-    avatar: "👩",
+    name: "Mãe",
+    avatar: "Heart",
     role: "Família",
     unread: true,
     messages: [
@@ -85,8 +89,8 @@ export const initialChats: Chat[] = [
   },
   {
     id: "love",
-    name: "Amor 💖",
-    avatar: "🥰",
+    name: "Amor",
+    avatar: "Heart",
     role: "Namorada",
     unread: true,
     messages: [
@@ -97,8 +101,8 @@ export const initialChats: Chat[] = [
   },
   {
     id: "grandmother",
-    name: "Vovó 👵",
-    avatar: "👵",
+    name: "Vovó",
+    avatar: "User",
     role: "Família",
     unread: false,
     messages: [
@@ -109,8 +113,8 @@ export const initialChats: Chat[] = [
   },
   {
     id: "friend-lucas",
-    name: "Lucas 🤙",
-    avatar: "👦",
+    name: "Lucas",
+    avatar: "User",
     role: "Amigo",
     unread: true,
     messages: [
@@ -122,7 +126,7 @@ export const initialChats: Chat[] = [
   {
     id: "tech-support",
     name: "Suporte Mock OS",
-    avatar: "🛠️",
+    avatar: "Wrench",
     role: "Suporte Técnico",
     unread: false,
     messages: [
@@ -132,7 +136,7 @@ export const initialChats: Chat[] = [
   {
     id: "self-notes",
     name: "Anotações",
-    avatar: "📝",
+    avatar: "FileText",
     role: "Minhas Notas",
     unread: false,
     messages: [
@@ -144,7 +148,7 @@ export const initialChats: Chat[] = [
 export const initialFolders: Folder[] = [
   {
     name: "Documentos",
-    icon: "📂",
+    icon: "Folder",
     files: [
       {
         name: "ideias_projeto.txt",
@@ -162,7 +166,7 @@ export const initialFolders: Folder[] = [
   },
   {
     name: "Imagens",
-    icon: "🖼️",
+    icon: "Image",
     files: [
       { name: "Pôr do Sol.png", type: "image", mediaRef: "3", size: "1.2 MB" },
       { name: "Nebula Cósmica.png", type: "image", mediaRef: "4", size: "2.5 MB" },
@@ -171,7 +175,7 @@ export const initialFolders: Folder[] = [
   },
   {
     name: "Músicas",
-    icon: "🎵",
+    icon: "Music",
     files: [
       { name: "Amanhecer Synth.mp3", type: "audio", mediaRef: "Amanhecer Synth", size: "4.8 MB" },
       { name: "Lofi Café.mp3", type: "audio", mediaRef: "Lofi Café", size: "3.2 MB" },
@@ -180,7 +184,7 @@ export const initialFolders: Folder[] = [
   },
   {
     name: "Sistema",
-    icon: "⚙️",
+    icon: "Settings",
     files: [
       {
         name: "build_info.json",

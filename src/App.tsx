@@ -9,7 +9,7 @@ import {
   Grid, Compass, FolderClosed, PlayCircle, Eye, EyeOff, Maximize, Minimize, Check
 } from 'lucide-react';
 
-import { Wallpaper, NotificationItem, PopupNotification, Track, Chat, Folder as FolderType, Contact } from './types';
+import { Wallpaper, NotificationItem, PopupNotification, Track, Chat, Folder as FolderType, Contact, CapturedPhoto } from './types';
 import { wallpapersList, initialNotifications, tracksList, initialChats, initialFolders } from './data';
 
 // Component imports
@@ -28,6 +28,8 @@ import PaintApp from './components/PaintApp';
 import PhoneApp from './components/PhoneApp';
 import ContactsApp from './components/ContactsApp';
 import CameraApp from './components/CameraApp';
+import BootSetupScreen from './components/BootSetupScreen';
+import LockScreen from './components/LockScreen';
 
 // Animated Matrix Code wallpaper component
 function MatrixWallpaper() {
@@ -156,22 +158,496 @@ function ParticlesWallpaper() {
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-65" />;
 }
 
+// Animated Liquid Metal Chrome simulation component
+function LiquidMetalWallpaper() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const resize = () => {
+      canvas.width = canvas.parentElement?.clientWidth || 360;
+      canvas.height = canvas.parentElement?.clientHeight || 740;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    
+    let animationId: number;
+    let time = 0;
+    const draw = () => {
+      ctx.fillStyle = '#09090b';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const w = canvas.width;
+      const h = canvas.height;
+      
+      for (let layer = 0; layer < 4; layer++) {
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        for (let x = 0; x <= w; x += 10) {
+          const y = h * 0.45 + Math.sin(x * 0.008 + time * 1.5 + layer) * 50 + Math.cos(x * 0.005 - time + layer * 1.2) * 35;
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, h);
+        ctx.closePath();
+        
+        const grad = ctx.createLinearGradient(0, h * 0.3, 0, h);
+        grad.addColorStop(0, `rgba(180, 185, 195, ${0.12 - layer * 0.02})`);
+        grad.addColorStop(0.5, `rgba(100, 105, 115, ${0.08 - layer * 0.015})`);
+        grad.addColorStop(1, 'rgba(9, 9, 11, 0)');
+        
+        ctx.fillStyle = grad;
+        ctx.fill();
+        
+        ctx.strokeStyle = `rgba(220, 225, 235, ${0.25 - layer * 0.05})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+      
+      time += 0.006;
+      animationId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-70" />;
+}
+
+// Animated Shifting Gradient component
+function GradientShiftWallpaper() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const resize = () => {
+      canvas.width = canvas.parentElement?.clientWidth || 360;
+      canvas.height = canvas.parentElement?.clientHeight || 740;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    
+    let animationId: number;
+    let hue = 0;
+    const draw = () => {
+      const w = canvas.width;
+      const h = canvas.height;
+      
+      const grad = ctx.createRadialGradient(w * 0.5, h * 0.5, 10, w * 0.5, h * 0.5, Math.max(w, h));
+      grad.addColorStop(0, `hsla(${hue}, 70%, 45%, 0.15)`);
+      grad.addColorStop(0.5, `hsla(${(hue + 120) % 360}, 65%, 35%, 0.1)`);
+      grad.addColorStop(1, `hsla(${(hue + 240) % 360}, 60%, 25%, 0.05)`);
+      
+      ctx.fillStyle = '#09090b';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      
+      hue = (hue + 0.15) % 360;
+      animationId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
+}
+
+// Animated Ocean Waves component
+function OceanWavesWallpaper() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const resize = () => {
+      canvas.width = canvas.parentElement?.clientWidth || 360;
+      canvas.height = canvas.parentElement?.clientHeight || 740;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    
+    let animationId: number;
+    let time = 0;
+    const draw = () => {
+      ctx.fillStyle = '#09090b';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const w = canvas.width;
+      const h = canvas.height;
+      
+      const waveColors = [
+        'rgba(14, 116, 144, 0.18)',
+        'rgba(3, 105, 161, 0.12)',
+        'rgba(29, 78, 216, 0.08)'
+      ];
+      
+      waveColors.forEach((color, idx) => {
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        
+        const frequency = 0.006 + idx * 0.002;
+        const speed = 0.015 + idx * 0.005;
+        const amplitude = 30 - idx * 5;
+        
+        for (let x = 0; x <= w; x += 12) {
+          const y = h * 0.65 + idx * 40 + Math.sin(x * frequency + time * speed) * amplitude;
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, h);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        
+        ctx.strokeStyle = `rgba(255, 255, 255, ${0.12 - idx * 0.03})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+      
+      time += 0.8;
+      animationId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
+}
+
+// Animated Geometric Saturn wireframe component
+function GeometricSaturnWallpaper() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const resize = () => {
+      canvas.width = canvas.parentElement?.clientWidth || 360;
+      canvas.height = canvas.parentElement?.clientHeight || 740;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    
+    let animationId: number;
+    let angle = 0;
+    
+    const draw = () => {
+      ctx.fillStyle = '#09090b';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+      }
+      for (let i = 0; i < canvas.height; i += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+      }
+      
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(0.2);
+      
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 85, 25, angle * 0.1, Math.PI, 0, false);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 1;
+      for (let r = 5; r <= 35; r += 7) {
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      for (let j = 0; j < 4; j++) {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 35, 35 * Math.sin(j * Math.PI / 4 + angle * 0.1), 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 85, 25, angle * 0.1, 0, Math.PI, false);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 65, 18, angle * 0.1, 0, Math.PI, false);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      
+      ctx.restore();
+      
+      angle += 0.04;
+      animationId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-60" />;
+}
+
+// Animated Cyber Neon perspective component
+function CyberNeonWallpaper() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const resize = () => {
+      canvas.width = canvas.parentElement?.clientWidth || 360;
+      canvas.height = canvas.parentElement?.clientHeight || 740;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    
+    let animationId: number;
+    let offset = 0;
+    
+    const draw = () => {
+      ctx.fillStyle = '#09090b';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const w = canvas.width;
+      const h = canvas.height;
+      
+      ctx.strokeStyle = 'rgba(244, 63, 94, 0.05)';
+      ctx.lineWidth = 1;
+      
+      const horizon = h * 0.4;
+      
+      for (let x = -w; x <= w * 2; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x + offset, h);
+        ctx.lineTo(w / 2, horizon);
+        ctx.stroke();
+      }
+      
+      for (let y = horizon; y <= h; y += (h - y) * 0.2 + 8) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      
+      const time = Date.now() * 0.001;
+      ctx.shadowBlur = 8;
+      for (let i = 0; i < 8; i++) {
+        const x = (Math.sin(i * 100 + time * 0.2) * 0.4 + 0.5) * w;
+        const y = horizon - 20 - (i * 20) % (horizon - 20);
+        const radius = Math.abs(Math.sin(time + i)) * 1.5 + 1;
+        const neonColor = i % 2 === 0 ? 'rgba(6, 182, 212, 0.5)' : 'rgba(236, 72, 153, 0.5)';
+        
+        ctx.fillStyle = neonColor;
+        ctx.shadowColor = neonColor;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      
+      offset = (offset + 0.2) % 40;
+      animationId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-65" />;
+}
+
+// Animated Starfield Warp component
+function StarfieldWallpaper() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const resize = () => {
+      canvas.width = canvas.parentElement?.clientWidth || 360;
+      canvas.height = canvas.parentElement?.clientHeight || 740;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    
+    const starCount = 60;
+    const stars: Array<{ x: number; y: number; z: number }> = [];
+    for (let i = 0; i < starCount; i++) {
+      stars.push({
+        x: Math.random() * 2000 - 1000,
+        y: Math.random() * 2000 - 1000,
+        z: Math.random() * 1000
+      });
+    }
+    
+    let animationId: number;
+    const draw = () => {
+      ctx.fillStyle = '#050508';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      
+      for (let i = 0; i < starCount; i++) {
+        const s = stars[i];
+        s.z -= 4.5;
+        if (s.z <= 0) {
+          s.z = 1000;
+          s.x = Math.random() * 2000 - 1000;
+          s.y = Math.random() * 2000 - 1000;
+        }
+        
+        const k = 128 / s.z;
+        const px = s.x * k + cx;
+        const py = s.y * k + cy;
+        
+        if (px >= 0 && px <= canvas.width && py >= 0 && py <= canvas.height) {
+          const size = (1 - s.z / 1000) * 2.2;
+          const alpha = 1 - s.z / 1000;
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(px, py, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      
+      animationId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-70" />;
+}
+
+// Animated Lava Lamp component
+function LavaLampWallpaper() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const resize = () => {
+      canvas.width = canvas.parentElement?.clientWidth || 360;
+      canvas.height = canvas.parentElement?.clientHeight || 740;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    
+    const blobCount = 5;
+    const blobs: Array<{ x: number; y: number; r: number; speed: number; angle: number; color: string }> = [];
+    const colors = [
+      'rgba(244, 63, 94, 0.08)',
+      'rgba(249, 115, 22, 0.07)',
+      'rgba(168, 85, 247, 0.08)',
+      'rgba(6, 182, 212, 0.07)',
+      'rgba(236, 72, 153, 0.08)'
+    ];
+    for (let i = 0; i < blobCount; i++) {
+      blobs.push({
+        x: Math.random() * (canvas.width || 360),
+        y: Math.random() * (canvas.height || 740),
+        r: Math.random() * 50 + 60,
+        speed: Math.random() * 0.3 + 0.15,
+        angle: Math.random() * Math.PI * 2,
+        color: colors[i % colors.length]
+      });
+    }
+    
+    let animationId: number;
+    const draw = () => {
+      ctx.fillStyle = '#09090b';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      blobs.forEach(b => {
+        b.y -= b.speed;
+        b.x += Math.sin(b.angle) * 0.2;
+        b.angle += 0.01;
+        
+        if (b.y < -b.r) {
+          b.y = canvas.height + b.r;
+          b.x = Math.random() * canvas.width;
+        }
+        
+        ctx.beginPath();
+        const radGrad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+        radGrad.addColorStop(0, b.color);
+        radGrad.addColorStop(1, 'rgba(9, 9, 11, 0)');
+        
+        ctx.fillStyle = radGrad;
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      
+      animationId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
+}
+
 const appMetadata: Record<string, { label: string; icon: string; iconBgClass: string }> = {
-  arquivos: { label: 'Arquivos', icon: '📁', iconBgClass: 'bg-blue-600' },
-  calculadora: { label: 'Calculadora', icon: '🧮', iconBgClass: 'bg-orange-500' },
-  configuracoes: { label: 'Configurações', icon: '⚙️', iconBgClass: 'bg-slate-500' },
-  galeria: { label: 'Galeria', icon: '🖼️', iconBgClass: 'bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500' },
-  mensagens: { label: 'Mensagens', icon: '💬', iconBgClass: 'bg-green-500' },
-  musica: { label: 'Música', icon: '🎵', iconBgClass: 'bg-red-500' },
-  navegador: { label: 'Navegador', icon: '🌐', iconBgClass: 'bg-purple-600' },
-  loja: { label: 'App Store', icon: '🛍️', iconBgClass: 'bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500' },
-  notas: { label: 'Bloco de Notas', icon: '📝', iconBgClass: 'bg-yellow-500' },
-  flappy: { label: 'Flappy Bird', icon: '🐦', iconBgClass: 'bg-blue-500' },
-  clima: { label: 'Previsão do Tempo', icon: '☀️', iconBgClass: 'bg-gradient-to-tr from-sky-400 to-amber-400' },
-  paint: { label: 'Mini Paint', icon: '🎨', iconBgClass: 'bg-purple-500' },
-  telefone: { label: 'Telefone', icon: '📞', iconBgClass: 'bg-emerald-500' },
-  contatos: { label: 'Contatos', icon: '👥', iconBgClass: 'bg-sky-500' },
-  camera: { label: 'Câmera', icon: '📷', iconBgClass: 'bg-zinc-700' }
+  arquivos: { label: 'Arquivos', icon: '📁', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  calculadora: { label: 'Calculadora', icon: '🧮', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  configuracoes: { label: 'Configurações', icon: '⚙️', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  galeria: { label: 'Galeria', icon: '🖼️', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  mensagens: { label: 'Mensagens', icon: '💬', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  musica: { label: 'Música', icon: '🎵', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  navegador: { label: 'Navegador', icon: '🌐', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  loja: { label: 'App Store', icon: '🛍️', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  notas: { label: 'Bloco de Notas', icon: '📝', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  flappy: { label: 'Flappy Bird', icon: '🐦', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  clima: { label: 'Previsão do Tempo', icon: '☀️', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  paint: { label: 'Mini Paint', icon: '🎨', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  telefone: { label: 'Telefone', icon: '📞', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  contatos: { label: 'Contatos', icon: '👥', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
+  camera: { label: 'Câmera', icon: '📷', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' }
 };
 
 const randomIncomingMessages = [
@@ -212,18 +688,105 @@ const randomIncomingMessages = [
 
 export default function App() {
   // 1. Core System Settings & States
-  const [userName, setUserName] = useState('Mateus Oliveira');
+  const [language, setLanguage] = useState<'pt' | 'en'>(() => {
+    return (localStorage.getItem('os_language') as 'pt' | 'en') || 'pt';
+  });
+  const [userName, setUserName] = useState(() => {
+    return localStorage.getItem('os_user_name') || 'Mateus Oliveira';
+  });
+  const [userAvatar, setUserAvatar] = useState(() => {
+    return localStorage.getItem('os_user_avatar') || '👤';
+  });
+  const [pincode, setPincode] = useState(() => {
+    return localStorage.getItem('os_pincode') || '';
+  });
+  const [isSetupCompleted, setIsSetupCompleted] = useState(() => {
+    return localStorage.getItem('os_setup_completed') === 'true';
+  });
+  const [isBooting, setIsBooting] = useState(true);
+  const [isLocked, setIsLocked] = useState(true);
+
+  // Sync to local storage
+  useEffect(() => {
+    localStorage.setItem('os_language', language);
+  }, [language]);
+
+  useEffect(() => {
+    localStorage.setItem('os_user_name', userName);
+  }, [userName]);
+
+  useEffect(() => {
+    localStorage.setItem('os_user_avatar', userAvatar);
+  }, [userAvatar]);
+
+  useEffect(() => {
+    localStorage.setItem('os_pincode', pincode);
+  }, [pincode]);
+
+  useEffect(() => {
+    localStorage.setItem('os_setup_completed', String(isSetupCompleted));
+  }, [isSetupCompleted]);
+
   const [wifiActive, setWifiActive] = useState(true);
   const [bluetoothActive, setBluetoothActive] = useState(true);
   const [cellularActive, setCellularActive] = useState(true);
   const [airplaneMode, setAirplaneMode] = useState(false);
+
+  // Localized app names and metadata
+  const appMetadata: Record<string, { label: string; icon: string; iconBgClass: string }> = {
+    arquivos: { label: language === 'en' ? 'Files' : 'Arquivos', icon: '📁', iconBgClass: 'bg-sky-100 dark:bg-sky-950/80 border border-sky-200/60 dark:border-sky-900/40 text-sky-600 dark:text-sky-400' },
+    calculadora: { label: language === 'en' ? 'Calculator' : 'Calculadora', icon: '🧮', iconBgClass: 'bg-orange-100 dark:bg-orange-950/80 border border-orange-200/60 dark:border-orange-900/40 text-orange-600 dark:text-orange-400' },
+    configuracoes: { label: language === 'en' ? 'Settings' : 'Configurações', icon: '⚙️', iconBgClass: 'bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300' },
+    galeria: { label: language === 'en' ? 'Gallery' : 'Galeria', icon: '🖼️', iconBgClass: 'bg-indigo-100 dark:bg-indigo-950/80 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400' },
+    mensagens: { label: language === 'en' ? 'Messages' : 'Mensagens', icon: '💬', iconBgClass: 'bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400' },
+    musica: { label: language === 'en' ? 'Music' : 'Música', icon: '🎵', iconBgClass: 'bg-rose-100 dark:bg-rose-950/80 border border-rose-200/60 dark:border-rose-900/40 text-rose-600 dark:text-rose-400' },
+    navegador: { label: language === 'en' ? 'Browser' : 'Navegador', icon: '🌐', iconBgClass: 'bg-blue-100 dark:bg-blue-950/80 border border-blue-200/60 dark:border-blue-900/40 text-blue-600 dark:text-blue-400' },
+    loja: { label: 'App Store', icon: '🛍️', iconBgClass: 'bg-violet-100 dark:bg-violet-950/80 border border-violet-200/60 dark:border-violet-900/40 text-violet-600 dark:text-violet-400' },
+    notas: { label: language === 'en' ? 'Notes' : 'Bloco de Notas', icon: '📝', iconBgClass: 'bg-yellow-100 dark:bg-yellow-950/80 border border-yellow-200/60 dark:border-yellow-900/40 text-yellow-600 dark:text-yellow-400' },
+    flappy: { label: 'Flappy Bird', icon: '🐦', iconBgClass: 'bg-sky-100 dark:bg-sky-950/80 border border-sky-200/60 dark:border-sky-900/40 text-sky-600 dark:text-sky-400' },
+    clima: { label: language === 'en' ? 'Weather' : 'Previsão do Tempo', icon: '☀️', iconBgClass: 'bg-cyan-100 dark:bg-cyan-950/80 border border-cyan-200/60 dark:border-cyan-900/40 text-cyan-600 dark:text-cyan-400' },
+    paint: { label: 'Mini Paint', icon: '🎨', iconBgClass: 'bg-fuchsia-100 dark:bg-fuchsia-950/80 border border-fuchsia-200/60 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400' },
+    telefone: { label: language === 'en' ? 'Phone' : 'Telefone', icon: '📞', iconBgClass: 'bg-green-100 dark:bg-green-950/80 border border-green-200/60 dark:border-green-900/40 text-green-600 dark:text-green-400' },
+    contatos: { label: language === 'en' ? 'Contacts' : 'Contatos', icon: '👥', iconBgClass: 'bg-teal-100 dark:bg-teal-950/80 border border-teal-200/60 dark:border-teal-900/40 text-teal-600 dark:text-teal-400' },
+    camera: { label: language === 'en' ? 'Camera' : 'Câmera', icon: '📷', iconBgClass: 'bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-300' }
+  };
   
   // Theme & screen settings
-  const [darkMode, setDarkMode] = useState(true);
-  const [nightMode, setNightMode] = useState(false); // Eyes shield (warm overlay)
-  const [brightness, setBrightness] = useState(100); // 20 - 100 range
-  const [volume, setVolume] = useState(70); // 0 - 100 range
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('os_dark_mode');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('os_dark_mode', String(darkMode));
+  }, [darkMode]);
+
+  const [selectedRingtone, setSelectedRingtone] = useState<string>(() => {
+    return localStorage.getItem('os_selected_ringtone') || 'marimba';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('os_selected_ringtone', selectedRingtone);
+  }, [selectedRingtone]);
+
+  }, [selectedRingtone]);
+
+  const [nightMode, setNightMode] = useState(() => {
+    return localStorage.getItem('os_night_mode') === 'true';
+  });
+  const [brightness, setBrightness] = useState(() => {
+    const saved = localStorage.getItem('os_brightness');
+    return saved ? parseInt(saved, 10) : 100;
+  });
+  const [volume, setVolume] = useState(() => {
+    const saved = localStorage.getItem('os_volume');
+    return saved ? parseInt(saved, 10) : 70;
+  });
   const [showVolumeHUD, setShowVolumeHUD] = useState(false);
+
+  useEffect(() => { localStorage.setItem('os_night_mode', String(nightMode)); }, [nightMode]);
+  useEffect(() => { localStorage.setItem('os_brightness', String(brightness)); }, [brightness]);
+  useEffect(() => { localStorage.setItem('os_volume', String(volume)); }, [volume]);
 
   // Battery Simulator state managers
   const [useManualBattery, setUseManualBattery] = useState(false);
@@ -235,11 +798,25 @@ export default function App() {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
 
   // Wallpaper manager
-  const [wallpaperIndex, setWallpaperIndex] = useState(0);
-  const currentWallpaper = wallpapersList[wallpaperIndex] || wallpapersList[0];
+  const [wallpapers, setWallpapers] = useState<Wallpaper[]>(() => {
+    const saved = localStorage.getItem('os_wallpapers');
+    return saved ? JSON.parse(saved) : wallpapersList;
+  });
+  const [wallpaperIndex, setWallpaperIndex] = useState(() => {
+    const saved = localStorage.getItem('os_wallpaper_index');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const currentWallpaper = wallpapers[wallpaperIndex] || wallpapers[0];
+
+  useEffect(() => { localStorage.setItem('os_wallpapers', JSON.stringify(wallpapers)); }, [wallpapers]);
+  useEffect(() => { localStorage.setItem('os_wallpaper_index', String(wallpaperIndex)); }, [wallpaperIndex]);
 
   // Shortcuts on home screen
-  const [homeApps, setHomeApps] = useState<string[]>([]);
+  const [homeApps, setHomeApps] = useState<string[]>(() => {
+    const saved = localStorage.getItem('os_home_apps');
+    return saved ? JSON.parse(saved) : [];
+  });
+  useEffect(() => { localStorage.setItem('os_home_apps', JSON.stringify(homeApps)); }, [homeApps]);
   
   // Home Edit Mode (Jiggle Mode like iOS)
   const [isEditingHome, setIsEditingHome] = useState(false);
@@ -249,9 +826,18 @@ export default function App() {
   const drawerLongPressTimerRef = useRef<any>(null);
   
   // Apps in the dock (Max 4)
-  const [dockApps, setDockApps] = useState<string[]>([
-    'mensagens', 'loja', 'arquivos'
-  ]);
+  const [dockApps, setDockApps] = useState<string[]>(() => {
+    const saved = localStorage.getItem('os_dock_apps');
+    return saved ? JSON.parse(saved) : ['mensagens', 'loja', 'arquivos'];
+  });
+  useEffect(() => { localStorage.setItem('os_dock_apps', JSON.stringify(dockApps)); }, [dockApps]);
+
+  // Captured Photos for Camera and Gallery
+  const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>(() => {
+    const saved = localStorage.getItem('mockos_captured_photos');
+    return saved ? JSON.parse(saved) : [];
+  });
+  useEffect(() => { localStorage.setItem('mockos_captured_photos', JSON.stringify(capturedPhotos)); }, [capturedPhotos]);
 
   // Drag and Drop State
   const [draggedApp, setDraggedApp] = useState<{
@@ -272,6 +858,48 @@ export default function App() {
   // Wallpaper Long-press Picker state
   const [wallpaperPickerOpen, setWallpaperPickerOpen] = useState(false);
   const longPressTimerRef = useRef<any>(null);
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCustomWallpaperUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        const newWp = {
+          name: file.name.split('.')[0] || (language === 'en' ? 'Custom Photo' : 'Foto Personalizada'),
+          gradient: `url(${base64}) center/cover no-repeat`,
+          isDark: false
+        };
+        setWallpapers(prev => {
+          const updated = [...prev, newWp];
+          setSelectedGalleryImg(updated.length - 1);
+          return updated;
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // OS Factory Reset
+  const handleResetOS = () => {
+    localStorage.clear();
+    setLanguage('pt');
+    setUserName('Mateus Oliveira');
+    setUserAvatar('👤');
+    setPincode('');
+    setIsSetupCompleted(false);
+    setIsBooting(true);
+    setIsLocked(true);
+    setActiveApp(null);
+    setOpenedApps([]);
+    setRecentAppsOpen(false);
+    setAppDrawerOpen(false);
+    setNotificationsOpen(false);
+    setUtilitiesOpen(false);
+  };
 
   // Shell Navigation & Dropdowns
   const [appDrawerOpen, setAppDrawerOpen] = useState(false);
@@ -285,16 +913,29 @@ export default function App() {
 
   // Interactive dynamic app data
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
-  const [chats, setChats] = useState<Chat[]>(initialChats);
-  const [folders, setFolders] = useState<FolderType[]>(initialFolders);
+  const [chats, setChats] = useState<Chat[]>(() => {
+    const saved = localStorage.getItem('os_chats');
+    return saved ? JSON.parse(saved) : initialChats;
+  });
+  const [folders, setFolders] = useState<FolderType[]>(() => {
+    const saved = localStorage.getItem('os_folders');
+    return saved ? JSON.parse(saved) : initialFolders;
+  });
 
-  const [contacts, setContacts] = useState<Contact[]>([
-    { id: 'mother', name: 'Mãe ❤️', avatar: '👩', role: 'Mãe', phone: '(11) 99222-3344', email: 'mamae.querida@email.com', location: 'São Paulo, SP' },
-    { id: 'love', name: 'Amor 💖', avatar: '🥰', role: 'Namorada', phone: '(11) 99888-7766', email: 'meu.amor@email.com', location: 'São Paulo, SP' },
-    { id: 'grandmother', name: 'Vovó 👵', avatar: '👵', role: 'Família', phone: '(11) 98765-4321', email: 'vovo.querida@email.com', location: 'Santos, SP' },
-    { id: 'friend-lucas', name: 'Lucas 🤙', avatar: '👦', role: 'Amigo', phone: '(11) 99111-2233', email: 'lucas.friend@email.com', location: 'São Bernardo, SP' },
-    { id: 'tech-support', name: 'Suporte Mock OS', avatar: '🛠️', role: 'Suporte Técnico', phone: '0800 123 456', email: 'suporte@mockos.io', location: 'Nuvem' },
-  ]);
+  const [contacts, setContacts] = useState<Contact[]>(() => {
+    const saved = localStorage.getItem('os_contacts');
+    return saved ? JSON.parse(saved) : [
+      { id: 'mother', name: 'Mãe ❤️', avatar: '👩', role: 'Mãe', phone: '(11) 99222-3344', email: 'mamae.querida@email.com', location: 'São Paulo, SP' },
+      { id: 'love', name: 'Amor 💖', avatar: '🥰', role: 'Namorada', phone: '(11) 99888-7766', email: 'meu.amor@email.com', location: 'São Paulo, SP' },
+      { id: 'grandmother', name: 'Vovó 👵', avatar: '👵', role: 'Família', phone: '(11) 98765-4321', email: 'vovo.querida@email.com', location: 'Santos, SP' },
+      { id: 'friend-lucas', name: 'Lucas 🤙', avatar: '👦', role: 'Amigo', phone: '(11) 99111-2233', email: 'lucas.friend@email.com', location: 'São Bernardo, SP' },
+      { id: 'tech-support', name: 'Suporte Mock OS', avatar: '🛠️', role: 'Suporte Técnico', phone: '0800 123 456', email: 'suporte@mockos.io', location: 'Nuvem' },
+    ];
+  });
+
+  useEffect(() => { localStorage.setItem('os_chats', JSON.stringify(chats)); }, [chats]);
+  useEffect(() => { localStorage.setItem('os_folders', JSON.stringify(folders)); }, [folders]);
+  useEffect(() => { localStorage.setItem('os_contacts', JSON.stringify(contacts)); }, [contacts]);
 
   const addContact = (newContact: Contact) => {
     setContacts(prev => [...prev, newContact].sort((a, b) => a.name.localeCompare(b.name)));
@@ -335,9 +976,11 @@ export default function App() {
   const [activePopup, setActivePopup] = useState<PopupNotification | null>(null);
 
   // Installed Apps State
-  const [installedApps, setInstalledApps] = useState<string[]>([
-    'arquivos', 'calculadora', 'configuracoes', 'galeria', 'mensagens', 'musica', 'navegador', 'loja', 'telefone', 'contatos', 'camera'
-  ]);
+  const [installedApps, setInstalledApps] = useState<string[]>(() => {
+    const saved = localStorage.getItem('os_installed_apps');
+    return saved ? JSON.parse(saved) : ['arquivos', 'calculadora', 'configuracoes', 'galeria', 'mensagens', 'musica', 'navegador', 'loja', 'telefone', 'contatos', 'camera'];
+  });
+  useEffect(() => { localStorage.setItem('os_installed_apps', JSON.stringify(installedApps)); }, [installedApps]);
 
   const handleInstallApp = (appId: string) => {
     setInstalledApps(prev => {
@@ -357,6 +1000,55 @@ export default function App() {
 
   // Standalone gallery lightbox state
   const [selectedGalleryImg, setSelectedGalleryImg] = useState<number | null>(null);
+
+  // Status bar pull-down gesture detection
+  const statusPullRef = useRef<{ startY: number; type: 'notif' | 'util' | null; triggered: boolean }>({
+    startY: 0,
+    type: null,
+    triggered: false
+  });
+
+  const handleStatusPullStart = (e: React.MouseEvent | React.TouchEvent, type: 'notif' | 'util') => {
+    let clientY = 0;
+    if ('touches' in e && e.touches.length > 0) {
+      clientY = e.touches[0].clientY;
+    } else if ('clientY' in e) {
+      clientY = (e as React.MouseEvent).clientY;
+    }
+    statusPullRef.current = { startY: clientY, type, triggered: false };
+  };
+
+  const handleStatusPullMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!statusPullRef.current.type || statusPullRef.current.triggered) return;
+    let clientY = 0;
+    if ('touches' in e && e.touches.length > 0) {
+      clientY = e.touches[0].clientY;
+    } else if ('clientY' in e) {
+      clientY = (e as React.MouseEvent).clientY;
+    }
+    const diffY = clientY - statusPullRef.current.startY;
+    if (diffY > 25) {
+      statusPullRef.current.triggered = true;
+      if (statusPullRef.current.type === 'notif') {
+        setNotificationsOpen(true);
+        setUtilitiesOpen(false);
+        setAppDrawerOpen(false);
+      } else {
+        setUtilitiesOpen(true);
+        setNotificationsOpen(false);
+        setAppDrawerOpen(false);
+      }
+      if (navigator.vibrate) {
+        try { navigator.vibrate(25); } catch {}
+      }
+    }
+  };
+
+  const handleStatusPullEnd = () => {
+    setTimeout(() => {
+      statusPullRef.current = { startY: 0, type: null, triggered: false };
+    }, 150);
+  };
 
   // Swipe gesture detection
   const [touchStartX, setTouchStartX] = useState(0);
@@ -657,12 +1349,6 @@ export default function App() {
   // 5. Helper callbacks for cross-app communication
   const handleSetWallpaperFromFile = (idx: number) => {
     setWallpaperIndex(idx);
-    triggerNotification(
-      "Papel de Parede Alterado", 
-      `Plano de fundo atualizado para "${wallpapersList[idx].name}"!`, 
-      "galeria", 
-      "🖼️"
-    );
   };
 
   const handlePlayTrackFromFile = (trackTitle: string) => {
@@ -689,6 +1375,56 @@ export default function App() {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
+  // Simple synthesizer for audio feedback using Web Audio API
+  const playNotificationSound = (ringtoneId: string) => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      
+      const playToneLocal = (freq: number, type: OscillatorType = 'sine', duration = 0.15, vol = 0.08) => {
+        try {
+          const osc = ctx.createOscillator();
+          const gainNode = ctx.createGain();
+          
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, ctx.currentTime);
+          
+          // Multiply sound volume by system volume
+          const calculatedVol = vol * (volume / 100);
+          gainNode.gain.setValueAtTime(calculatedVol, ctx.currentTime);
+          
+          osc.connect(gainNode);
+          gainNode.connect(ctx.destination);
+          
+          osc.start();
+          osc.stop(ctx.currentTime + duration);
+        } catch (e) {
+          console.warn(e);
+        }
+      };
+
+      if (ringtoneId === 'classic') {
+        playToneLocal(523.25, 'sine', 0.1);
+        setTimeout(() => playToneLocal(659.25, 'sine', 0.1), 120);
+        setTimeout(() => playToneLocal(783.99, 'sine', 0.15), 240);
+      } else if (ringtoneId === 'synth') {
+        playToneLocal(880, 'sawtooth', 0.08, 0.04);
+        setTimeout(() => playToneLocal(1760, 'sawtooth', 0.15, 0.03), 100);
+      } else if (ringtoneId === 'bell') {
+        playToneLocal(987.77, 'triangle', 0.2, 0.1);
+        setTimeout(() => playToneLocal(1318.51, 'triangle', 0.3, 0.08), 150);
+      } else if (ringtoneId === 'marimba') {
+        const scale = [440, 554.37, 659.25, 880];
+        scale.forEach((freq, idx) => {
+          setTimeout(() => playToneLocal(freq, 'sine', 0.15, 0.06), idx * 80);
+        });
+      }
+    } catch (err) {
+      console.warn('Audio synthesis not supported or blocked:', err);
+    }
+  };
+
   // Trigger system-wide notification with a popup
   const triggerNotification = (title: string, body: string, app: string, avatar?: string, chatId?: string) => {
     const newNotif: NotificationItem = {
@@ -710,6 +1446,9 @@ export default function App() {
       avatar,
       chatId,
     });
+
+    // Play notification sound based on selected settings tone
+    playNotificationSound(selectedRingtone);
   };
 
   // Drag and Drop & Shortcuts customization helpers
@@ -1023,10 +1762,19 @@ export default function App() {
     const target = e.target as HTMLElement;
     const isDrawingOrGameCanvas = target && (target.tagName === 'CANVAS' || target.closest('canvas'));
     const isInteractiveApp = activeApp === 'paint' || activeApp === 'flappy';
+    const isInteractiveElement = target && (
+      target.tagName === 'INPUT' || 
+      target.tagName === 'TEXTAREA' || 
+      target.tagName === 'BUTTON' || 
+      target.closest('input') || 
+      target.closest('textarea') || 
+      target.closest('button') ||
+      target.closest('select')
+    );
 
     // Se o toque iniciar muito próximo à borda inferior da tela, e na parte central (evitando conflitos com scrolls longos nos apps)
     const isNearCenterBottom = Math.abs(x - window.innerWidth / 2) < 80;
-    if (y > window.innerHeight - 30 && isNearCenterBottom && !isDrawingOrGameCanvas && !isInteractiveApp) {
+    if (y > window.innerHeight - 30 && isNearCenterBottom && !isDrawingOrGameCanvas && !isInteractiveApp && !isInteractiveElement) {
       setSwipeUpStartY(y);
       setSwipeUpCurrentY(y);
       
@@ -1045,7 +1793,7 @@ export default function App() {
           }
         }
       }, 350);
-    } else if (x > window.innerWidth - 25 && activeApp !== null && !isDrawingOrGameCanvas && !isInteractiveApp) {
+    } else if (x > window.innerWidth - 25 && activeApp !== null && !isDrawingOrGameCanvas && !isInteractiveApp && !isInteractiveElement) {
       // Começou bem na borda direita (gesto de voltar do Android/iOS)
       setSwipeBackStartX(x);
       setSwipeBackCurrentX(x);
@@ -1078,6 +1826,15 @@ export default function App() {
     const touchEndX = e.changedTouches[0].clientX;
     const touchEndY = e.changedTouches[0].clientY;
 
+    if (notificationsOpen || utilitiesOpen || appDrawerOpen) {
+      if ((touchStartYRef.current || touchEndY) - touchEndY > 35) {
+        setNotificationsOpen(false);
+        setUtilitiesOpen(false);
+        setAppDrawerOpen(false);
+        return;
+      }
+    }
+
     if (swipeUpStartY !== null) {
       const diffY = swipeUpStartY - touchEndY;
       setSwipeUpStartY(null);
@@ -1093,11 +1850,13 @@ export default function App() {
 
     if (isSwipingBack && swipeBackStartX !== null) {
       const dragDistance = swipeBackStartX - touchEndX;
+      const dragVertical = Math.abs(touchEndY - (touchStartYRef.current || touchEndY));
       setIsSwipingBack(false);
       setSwipeBackStartX(null);
       
       // Puxando da direita para a esquerda: volta a página ou fecha o app
-      if (dragDistance > 75) {
+      // Deve ser predominantemente horizontal para evitar fechamento acidental durante scroll vertical
+      if (dragDistance > 90 && dragVertical < dragDistance * 0.5) {
         if (activeApp === 'galeria' && selectedGalleryImg !== null) {
           setSelectedGalleryImg(null);
         } else {
@@ -1111,8 +1870,11 @@ export default function App() {
       return;
     }
 
-    // Se o toque começar bem perto da borda esquerda (< 70px) e deslizar para a direita (> 60px de diferença)
-    if (touchStartX < 70 && (touchEndX - touchStartX) > 60) {
+    // Se o toque começar bem perto da borda esquerda (< 70px) e deslizar para a direita (> 80px de diferença)
+    // Também deve ser predominantemente horizontal para evitar abertura acidental durante scroll
+    const dragDistanceLeftToRight = touchEndX - touchStartX;
+    const dragVerticalLeftToRight = Math.abs(touchEndY - (touchStartYRef.current || touchEndY));
+    if (touchStartX !== null && touchStartX < 70 && dragDistanceLeftToRight > 80 && dragVerticalLeftToRight < dragDistanceLeftToRight * 0.5) {
       setAppDrawerOpen(true);
       setNotificationsOpen(false);
       setUtilitiesOpen(false);
@@ -1136,6 +1898,8 @@ export default function App() {
             setAirplaneMode={setAirplaneMode}
             darkMode={darkMode}
             setDarkMode={setDarkMode}
+            selectedRingtone={selectedRingtone}
+            setSelectedRingtone={setSelectedRingtone}
             nightMode={nightMode}
             setNightMode={setNightMode}
             brightness={brightness}
@@ -1148,31 +1912,68 @@ export default function App() {
             setSimulatedLevel={setBatteryLevel}
             simulatedCharging={isCharging}
             setSimulatedCharging={setIsCharging}
-            wallpapers={wallpapersList}
+            wallpapers={wallpapers}
             currentWallpaperIndex={wallpaperIndex}
             setWallpaperIndex={setWallpaperIndex}
+            onOpenGallery={() => {
+              setActiveApp('galeria');
+            }}
             isActive={false}
             installedApps={installedApps}
             onUninstall={handleUninstallApp}
             isFullscreen={isFullscreen}
             onToggleFullscreen={toggleFullscreen}
+            language={language}
+            setLanguage={setLanguage}
+            pincode={pincode}
+            setPincode={setPincode}
+            userAvatar={userAvatar}
+            setUserAvatar={setUserAvatar}
+            onResetOS={handleResetOS}
           />
         );
       case 'calculadora':
         return <Calculator />;
       case 'galeria':
         return (
-          <div className={`no-scrollbar pt-4 pb-24 px-5 space-y-4 overflow-y-auto h-full ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+          <div className={`no-scrollbar pt-4 pb-24 px-5 space-y-6 overflow-y-auto h-full ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+            {capturedPhotos.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-bold text-base flex items-center gap-2"><span>📸</span> Fotos Capturadas</h3>
+                <div className="grid grid-cols-2 gap-3.5 pt-1">
+                  {capturedPhotos.map((photo) => (
+                    <div
+                      key={photo.id}
+                      onClick={() => {
+                        setActiveApp('camera');
+                      }}
+                      className={`aspect-[3/4] rounded-2xl overflow-hidden relative shadow-md border border-white/10 bg-gradient-to-tr ${photo.url} cursor-pointer hover:scale-[1.02] transition-transform`}
+                    >
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <span className="text-3xl">📸</span>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3 text-white">
+                        <p className="font-bold text-xs leading-tight">Foto Capturada</p>
+                        <p className="text-[9px] font-mono opacity-70">{photo.timestamp} • {photo.filter}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="space-y-1">
-              <h3 className="font-bold text-base">Minha Galeria</h3>
+              <h3 className="font-bold text-base">Papeis de Parede</h3>
               <p className="text-xs opacity-65">Escolha um gradiente para ser seu papel de parede.</p>
             </div>
             <div className="grid grid-cols-2 gap-3.5 pt-2">
-              {wallpapersList.map((wp, idx) => (
+              {wallpapers.map((wp, idx) => (
                 <div
                   key={idx}
-                  className="aspect-[9/16] rounded-2xl overflow-hidden relative shadow-md border border-white/5"
+                  className="aspect-[9/16] rounded-2xl overflow-hidden relative shadow-md border border-white/5 cursor-pointer"
                   style={{ background: wp.gradient }}
+                  onClick={() => {
+                    setWallpaperIndex(idx);
+                  }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-3 text-white">
                     <p className="font-bold text-xs leading-tight">{wp.name}</p>
@@ -1250,7 +2051,16 @@ export default function App() {
           />
         );
       case 'camera':
-        return <CameraApp darkMode={darkMode} isActive={false} />;
+        return (
+          <CameraApp 
+            darkMode={darkMode} 
+            isActive={false} 
+            capturedPhotos={capturedPhotos}
+            onCapturePhoto={(photo) => {
+              setCapturedPhotos(prev => [photo, ...prev]);
+            }}
+          />
+        );
       default:
         return null;
     }
@@ -1260,10 +2070,15 @@ export default function App() {
     <div className="w-screen h-screen overflow-hidden select-none bg-black">
       <div 
         id="screen-container"
+        className={`
+          ${darkMode ? 'dark theme-dark' : 'theme-light'}
+        `}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ filter: `brightness(${brightness}%)` }}
+        style={{ 
+          filter: `brightness(${brightness}%)`
+        }}
       >
         
         {/* ==========================================
@@ -1282,9 +2097,7 @@ export default function App() {
            ========================================== */}
         <div 
           id="wallpaper"
-          className={`transition-all duration-500 overflow-hidden relative ${
-            currentWallpaper.isAnimated && currentWallpaper.animatedType === 'waves' ? 'animated-waves-bg' : 'metal-shift-anim'
-          }`}
+          className="transition-all duration-500 overflow-hidden relative w-full h-full"
           style={{ background: currentWallpaper.gradient }}
         >
           {/* Animated elements based on type */}
@@ -1300,6 +2113,27 @@ export default function App() {
           )}
           {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'particles' && (
             <ParticlesWallpaper />
+          )}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'metal-liquid' && (
+            <LiquidMetalWallpaper />
+          )}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'gradient-shift' && (
+            <GradientShiftWallpaper />
+          )}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'waves' && (
+            <OceanWavesWallpaper />
+          )}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'geometric' && (
+            <GeometricSaturnWallpaper />
+          )}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'cyber-neon' && (
+            <CyberNeonWallpaper />
+          )}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'starfield' && (
+            <StarfieldWallpaper />
+          )}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'lava-lamp' && (
+            <LavaLampWallpaper />
           )}
         </div>
 
@@ -1319,12 +2153,21 @@ export default function App() {
         {/* ==========================================
            3. SYSTEM STATUS BAR (Clock & Pill - mix-blend-mode: difference)
            ========================================== */}
-        <header id="status-bar">
+        <header 
+          id="status-bar"
+          onMouseMove={handleStatusPullMove}
+          onTouchMove={handleStatusPullMove}
+          onMouseUp={handleStatusPullEnd}
+          onTouchEnd={handleStatusPullEnd}
+        >
           <div 
-            className="status-zone left cursor-pointer" 
+            className="status-zone left cursor-pointer select-none" 
             id="trigger-notifications"
+            onMouseDown={(e) => handleStatusPullStart(e, 'notif')}
+            onTouchStart={(e) => handleStatusPullStart(e, 'notif')}
             onClick={(e) => {
               e.stopPropagation();
+              if (statusPullRef.current.triggered) return;
               setNotificationsOpen(!notificationsOpen);
               setUtilitiesOpen(false);
               setAppDrawerOpen(false);
@@ -1334,18 +2177,21 @@ export default function App() {
           </div>
           
           <div 
-            className="status-zone right cursor-pointer" 
+            className="status-zone right cursor-pointer select-none" 
             id="trigger-utilities"
+            onMouseDown={(e) => handleStatusPullStart(e, 'util')}
+            onTouchStart={(e) => handleStatusPullStart(e, 'util')}
             onClick={(e) => {
               e.stopPropagation();
+              if (statusPullRef.current.triggered) return;
               setUtilitiesOpen(!utilitiesOpen);
               setNotificationsOpen(false);
               setAppDrawerOpen(false);
             }}
           >
             <div className="status-pill">
-              <svg className="pill-svg" viewBox="0 0 24 24" id="wifi-icon" style={{ width: '17px', height: '13px', fill: 'none', stroke: '#ffffff', strokeWidth: 2.5, strokeLinecap: 'round' }}>
-                <circle cx="12" cy="19.5" r="1.2" fill="#ffffff" stroke="none" />
+              <svg className="pill-svg" viewBox="0 0 24 24" id="wifi-icon" style={{ width: '17px', height: '13px', fill: 'none', stroke: 'currentColor', strokeWidth: 2.5, strokeLinecap: 'round' }}>
+                <circle cx="12" cy="19.5" r="1.2" fill="currentColor" stroke="none" />
                 <path d="M8.5 15.5a5 3.2 0 0 1 7 0" />
                 <path d="M5 11.5a10 6 0 0 1 14 0" />
                 <path d="M1.5 7.5a15 8.5 0 0 1 21 0" />
@@ -1373,20 +2219,22 @@ export default function App() {
           <div className="panel-top-cap" />
           <div className="panel-center-content">
             <div className="panel-header flex justify-between items-center w-full">
-              <span>Notificações</span>
+              <span>{language === 'en' ? 'Notifications' : 'Notificações'}</span>
               {notifications.length > 0 && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); setNotifications([]); }}
                   className="text-[10px] text-blue-400 font-bold hover:underline bg-transparent border-none cursor-pointer"
                 >
-                  Limpar Tudo
+                  {language === 'en' ? 'Clear All' : 'Limpar Tudo'}
                 </button>
               )}
             </div>
 
             <div className="panel-content w-full space-y-2 overflow-y-auto no-scrollbar max-h-72">
               {notifications.length === 0 ? (
-                <p className="text-center py-6 text-xs text-white/40">Nenhuma notificação recente</p>
+                <p className="text-center py-6 text-xs text-white/40">
+                  {language === 'en' ? 'No recent notifications' : 'Nenhuma notificação recente'}
+                </p>
               ) : (
                 notifications.map(item => (
                   <div 
@@ -1399,7 +2247,7 @@ export default function App() {
                     <button 
                       onClick={(e) => { e.stopPropagation(); removeNotification(item.id); }}
                       className="absolute top-3 right-3 text-white/40 hover:text-white bg-transparent border-none cursor-pointer"
-                      title="Remover"
+                      title={language === 'en' ? 'Remove' : 'Remover'}
                     >
                       <X size={11} />
                     </button>
@@ -1494,22 +2342,26 @@ export default function App() {
                   className={`toggle-btn ${darkMode ? 'active' : ''}`}
                 >
                   <Moon size={16} />
-                  <span>Modo Escuro</span>
+                  <span>{language === 'en' ? 'Dark Mode' : 'Modo Escuro'}</span>
                 </button>
                 <button 
                   onClick={() => setNightMode(!nightMode)}
                   className={`toggle-btn ${nightMode ? 'active' : ''}`}
                 >
                   <Sun size={16} />
-                  <span>Modo Noturno</span>
+                  <span>{language === 'en' ? 'Night Shield' : 'Modo Noturno'}</span>
                 </button>
                 <button 
                   onClick={() => toggleFullscreen()}
                   className={`toggle-btn ${isFullscreen ? 'active bg-blue-600 text-white' : ''}`}
-                  title="Esconder barra de status do celular Android (Tela Cheia)"
+                  title={language === 'en' ? 'Hide system status bar (Fullscreen)' : 'Esconder barra de status do celular Android (Tela Cheia)'}
                 >
                   {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
-                  <span>{isFullscreen ? 'Minimizar' : 'Tela Cheia'}</span>
+                  <span>
+                    {isFullscreen 
+                      ? (language === 'en' ? 'Minimize' : 'Minimizar') 
+                      : (language === 'en' ? 'Fullscreen' : 'Tela Cheia')}
+                  </span>
                 </button>
               </div>
               
@@ -1739,6 +2591,8 @@ export default function App() {
               setAirplaneMode={setAirplaneMode}
               darkMode={darkMode}
               setDarkMode={setDarkMode}
+              selectedRingtone={selectedRingtone}
+              setSelectedRingtone={setSelectedRingtone}
               nightMode={nightMode}
               setNightMode={setNightMode}
               brightness={brightness}
@@ -1751,14 +2605,24 @@ export default function App() {
               setSimulatedLevel={setBatteryLevel}
               simulatedCharging={isCharging}
               setSimulatedCharging={setIsCharging}
-              wallpapers={wallpapersList}
+              wallpapers={wallpapers}
               currentWallpaperIndex={wallpaperIndex}
               setWallpaperIndex={setWallpaperIndex}
+              onOpenGallery={() => {
+                setActiveApp('galeria');
+              }}
               isActive={activeApp === 'configuracoes'}
               installedApps={installedApps}
               onUninstall={handleUninstallApp}
               isFullscreen={isFullscreen}
               onToggleFullscreen={toggleFullscreen}
+              language={language}
+              setLanguage={setLanguage}
+              pincode={pincode}
+              setPincode={setPincode}
+              userAvatar={userAvatar}
+              setUserAvatar={setUserAvatar}
+              onResetOS={handleResetOS}
             />
           </div>
         </div>
@@ -1787,11 +2651,33 @@ export default function App() {
           <div className="app-content no-scrollbar pt-4 pb-24 px-5 space-y-4 overflow-y-auto">
             <div className="space-y-1">
               <h3 className="font-bold text-base">Minha Galeria</h3>
-              <p className="text-xs opacity-65">Escolha um gradiente para ser seu papel de parede do sistema.</p>
+              <p className="text-xs opacity-65">Escolha um gradiente ou envie uma foto para ser seu papel de parede do sistema.</p>
             </div>
             
             <div className="grid grid-cols-2 gap-3.5 pt-2">
-              {wallpapersList.map((wp, idx) => (
+              {/* Option to upload wallpaper from real device */}
+              <button
+                onClick={() => galleryFileInputRef.current?.click()}
+                className="aspect-[9/16] rounded-2xl overflow-hidden relative shadow-md hover:scale-[0.98] transition-all cursor-pointer border border-dashed border-slate-300 dark:border-white/20 bg-slate-100/50 dark:bg-white/5 flex flex-col items-center justify-center text-center p-4 gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 hover:border-blue-500"
+              >
+                <div className="w-10 h-10 rounded-full bg-slate-200/80 dark:bg-white/10 flex items-center justify-center text-slate-700 dark:text-white">
+                  <Plus size={20} />
+                </div>
+                <div>
+                  <p className="font-bold text-xs">Adicionar Foto</p>
+                  <p className="text-[10px] opacity-60">Escolher do dispositivo</p>
+                </div>
+              </button>
+
+              <input 
+                type="file" 
+                ref={galleryFileInputRef} 
+                className="hidden" 
+                accept="image/*" 
+                onChange={handleCustomWallpaperUpload} 
+              />
+
+              {wallpapers.map((wp, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedGalleryImg(idx)}
@@ -1806,16 +2692,16 @@ export default function App() {
             </div>
 
             {/* LIGHTBOX CONFIRMAÇÃO DE PAPEL DE PAREDE */}
-            {selectedGalleryImg !== null && (
+            {selectedGalleryImg !== null && wallpapers[selectedGalleryImg] && (
               <div className="absolute inset-0 bg-black/95 flex flex-col justify-center items-center p-6 z-50 text-white space-y-6">
-                <div className="w-44 aspect-[9/16] rounded-2xl border-4 border-white/10 shadow-2xl relative overflow-hidden" style={{ background: wallpapersList[selectedGalleryImg].gradient }}>
+                <div className="w-44 aspect-[9/16] rounded-2xl border-4 border-white/10 shadow-2xl relative overflow-hidden" style={{ background: wallpapers[selectedGalleryImg].gradient }}>
                   <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/40 px-3 py-1 rounded-full text-[9px] text-center">
                     Visualização
                   </div>
                 </div>
                 
                 <div className="text-center space-y-1">
-                  <h4 className="font-bold text-sm">Definir "{wallpapersList[selectedGalleryImg].name}"?</h4>
+                  <h4 className="font-bold text-sm">Definir "{wallpapers[selectedGalleryImg].name}"?</h4>
                   <p className="text-xs opacity-60">Isso atualizará a tela de fundo do sistema operacional.</p>
                 </div>
 
@@ -2352,7 +3238,7 @@ export default function App() {
                       <span>✨</span> Papéis de Parede Animados
                     </span>
                     <div className="grid grid-cols-2 gap-3">
-                      {wallpapersList
+                      {wallpapers
                         .map((w, idx) => ({ ...w, originalIdx: idx }))
                         .filter(w => w.isAnimated)
                         .map((w) => {
@@ -2391,7 +3277,17 @@ export default function App() {
                       <span>🖼️</span> Estáticos Clássicos
                     </span>
                     <div className="grid grid-cols-2 gap-3">
-                      {wallpapersList
+                      <button
+                        onClick={() => {
+                          setActiveApp('galeria');
+                          setWallpaperPickerOpen(false);
+                        }}
+                        className="group relative h-20 rounded-2xl border border-dashed border-white/20 hover:border-white/45 bg-white/5 hover:bg-white/10 flex flex-col items-center justify-center text-center transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-slate-300 gap-1"
+                      >
+                        <Plus size={16} />
+                        <span className="text-white text-[9px] font-black uppercase tracking-wider">Escolher da Galeria</span>
+                      </button>
+                      {wallpapers
                         .map((w, idx) => ({ ...w, originalIdx: idx }))
                         .filter(w => !w.isAnimated)
                         .map((w) => {
@@ -2445,6 +3341,47 @@ export default function App() {
               {appMetadata[draggedApp.appId]?.label}
             </span>
           </div>
+        )}
+
+        {/* Boot & Setup wizard Screen overlay */}
+        {isBooting && (
+          <BootSetupScreen
+            language={language}
+            setLanguage={setLanguage}
+            userName={userName}
+            setUserName={setUserName}
+            userAvatar={userAvatar}
+            setUserAvatar={setUserAvatar}
+            pincode={pincode}
+            setPincode={setPincode}
+            darkMode={darkMode}
+            setDarkMode={setDarkMode}
+            wallpaperIndex={wallpaperIndex}
+            setWallpaperIndex={setWallpaperIndex}
+            isSetupCompleted={isSetupCompleted}
+            onComplete={() => {
+              setIsBooting(false);
+              setIsSetupCompleted(true);
+              // If no PIN is configured, unlock immediately. Otherwise, show LockScreen.
+              if (!pincode) {
+                setIsLocked(false);
+              } else {
+                setIsLocked(true);
+              }
+            }}
+          />
+        )}
+
+        {/* Lock Screen overlay */}
+        {!isBooting && isLocked && (
+          <LockScreen
+            language={language}
+            userName={userName}
+            userAvatar={userAvatar}
+            pincode={pincode}
+            onUnlock={() => setIsLocked(false)}
+            onReset={handleResetOS}
+          />
         )}
 
       </div>
