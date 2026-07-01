@@ -2142,12 +2142,16 @@ export default function App() {
         {(notificationsOpen || utilitiesOpen || appDrawerOpen) && (
           <button 
             id="overlay-blur"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               setNotificationsOpen(false);
               setUtilitiesOpen(false);
               setAppDrawerOpen(false);
             }}
-            className="w-full h-full text-left border-none focus:outline-none cursor-pointer"
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            className={`w-full h-full text-left border-none focus:outline-none cursor-pointer ${(notificationsOpen || utilitiesOpen) ? 'status-active' : ''}`}
           />
         )}
 

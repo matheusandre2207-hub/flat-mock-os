@@ -58,8 +58,16 @@ body, html {
     background-color: rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(25px) saturate(120%);
     -webkit-backdrop-filter: blur(25px) saturate(120%);
-    z-index: 5;
+    z-index: 21;
     transition: opacity 0.35s ease;
+}
+
+#overlay-blur.status-active {
+    z-index: 23 !important; /* Acima de app-window (20) e app-drawer (22), bloqueando interações e ofuscando tudo abaixo da barra de status! */
+    background-color: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(30px) saturate(130%);
+    -webkit-backdrop-filter: blur(30px) saturate(130%);
+    pointer-events: auto !important;
 }
 
 .hidden {
@@ -416,7 +424,7 @@ body, html {
     backdrop-filter: blur(35px);
     -webkit-backdrop-filter: blur(35px);
     border-radius: 28px;
-    z-index: 15;
+    z-index: 22;
     display: flex;
     flex-direction: column;
     overflow: hidden;
