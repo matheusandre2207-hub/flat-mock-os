@@ -769,8 +769,6 @@ export default function App() {
     localStorage.setItem('os_selected_ringtone', selectedRingtone);
   }, [selectedRingtone]);
 
-  }, [selectedRingtone]);
-
   const [nightMode, setNightMode] = useState(() => {
     return localStorage.getItem('os_night_mode') === 'true';
   });
