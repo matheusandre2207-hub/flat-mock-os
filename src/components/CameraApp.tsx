@@ -327,8 +327,7 @@ export default function CameraApp({ darkMode, isActive = true }: CameraAppProps)
             {capturedPhotos.length > 0 ? (
               <button 
                 onClick={() => setViewingPhoto(capturedPhotos[0])}
-                className="w-full h-full bg-gradient-to-tr border-none cursor-pointer"
-                style={{ backgroundImage: `linear-gradient(to top right, ${capturedPhotos[0].url.split(' ')[1] || '#3b82f6'}, ${capturedPhotos[0].url.split(' ')[3] || '#8b5cf6'})` }}
+                className={`w-full h-full bg-gradient-to-tr ${capturedPhotos[0].url} border-none cursor-pointer`}
               />
             ) : (
               <span className="text-xs text-slate-600">📁</span>

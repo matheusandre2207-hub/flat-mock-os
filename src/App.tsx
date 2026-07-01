@@ -237,14 +237,21 @@ export default function App() {
     const doc = document as any;
 
     if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.mozFullScreenElement && !doc.msFullscreenElement) {
-      if (docEl.requestFullscreen) {
-        docEl.requestFullscreen();
-      } else if (docEl.webkitRequestFullscreen) {
-        docEl.webkitRequestFullscreen();
-      } else if (docEl.mozRequestFullScreen) {
-        docEl.mozRequestFullScreen();
-      } else if (docEl.msRequestFullscreen) {
-        docEl.msRequestFullscreen();
+      const requestFS = docEl.requestFullscreen || 
+                        docEl.webkitRequestFullscreen || 
+                        docEl.mozRequestFullScreen || 
+                        docEl.msRequestFullscreen;
+      if (requestFS) {
+        requestFS.call(docEl).then(() => {
+          const screenObj = window.screen as any;
+          if (screenObj && screenObj.orientation && typeof screenObj.orientation.lock === 'function') {
+            screenObj.orientation.lock('portrait').catch((err: any) => {
+              console.warn("Falha ao travar orientação em modo retrato:", err);
+            });
+          }
+        }).catch((err: any) => {
+          console.warn("Falha ao entrar em tela inteira:", err);
+        });
       }
     } else {
       if (doc.exitFullscreen) {
@@ -255,6 +262,36 @@ export default function App() {
         doc.mozCancelFullScreen();
       } else if (doc.msExitFullscreen) {
         doc.msExitFullscreen();
+      }
+    }
+  };
+
+  const handleScreenClick = () => {
+    const doc = document as any;
+    const isCurrentlyFullscreen = !!(
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement
+    );
+    
+    if (!isCurrentlyFullscreen) {
+      const docEl = document.documentElement as any;
+      const requestFS = docEl.requestFullscreen || 
+                        docEl.webkitRequestFullscreen || 
+                        docEl.mozRequestFullScreen || 
+                        docEl.msRequestFullscreen;
+      if (requestFS) {
+        requestFS.call(docEl).then(() => {
+          const screenObj = window.screen as any;
+          if (screenObj && screenObj.orientation && typeof screenObj.orientation.lock === 'function') {
+            screenObj.orientation.lock('portrait').catch((err: any) => {
+              console.warn("Falha ao travar orientação em modo retrato:", err);
+            });
+          }
+        }).catch((err: any) => {
+          console.warn("Falha ao entrar em tela inteira:", err);
+        });
       }
     }
   };
@@ -826,7 +863,7 @@ export default function App() {
   };
 
   return (
-    <div className="w-screen h-screen overflow-hidden select-none bg-black">
+    <div onClick={handleScreenClick} className="w-screen h-screen overflow-hidden select-none bg-black">
       <div 
         id="screen-container"
         onTouchStart={handleTouchStart}
