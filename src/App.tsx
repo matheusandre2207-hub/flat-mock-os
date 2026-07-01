@@ -807,8 +807,16 @@ export default function App() {
   });
   const currentWallpaper = wallpapers[wallpaperIndex] || wallpapers[0];
 
+  const [lockWallpaperIndex, setLockWallpaperIndex] = useState(() => {
+    const saved = localStorage.getItem('os_lock_wallpaper_index');
+    return saved ? parseInt(saved, 10) : (localStorage.getItem('os_wallpaper_index') ? parseInt(localStorage.getItem('os_wallpaper_index')!, 10) : 0);
+  });
+  const currentLockWallpaper = wallpapers[lockWallpaperIndex] || wallpapers[0];
+  const [wallpaperTarget, setWallpaperTarget] = useState<'home' | 'lock' | 'both'>('home');
+
   useEffect(() => { localStorage.setItem('os_wallpapers', JSON.stringify(wallpapers)); }, [wallpapers]);
   useEffect(() => { localStorage.setItem('os_wallpaper_index', String(wallpaperIndex)); }, [wallpaperIndex]);
+  useEffect(() => { localStorage.setItem('os_lock_wallpaper_index', String(lockWallpaperIndex)); }, [lockWallpaperIndex]);
 
   // Shortcuts on home screen
   const [homeApps, setHomeApps] = useState<string[]>(() => {
@@ -898,6 +906,8 @@ export default function App() {
     setAppDrawerOpen(false);
     setNotificationsOpen(false);
     setUtilitiesOpen(false);
+    setWallpaperIndex(0);
+    setLockWallpaperIndex(0);
   };
 
   // Shell Navigation & Dropdowns
@@ -1215,6 +1225,7 @@ export default function App() {
   const [swipeUpStartY, setSwipeUpStartY] = useState<number | null>(null);
   const [swipeUpCurrentY, setSwipeUpCurrentY] = useState<number | null>(null);
   const swipeUpTimerRef = useRef<any>(null);
+  const touchStartXRef = useRef<number>(0);
   const touchStartYRef = useRef<number>(0);
   const touchCurrentYRef = useRef<number>(0);
   const isHoldingBottomSwipeRef = useRef<boolean>(false);
@@ -1756,6 +1767,7 @@ export default function App() {
     const x = e.touches[0].clientX;
     const y = e.touches[0].clientY;
     setTouchStartX(x);
+    touchStartXRef.current = x;
     touchStartYRef.current = y;
     touchCurrentYRef.current = y;
     isHoldingBottomSwipeRef.current = false;
@@ -1827,10 +1839,19 @@ export default function App() {
     const touchEndX = e.changedTouches[0].clientX;
     const touchEndY = e.changedTouches[0].clientY;
 
-    if (notificationsOpen || utilitiesOpen || appDrawerOpen) {
+    if (notificationsOpen || utilitiesOpen) {
       if ((touchStartYRef.current || touchEndY) - touchEndY > 35) {
         setNotificationsOpen(false);
         setUtilitiesOpen(false);
+        return;
+      }
+    }
+
+    if (appDrawerOpen) {
+      const diffX = touchEndX - (touchStartXRef.current || touchEndX);
+      const diffY = Math.abs((touchStartYRef.current || touchEndY) - touchEndY);
+      // Se deslizar para a esquerda predominantemente horizontal, fecha a gaveta lateral
+      if (diffX < -50 && Math.abs(diffX) > diffY) {
         setAppDrawerOpen(false);
         return;
       }
@@ -2151,7 +2172,7 @@ export default function App() {
             onTouchStart={(e) => e.stopPropagation()}
             onTouchMove={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
-            className={`w-full h-full text-left border-none focus:outline-none cursor-pointer ${(notificationsOpen || utilitiesOpen) ? 'status-active' : ''}`}
+            className={`w-full h-full text-left border-none focus:outline-none cursor-pointer ${(notificationsOpen || utilitiesOpen || appDrawerOpen) ? 'status-active' : ''}`}
           />
         )}
 
@@ -2633,7 +2654,7 @@ export default function App() {
         </div>
 
         {/* APP B: CALCULADORA */}
-        <div className={`app-window ${activeApp === 'calculadora' ? '' : 'closed'} dark bg-slate-950 text-white`}>
+        <div className={`app-window ${activeApp === 'calculadora' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -2641,7 +2662,7 @@ export default function App() {
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
-            <Calculator />
+            <Calculator darkMode={darkMode} />
           </div>
         </div>
 
@@ -2710,21 +2731,42 @@ export default function App() {
                   <p className="text-xs opacity-60">Isso atualizará a tela de fundo do sistema operacional.</p>
                 </div>
 
-                <div className="flex gap-3 text-xs w-full max-w-xs">
-                  <button 
-                    onClick={() => setSelectedGalleryImg(null)}
-                    className="flex-1 py-2.5 bg-slate-800 font-bold rounded-xl hover:bg-slate-700 border-none cursor-pointer text-white text-center"
-                  >
-                    Cancelar
-                  </button>
+                <div className="flex flex-col gap-2 w-full max-w-xs text-xs">
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => {
+                        handleSetWallpaperFromFile(selectedGalleryImg);
+                        setSelectedGalleryImg(null);
+                      }}
+                      className="flex-1 py-2 bg-blue-600 font-bold rounded-xl hover:bg-blue-700 border-none cursor-pointer text-white text-center"
+                    >
+                      Tela Inicial
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setLockWallpaperIndex(selectedGalleryImg);
+                        setSelectedGalleryImg(null);
+                      }}
+                      className="flex-1 py-2 bg-emerald-600 font-bold rounded-xl hover:bg-emerald-700 border-none cursor-pointer text-white text-center"
+                    >
+                      Tela de Bloqueio
+                    </button>
+                  </div>
                   <button 
                     onClick={() => {
                       handleSetWallpaperFromFile(selectedGalleryImg);
+                      setLockWallpaperIndex(selectedGalleryImg);
                       setSelectedGalleryImg(null);
                     }}
-                    className="flex-1 py-2.5 bg-blue-600 font-bold rounded-xl hover:bg-blue-700 border-none cursor-pointer text-white text-center"
+                    className="w-full py-2 bg-violet-600 font-bold rounded-xl hover:bg-violet-700 border-none cursor-pointer text-white text-center"
                   >
-                    Confirmar
+                    Definir para Ambas
+                  </button>
+                  <button 
+                    onClick={() => setSelectedGalleryImg(null)}
+                    className="w-full py-2 bg-slate-800 font-bold rounded-xl hover:bg-slate-700 border-none cursor-pointer text-white text-center mt-1"
+                  >
+                    Cancelar
                   </button>
                 </div>
               </div>
@@ -2757,7 +2799,7 @@ export default function App() {
         </div>
 
         {/* APP E: MÚSICA */}
-        <div className={`app-window ${activeApp === 'musica' ? '' : 'closed'} dark bg-slate-950 text-white`}>
+        <div className={`app-window ${activeApp === 'musica' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -2844,7 +2886,7 @@ export default function App() {
         </div>
 
         {/* APP J: FLAPPY BIRD */}
-        <div className={`app-window ${activeApp === 'flappy' ? '' : 'closed'} dark bg-slate-950 text-white`}>
+        <div className={`app-window ${activeApp === 'flappy' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3149,7 +3191,7 @@ export default function App() {
                 }
               }}
               onClick={() => handlePopupAction(activePopup)}
-              className="absolute top-14 left-1/2 z-[200] w-[calc(100%-24px)] max-w-[360px] flex items-center gap-3.5 p-3.5 rounded-3xl bg-slate-900/95 dark:bg-[#1a1c22]/95 text-white shadow-[0_20px_45px_rgba(0,0,0,0.55)] border border-white/10 backdrop-blur-xl cursor-pointer select-none active:scale-[0.99] transition-transform duration-100"
+              className="absolute top-14 left-1/2 z-[10000] w-[calc(100%-24px)] max-w-[360px] flex items-center gap-3.5 p-3.5 rounded-3xl bg-slate-900/95 dark:bg-[#1a1c22]/95 text-white shadow-[0_20px_45px_rgba(0,0,0,0.55)] border border-white/10 backdrop-blur-xl cursor-pointer select-none active:scale-[0.99] transition-transform duration-100"
             >
               {/* Avatar / App Icon on Left */}
               <div className="flex-shrink-0 relative">
@@ -3236,6 +3278,27 @@ export default function App() {
                   </button>
                 </div>
 
+                <div className="flex bg-slate-800/80 p-1 rounded-xl border border-white/5 text-xs font-semibold">
+                  <button
+                    onClick={() => setWallpaperTarget('home')}
+                    className={`flex-1 py-1.5 rounded-lg border-none cursor-pointer transition-all ${wallpaperTarget === 'home' ? 'bg-blue-600 text-white shadow' : 'bg-transparent text-slate-400 hover:text-white'}`}
+                  >
+                    Tela Inicial
+                  </button>
+                  <button
+                    onClick={() => setWallpaperTarget('lock')}
+                    className={`flex-1 py-1.5 rounded-lg border-none cursor-pointer transition-all ${wallpaperTarget === 'lock' ? 'bg-emerald-600 text-white shadow' : 'bg-transparent text-slate-400 hover:text-white'}`}
+                  >
+                    Tela de Bloqueio
+                  </button>
+                  <button
+                    onClick={() => setWallpaperTarget('both')}
+                    className={`flex-1 py-1.5 rounded-lg border-none cursor-pointer transition-all ${wallpaperTarget === 'both' ? 'bg-violet-600 text-white shadow' : 'bg-transparent text-slate-400 hover:text-white'}`}
+                  >
+                    Ambas
+                  </button>
+                </div>
+
                 <div className="flex-1 overflow-y-auto no-scrollbar pr-1 flex flex-col gap-6">
                   {/* Animados Section */}
                   <div className="flex flex-col gap-2.5">
@@ -3247,12 +3310,13 @@ export default function App() {
                         .map((w, idx) => ({ ...w, originalIdx: idx }))
                         .filter(w => w.isAnimated)
                         .map((w) => {
-                          const isSelected = wallpaperIndex === w.originalIdx;
+                          const isSelected = wallpaperTarget === 'lock' ? lockWallpaperIndex === w.originalIdx : wallpaperIndex === w.originalIdx;
                           return (
                             <button
                               key={w.name}
                               onClick={() => {
-                                handleSetWallpaperFromFile(w.originalIdx);
+                                if (wallpaperTarget === 'home' || wallpaperTarget === 'both') handleSetWallpaperFromFile(w.originalIdx);
+                                if (wallpaperTarget === 'lock' || wallpaperTarget === 'both') setLockWallpaperIndex(w.originalIdx);
                                 setWallpaperPickerOpen(false);
                               }}
                               className={`group relative h-20 rounded-2xl border text-left overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
@@ -3296,12 +3360,13 @@ export default function App() {
                         .map((w, idx) => ({ ...w, originalIdx: idx }))
                         .filter(w => !w.isAnimated)
                         .map((w) => {
-                          const isSelected = wallpaperIndex === w.originalIdx;
+                          const isSelected = wallpaperTarget === 'lock' ? lockWallpaperIndex === w.originalIdx : wallpaperIndex === w.originalIdx;
                           return (
                             <button
                               key={w.name}
                               onClick={() => {
-                                handleSetWallpaperFromFile(w.originalIdx);
+                                if (wallpaperTarget === 'home' || wallpaperTarget === 'both') handleSetWallpaperFromFile(w.originalIdx);
+                                if (wallpaperTarget === 'lock' || wallpaperTarget === 'both') setLockWallpaperIndex(w.originalIdx);
                                 setWallpaperPickerOpen(false);
                               }}
                               className={`group relative h-20 rounded-2xl border text-left overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
@@ -3384,6 +3449,12 @@ export default function App() {
             userName={userName}
             userAvatar={userAvatar}
             pincode={pincode}
+            wallpaper={currentLockWallpaper}
+            notifications={notifications}
+            onOpenApp={(appName) => {
+              openApp(appName);
+              setIsLocked(false);
+            }}
             onUnlock={() => setIsLocked(false)}
             onReset={handleResetOS}
           />

@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 
-export default function Calculator() {
+interface CalculatorProps {
+  darkMode?: boolean;
+}
+
+export default function Calculator({ darkMode = true }: CalculatorProps) {
   const [display, setDisplay] = useState('0');
   const [equation, setEquation] = useState('');
   const [shouldReset, setShouldReset] = useState(false);
@@ -76,76 +80,88 @@ export default function Calculator() {
     }
   };
 
+  const numBtnClass = `h-12 rounded-full font-semibold transition-all text-base active:scale-95 ${
+    darkMode 
+      ? 'bg-slate-800/80 hover:bg-slate-800 text-white' 
+      : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
+  }`;
+
+  const topBtnClass = `h-12 rounded-full font-bold transition-all text-sm active:scale-95 ${
+    darkMode
+      ? 'bg-slate-700/60 hover:bg-slate-700/80 text-yellow-400'
+      : 'bg-slate-300 hover:bg-slate-400 text-slate-800'
+  }`;
+
   return (
-    <div className="w-full h-full flex flex-col justify-end p-4 bg-slate-950 pb-20 pt-4">
+    <div className={`w-full h-full flex flex-col justify-end p-4 pb-20 pt-4 ${darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
       {/* Display screen */}
-      <div className="mb-3 text-right p-4 bg-black/35 rounded-2xl border border-white/5 min-h-[110px] flex flex-col justify-end">
-        <div className="text-xs text-white/50 font-mono h-4 mb-1 truncate">
+      <div className={`mb-3 text-right p-4 rounded-2xl border min-h-[110px] flex flex-col justify-end transition-colors ${darkMode ? 'bg-black/35 border-white/5' : 'bg-white border-slate-200 shadow-sm'}`}>
+        <div className={`text-xs font-mono h-4 mb-1 truncate ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>
           {equation}
         </div>
-        <div className="text-4xl font-semibold text-white font-mono tracking-wider truncate">
+        <div className={`text-4xl font-semibold font-mono tracking-wider truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
           {display}
         </div>
       </div>
 
       {/* Keyboard Grid */}
       <div className="grid grid-cols-4 gap-2.5">
-        <button onClick={clear} className="h-12 rounded-full bg-slate-700/60 hover:bg-slate-700/80 active:scale-95 text-yellow-400 font-bold transition-all text-sm">
+        <button onClick={clear} className={topBtnClass}>
           AC
         </button>
-        <button onClick={toggleSign} className="h-12 rounded-full bg-slate-700/60 hover:bg-slate-700/80 active:scale-95 text-white font-medium transition-all text-sm">
+        <button onClick={toggleSign} className={topBtnClass}>
           +/-
         </button>
-        <button onClick={handlePercent} className="h-12 rounded-full bg-slate-700/60 hover:bg-slate-700/80 active:scale-95 text-white font-medium transition-all text-sm">
+        <button onClick={handlePercent} className={topBtnClass}>
           %
         </button>
         <button onClick={() => handleOp('÷')} className="h-12 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold transition-all text-lg">
           ÷
         </button>
 
-        <button onClick={() => handleNum('7')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
+        <button onClick={() => handleNum('7')} className={numBtnClass}>
           7
         </button>
-        <button onClick={() => handleNum('8')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
+        <button onClick={() => handleNum('8')} className={numBtnClass}>
           8
         </button>
-        <button onClick={() => handleNum('9')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
+        <button onClick={() => handleNum('9')} className={numBtnClass}>
           9
         </button>
         <button onClick={() => handleOp('×')} className="h-12 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold transition-all text-lg">
           ×
         </button>
 
-        <button onClick={() => handleNum('4')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
+        <button onClick={() => handleNum('4')} className={numBtnClass}>
           4
         </button>
-        <button onClick={() => handleNum('5')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
+        <button onClick={() => handleNum('5')} className={numBtnClass}>
           5
         </button>
-        <button onClick={() => handleNum('6')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
+        <button onClick={() => handleNum('6')} className={numBtnClass}>
           6
         </button>
         <button onClick={() => handleOp('-')} className="h-12 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold transition-all text-lg">
           -
         </button>
 
-        <button onClick={() => handleNum('1')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
+        <button onClick={() => handleNum('1')} className={numBtnClass}>
           1
         </button>
-        <button onClick={() => handleNum('2')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
+        <button onClick={() => handleNum('2')} className={numBtnClass}>
           2
         </button>
-        <button onClick={() => handleNum('3')} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
+        <button onClick={() => handleNum('3')} className={numBtnClass}>
           3
         </button>
         <button onClick={() => handleOp('+')} className="h-12 rounded-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold transition-all text-lg">
           +
         </button>
 
-        <button onClick={() => handleNum('0')} className="col-span-2 h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base text-left pl-6">
+        <button onClick={() => handleNum('0')} className={`col-span-2 text-left pl-6 ${numBtnClass}`}>
           0
         </button>
-        <button onClick={handleDecimal} className="h-12 rounded-full bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-white font-semibold transition-all text-base">
+        <button onClick={handleDecimal} className={numBtnClass}>
           ,
         </button>
         <button onClick={calculate} className="h-12 rounded-full bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold transition-all text-lg">
