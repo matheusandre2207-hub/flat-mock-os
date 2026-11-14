@@ -3,8 +3,9 @@ import {
   Search, Download, Trash2, Check, Star, ArrowLeft, ArrowUpRight, ShieldCheck, 
   Heart, Sparkles, User, Award, FileText, Bird, Sun, Palette, Sliders, 
   Image as ImageIcon, Music as MusicIcon, Globe, Folder, Settings, MessageSquare, 
-  ShoppingBag, Phone, Users, Camera
+  ShoppingBag, Phone, Users, Camera, Upload, FileCode
 } from 'lucide-react';
+import { CustomApp, MAX_CUSTOM_APP_BYTES, extractTitle, makeCustomAppId, pickColor } from '../customApps';
 
 function renderAppStoreIcon(iconName: string, size: number = 24, className?: string) {
   switch (iconName) {
@@ -133,7 +134,7 @@ function renderAppStoreIcon(iconName: string, size: number = 24, className?: str
         </svg>
       );
     default: 
-      return <ShoppingBag size={size} className={className} />;
+      return <FileCode size={size} className={className} />;
   }
 }
 
@@ -269,9 +270,77 @@ interface StoreAppProps {
   onInstall: (id: string) => void;
   onUninstall: (id: string) => void;
   onOpenApp: (id: string) => void;
+  customApps: CustomApp[];
+  onImportCustomApp: (app: CustomApp) => boolean;
+  onDeleteCustomApp: (id: string) => void;
 }
 
-export default function StoreApp({ darkMode, installedApps, onInstall, onUninstall, onOpenApp }: StoreAppProps) {
+// Transforma um app HTML importado no mesmo formato dos apps da loja
+function customToItem(app: CustomApp): AppItem {
+  return {
+    id: app.id,
+    name: app.name,
+    category: 'utilities',
+    icon: 'Custom',
+    iconBgClass: 'bg-slate-500',
+    size: app.size,
+    version: 'v1.0.0',
+    rating: 0,
+    downloads: 'Importado',
+    desc: 'App HTML importado por você. Roda isolado do sistema e não tem acesso aos seus dados.',
+  };
+}
+
+export default function StoreApp({ darkMode, installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp }: StoreAppProps) {
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const catalog: AppItem[] = [...STORE_APPS, ...customApps.map(customToItem)];
+
+  useEffect(() => {
+    if (!importMsg) return;
+    const t = window.setTimeout(() => setImportMsg(null), 3800);
+    return () => window.clearTimeout(t);
+  }, [importMsg]);
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // permite importar o mesmo arquivo de novo
+    if (!file) return;
+    const notify = (ok: boolean, text: string) => setImportMsg({ ok, text });
+
+    if (!/\.html?$/i.test(file.name) && file.type !== 'text/html') {
+      notify(false, 'Escolha um arquivo .html');
+      return;
+    }
+    if (file.size > MAX_CUSTOM_APP_BYTES) {
+      notify(false, 'Arquivo muito grande (máximo 1,5 MB)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const html = String(reader.result || '');
+      if (!html.trim()) {
+        notify(false, 'O arquivo está vazio');
+        return;
+      }
+      const name = extractTitle(html, file.name.replace(/\.html?$/i, ''));
+      const app: CustomApp = {
+        id: makeCustomAppId(),
+        name,
+        html,
+        color: pickColor(customApps.length),
+        size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
+        createdAt: Date.now(),
+      };
+      const ok = onImportCustomApp(app);
+      notify(ok, ok ? `"${name}" foi importado e já está na loja.` : 'Sem espaço para salvar. Exclua apps importados e tente de novo.');
+      if (ok) setAvatarMenuOpen(false);
+    };
+    reader.onerror = () => notify(false, 'Não foi possível ler o arquivo');
+    reader.readAsText(file);
+  };
+
   const [activeTab, setActiveTab] = useState<'all' | 'productivity' | 'games' | 'utilities' | 'creativity' | 'system'>('all');
   const [search, setSearch] = useState('');
   const [selectedApp, setSelectedApp] = useState<AppItem | null>(null);
@@ -351,7 +420,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
     }
   };
 
-  const filteredApps = STORE_APPS.filter(app => {
+  const filteredApps = catalog.filter(app => {
     const matchesTab = activeTab === 'all' || app.category === activeTab;
     const matchesSearch = app.name.toLowerCase().includes(search.toLowerCase()) || 
                           app.desc.toLowerCase().includes(search.toLowerCase());
@@ -393,18 +462,53 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
           </div>
         </div>
         
-        {/* Profile Avatar (Identical to Photo) */}
+        {/* Perfil: toque no avatar para abrir o menu (importar apps HTML) */}
         {!selectedApp && (
           <div className="flex items-center">
-            <img 
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" 
-              alt="User Profile" 
-              className="w-9 h-9 rounded-full object-cover border border-white/20"
-              referrerPolicy="no-referrer"
-            />
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setAvatarMenuOpen(v => !v); }}
+              aria-label="Menu do perfil"
+              aria-expanded={avatarMenuOpen}
+              className="p-0 border-none bg-transparent cursor-pointer rounded-full active:scale-95 transition-transform"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"
+                alt="User Profile"
+                className="w-9 h-9 rounded-full object-cover border border-white/20"
+                referrerPolicy="no-referrer"
+              />
+            </button>
           </div>
         )}
       </div>
+
+      {/* Menu do perfil (fecha ao tocar fora) */}
+      {avatarMenuOpen && !selectedApp && (
+        <>
+          <div className="absolute inset-0 z-40" onClick={() => setAvatarMenuOpen(false)} />
+          <div className={`absolute right-3 top-16 z-50 w-64 rounded-2xl p-1.5 border shadow-lg ${darkMode ? 'bg-slate-900 border-white/10 text-slate-100' : 'bg-white border-slate-200 text-slate-800'}`}>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); importInputRef.current?.click(); }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border-none bg-transparent cursor-pointer text-left hover:bg-slate-500/10 transition-colors"
+            >
+              <span className="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center shrink-0"><Upload size={15} /></span>
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold">Importar app HTML</span>
+                <span className="block text-[11px] opacity-60">Um arquivo .html vira um app na loja</span>
+              </span>
+            </button>
+          </div>
+        </>
+      )}
+      <input ref={importInputRef} type="file" accept=".html,.htm,text/html" className="hidden" onChange={handleImportFile} />
+
+      {importMsg && (
+        <div className={`mx-4 mt-3 rounded-xl px-3.5 py-2.5 text-xs font-medium border ${importMsg.ok ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
+          {importMsg.text}
+        </div>
+      )}
 
       {/* 2. MAIN STORE VIEWPORT */}
       <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
@@ -435,7 +539,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
               <div className="flex flex-col justify-center items-center">
                 <span className="opacity-40 text-[11px] block mb-0.5 font-bold text-slate-500 dark:text-slate-400">Nota</span>
                 <span className="font-semibold text-[12.5px] flex items-center gap-0.5 text-slate-900 dark:text-white">
-                  {selectedApp.rating} <Star size={11} fill="currentColor" className="text-amber-500 border-none" />
+                  {selectedApp.rating > 0 ? <>{selectedApp.rating} <Star size={11} fill="currentColor" className="text-amber-500 border-none" /></> : '—'}
                 </span>
               </div>
               <div className="border-x border-slate-200 dark:border-white/5 flex flex-col justify-center items-center">
@@ -502,6 +606,16 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                 </button>
               )}
             </div>
+
+            {selectedApp.id.startsWith('custom-') && (
+              <button
+                type="button"
+                onClick={() => { onDeleteCustomApp(selectedApp.id); setSelectedApp(null); }}
+                className="w-full py-3 rounded-xl border-none cursor-pointer text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-500"
+              >
+                Excluir app importado da loja
+              </button>
+            )}
 
             {/* Description section card */}
             <div className="space-y-2 text-left">
@@ -640,7 +754,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                             <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">{app.size}</span>
                             <span className="text-[11px] text-slate-400 dark:text-slate-500">•</span>
                             <span className="text-[11px] font-bold text-amber-500 flex items-center gap-0.5">
-                              {app.rating} <Star size={10} fill="currentColor" className="border-none text-amber-500" />
+                              {app.rating > 0 ? <>{app.rating} <Star size={10} fill="currentColor" className="border-none text-amber-500" /></> : 'Importado'}
                             </span>
                           </div>
                         </div>

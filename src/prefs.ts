@@ -5,7 +5,10 @@ export interface ClockPref {
   pos: 'top' | 'center' | 'bottom';
   align: 'left' | 'center' | 'right';
 }
+export type NavStyle = 'gestures' | 'buttons';
+
 export interface Prefs {
+  navStyle: NavStyle;
   iconTint: boolean;
   doubleTapSleep: boolean;
   home: ClockPref;
@@ -13,6 +16,7 @@ export interface Prefs {
 }
 
 export const DEFAULTS: Prefs = {
+  navStyle: 'gestures',
   iconTint: false,
   doubleTapSleep: true,
   home: { style: 'light', pos: 'top', align: 'left' },

@@ -37,6 +37,8 @@ import ContactsApp from './components/ContactsApp';
 import CameraApp from './components/CameraApp';
 import BootSetupScreen from './components/BootSetupScreen';
 import LockScreen from './components/LockScreen';
+import SwipeDismiss from './components/SwipeDismiss';
+import { CustomApp, CUSTOM_APPS_KEY, loadCustomApps, setCustomAppRegistry, getCustomApp, isCustomAppId } from './customApps';
 
 // Animated Matrix Code wallpaper component
 function MatrixWallpaper() {
@@ -658,11 +660,35 @@ const baseAppMetadata: Record<string, { label: string; icon: React.ReactNode; ic
 };
 
 // Ícone de app padronizado: quadrado chapado + glifo branco
+function hashId(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+// Ícone de app: quadrado chapado + glifo branco.
+// Com "ícones combinando com o papel de parede", cada app recebe uma pequena variação
+// de matiz, saturação e brilho (sempre a mesma para o mesmo app), para não ficar tudo igual.
 function AppIcon({ id, size = 52 }: { id: string; size?: number }) {
   const meta = baseAppMetadata[id];
-  if (!meta) return null;
+  const custom = meta ? undefined : getCustomApp(id);
+  const h = hashId(id);
+  const variation = {
+    '--s': `${size}px`,
+    '--hue-shift': (h % 45) - 22,
+    '--sat-shift': ((h >> 5) % 21) - 10,
+    '--lum-shift': ((h >> 10) % 13) - 6,
+  } as React.CSSProperties;
+  if (!meta) {
+    if (!custom) return null;
+    return (
+      <div className="app-tile tile-custom" style={{ ...variation, '--custom-color': custom.color } as React.CSSProperties}>
+        <span className="custom-app-initial">{custom.name.charAt(0).toUpperCase()}</span>
+      </div>
+    );
+  }
   return (
-    <div className={`app-tile ${meta.iconBgClass}`} style={{ '--s': `${size}px` } as React.CSSProperties}>
+    <div className={`app-tile ${meta.iconBgClass}`} style={variation}>
       {meta.icon}
     </div>
   );
@@ -722,6 +748,20 @@ const randomIncomingMessages = [
   }
 ];
 
+type WidgetDrag = {
+  id: string;
+  w: number;
+  h: number;
+  startX: number;
+  startY: number;
+  x: number;
+  y: number;
+  grabC: number;
+  grabR: number;
+  moved: boolean;
+  target: { c: number; r: number } | null;
+};
+
 export default function App() {
   // 1. Core System Settings & States
   const [language, setLanguage] = useState<'pt' | 'en'>(() => {
@@ -768,6 +808,13 @@ export default function App() {
   const [cellularActive, setCellularActive] = useState(true);
   const [airplaneMode, setAirplaneMode] = useState(false);
 
+  // Apps HTML importados pela App Store (guardados no navegador)
+  const [customApps, setCustomApps] = useState<CustomApp[]>(() => loadCustomApps());
+  useEffect(() => {
+    try { localStorage.setItem(CUSTOM_APPS_KEY, JSON.stringify(customApps)); } catch { /* sem espaço */ }
+  }, [customApps]);
+  setCustomAppRegistry(customApps);
+
   // Nomes localizados + ícones padronizados
   const appLabels: Record<string, [string, string]> = {
     arquivos: ['Arquivos', 'Files'],
@@ -786,9 +833,12 @@ export default function App() {
     contatos: ['Contatos', 'Contacts'],
     camera: ['Câmera', 'Camera']
   };
-  const appMetadata: Record<string, { label: string; icon: React.ReactNode; iconBgClass: string }> = Object.fromEntries(
-    Object.entries(baseAppMetadata).map(([id, m]) => [id, { ...m, label: appLabels[id]?.[language === 'en' ? 1 : 0] ?? m.label }])
-  );
+  const appMetadata: Record<string, { label: string; icon: React.ReactNode; iconBgClass: string }> = {
+    ...Object.fromEntries(
+      Object.entries(baseAppMetadata).map(([id, m]) => [id, { ...m, label: appLabels[id]?.[language === 'en' ? 1 : 0] ?? m.label }])
+    ),
+    ...Object.fromEntries(customApps.map(a => [a.id, { label: a.name, icon: null, iconBgClass: 'tile-custom' }])),
+  };
 
   // Theme & screen settings
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -1021,6 +1071,7 @@ export default function App() {
   // Selected chat ID for messaging & Popups state
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [activePopup, setActivePopup] = useState<PopupNotification | null>(null);
+  const toastDraggedRef = useRef(false);
 
   // Installed Apps State
   const [installedApps, setInstalledApps] = useState<string[]>(() => {
@@ -1043,6 +1094,27 @@ export default function App() {
       setActiveApp(null);
     }
     setOpenedApps(prev => prev.filter(id => id !== appId));
+  };
+
+  // App Store: importar e excluir apps HTML
+  const handleImportCustomApp = (app: CustomApp): boolean => {
+    const next = [...customApps, app];
+    try {
+      localStorage.setItem(CUSTOM_APPS_KEY, JSON.stringify(next));
+    } catch {
+      return false; // sem espaço no navegador
+    }
+    setCustomApps(next);
+    return true;
+  };
+
+  const handleDeleteCustomApp = (appId: string) => {
+    setCustomApps(prev => prev.filter(a => a.id !== appId));
+    setInstalledApps(prev => prev.filter(id => id !== appId));
+    setHomeApps(prev => prev.filter(id => id !== appId));
+    setDockApps(prev => prev.filter(id => id !== appId));
+    setOpenedApps(prev => prev.filter(id => id !== appId));
+    if (activeApp === appId) setActiveApp(null);
   };
 
   // Standalone gallery lightbox state
@@ -1811,10 +1883,34 @@ export default function App() {
     setActiveApp(null);
   };
 
+  // Navegação por botões (estilo Android): voltar, início e apps em segundo plano
+  const goBack = () => {
+    if (recentAppsOpen) { setRecentAppsOpen(false); return; }
+    if (anySheetOpen) { closeSheets(); return; }
+    if (activeApp === 'galeria' && selectedGalleryImg !== null) { setSelectedGalleryImg(null); return; }
+    const event = new Event('mockos-back', { cancelable: true });
+    const wasCancelled = !window.dispatchEvent(event);
+    if (!wasCancelled) closeApp();
+  };
+  const goHome = () => {
+    setRecentAppsOpen(false);
+    closeSheets();
+    setIsEditingHome(false);
+    setSelectedGalleryImg(null);
+    setActiveApp(null);
+  };
+  const toggleRecents = () => {
+    closeSheets();
+    setRecentAppsOpen(v => !v);
+  };
+  // Marca toques que começaram dentro de um item que tem gestos próprios (ex.: notificação arrastável)
+  const touchNoGestureRef = useRef(false);
+
   // Gesto de deslizar (Swipe) para abrir a gaveta pela esquerda, voltar pela direita ou multitarefa de baixo
   const handleTouchStart = (e: React.TouchEvent) => {
     const x = e.touches[0].clientX;
     const y = e.touches[0].clientY;
+    touchNoGestureRef.current = !!(e.target as HTMLElement).closest?.('[data-no-sheet-gesture]');
     setTouchStartX(x);
     touchStartXRef.current = x;
     touchStartYRef.current = y;
@@ -1836,7 +1932,7 @@ export default function App() {
 
     // Se o toque iniciar muito próximo à borda inferior da tela, e na parte central (evitando conflitos com scrolls longos nos apps)
     const isNearCenterBottom = Math.abs(x - window.innerWidth / 2) < 80;
-    if (y > window.innerHeight - 30 && isNearCenterBottom && !isDrawingOrGameCanvas && !isInteractiveApp && !isInteractiveElement) {
+    if (y > window.innerHeight - 30 && isNearCenterBottom && !isDrawingOrGameCanvas && !isInteractiveApp && !isInteractiveElement && prefs.navStyle === 'gestures') {
       setSwipeUpStartY(y);
       setSwipeUpCurrentY(y);
       
@@ -1855,7 +1951,7 @@ export default function App() {
           }
         }
       }, 350);
-    } else if (x > window.innerWidth - 25 && activeApp !== null && !isDrawingOrGameCanvas && !isInteractiveApp && !isInteractiveElement) {
+    } else if (x > window.innerWidth - 25 && activeApp !== null && !isDrawingOrGameCanvas && !isInteractiveApp && !isInteractiveElement && prefs.navStyle === 'gestures') {
       // Começou bem na borda direita (gesto de voltar do Android/iOS)
       setSwipeBackStartX(x);
       setSwipeBackCurrentX(x);
@@ -1887,8 +1983,27 @@ export default function App() {
 
     const touchEndX = e.changedTouches[0].clientX;
     const touchEndY = e.changedTouches[0].clientY;
+    const noGesture = touchNoGestureRef.current;
+    touchNoGestureRef.current = false;
 
-    if (notificationsOpen || utilitiesOpen) {
+    // Puxar de qualquer ponto do topo: lado esquerdo abre notificações, lado direito abre ajustes rápidos
+    const startXTop = touchStartXRef.current;
+    const startYTop = touchStartYRef.current;
+    const dyTop = touchEndY - startYTop;
+    const dxTop = touchEndX - startXTop;
+    if (!noGesture && !isBooting && !isLocked && !screenOff && startYTop < 90 && dyTop > 60 && dyTop > Math.abs(dxTop) * 1.5 && !notificationsOpen && !utilitiesOpen && !appDrawerOpen) {
+      if (startXTop < window.innerWidth / 2) {
+        setNotificationsOpen(true);
+        setUtilitiesOpen(false);
+      } else {
+        setUtilitiesOpen(true);
+        setNotificationsOpen(false);
+      }
+      setAppDrawerOpen(false);
+      return;
+    }
+
+    if (!noGesture && (notificationsOpen || utilitiesOpen)) {
       if ((touchStartYRef.current || touchEndY) - touchEndY > 35) {
         setNotificationsOpen(false);
         setUtilitiesOpen(false);
@@ -1945,7 +2060,9 @@ export default function App() {
     // Também deve ser predominantemente horizontal para evitar abertura acidental durante scroll
     const dragDistanceLeftToRight = touchEndX - touchStartX;
     const dragVerticalLeftToRight = Math.abs(touchEndY - (touchStartYRef.current || touchEndY));
-    if (touchStartX !== null && touchStartX < 70 && dragDistanceLeftToRight > 80 && dragVerticalLeftToRight < dragDistanceLeftToRight * 0.5) {
+    // Zona de abertura: a esquerda da tela, em qualquer altura
+    const leftZone = Math.max(70, window.innerWidth * 0.3);
+    if (!noGesture && touchStartX !== null && touchStartX < leftZone && dragDistanceLeftToRight > 80 && dragVerticalLeftToRight < dragDistanceLeftToRight * 0.5) {
       setAppDrawerOpen(true);
       setNotificationsOpen(false);
       setUtilitiesOpen(false);
@@ -2021,6 +2138,10 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('os_widgets') || '[]'); } catch { return []; }
   });
   const [widgetSheet, setWidgetSheet] = useState(false);
+
+  // Arrastar widgets pela tela inicial (no modo de edição)
+  const [widgetDrag, setWidgetDrag] = useState<WidgetDrag | null>(null);
+  const widgetDragRef = useRef<WidgetDrag | null>(null);
   const [screenOff, setScreenOff] = useState(false);
   useEffect(() => { localStorage.setItem('os_home_layout', JSON.stringify(layout)); }, [layout]);
   useEffect(() => { localStorage.setItem('os_widgets', JSON.stringify(widgets)); }, [widgets]);
@@ -2028,6 +2149,81 @@ export default function App() {
   const autoStart = prefs.home.style === 'none' || prefs.home.pos !== 'top' ? 0 : prefs.home.style === 'stacked' ? 3 : 2;
   const placed = resolveLayout(homeApps.filter(a => installedApps.includes(a)), layout, widgets, autoStart);
   stateRef.current = { placed, widgets };
+
+  const handleWidgetPressStart = (e: React.MouseEvent | React.TouchEvent, w: WidgetItem) => {
+    if (!isEditingHome) return;
+    const sz = WIDGETS[w.type];
+    const g = document.getElementById('home-grid');
+    if (!sz || !g) return;
+    const p = 'touches' in e ? e.touches[0] : e;
+    if (!p) return;
+    const rc = g.getBoundingClientRect();
+    // Célula do widget onde o dedo começou, para o widget não "pular" ao arrastar
+    const grabC = Math.max(0, Math.min(sz.w - 1, Math.floor((p.clientX - rc.left) / (rc.width / COLS)) - w.c));
+    const grabR = Math.max(0, Math.min(sz.h - 1, Math.floor((p.clientY - rc.top) / (rc.height / ROWS)) - w.r));
+    const d: WidgetDrag = {
+      id: w.id, w: sz.w, h: sz.h,
+      startX: p.clientX, startY: p.clientY, x: p.clientX, y: p.clientY,
+      grabC, grabR, moved: false, target: null,
+    };
+    widgetDragRef.current = d;
+    setWidgetDrag(d);
+  };
+
+  const widgetDragId = widgetDrag ? widgetDrag.id : null;
+  useEffect(() => {
+    if (!widgetDragId) return;
+    const pointOf = (e: MouseEvent | TouchEvent) => {
+      if ('touches' in e) {
+        const t = e.touches[0] || e.changedTouches[0];
+        return t ? { x: t.clientX, y: t.clientY } : null;
+      }
+      return { x: e.clientX, y: e.clientY };
+    };
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      const d = widgetDragRef.current;
+      const pt = pointOf(e);
+      if (!d || !pt) return;
+      if ('touches' in e && e.cancelable) e.preventDefault();
+      const moved = d.moved || Math.abs(pt.x - d.startX) + Math.abs(pt.y - d.startY) > 6;
+      let target = d.target;
+      const g = document.getElementById('home-grid');
+      if (g && moved) {
+        const rc = g.getBoundingClientRect();
+        const c0 = Math.floor((pt.x - rc.left) / (rc.width / COLS)) - d.grabC;
+        const r0 = Math.floor((pt.y - rc.top) / (rc.height / ROWS)) - d.grabR;
+        const c = Math.max(0, Math.min(COLS - d.w, c0));
+        const r = Math.max(0, Math.min(ROWS - d.h, r0));
+        // Só colide com outros widgets; os apps se reorganizam sozinhos ao redor
+        const occ = occupiedCells({}, (stateRef.current?.widgets ?? []).filter((x: WidgetItem) => x.id !== d.id));
+        let fits = true;
+        for (let dc = 0; dc < d.w; dc++) for (let dr = 0; dr < d.h; dr++) if (occ.has(`${c + dc},${r + dr}`)) fits = false;
+        const spot = fits ? { c, r } : findFree(occ, d.w, d.h, { c, r });
+        if (spot) target = spot;
+      }
+      const next: WidgetDrag = { ...d, x: pt.x, y: pt.y, moved, target };
+      widgetDragRef.current = next;
+      setWidgetDrag(next);
+    };
+    const onUp = () => {
+      const d = widgetDragRef.current;
+      widgetDragRef.current = null;
+      setWidgetDrag(null);
+      if (!d || !d.moved || !d.target) return;
+      const t = d.target;
+      setWidgets(ws => ws.map(x => (x.id === d.id ? { ...x, c: t.c, r: t.r } : x)));
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchend', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchend', onUp);
+    };
+  }, [widgetDragId]);
 
   const addWidget = (type: string) => {
     const sz = WIDGETS[type];
@@ -2037,7 +2233,7 @@ export default function App() {
   };
 
   // Cor dos ícones a partir do papel de parede
-  const tint = (() => {
+  const tintInfo = (() => {
     let best: { hue: number; s: number } | null = null;
     (currentWallpaper.gradient.match(/#[0-9a-fA-F]{6}/g) || []).forEach(h => {
       const r = parseInt(h.slice(1, 3), 16) / 255, g = parseInt(h.slice(3, 5), 16) / 255, b = parseInt(h.slice(5, 7), 16) / 255;
@@ -2047,8 +2243,11 @@ export default function App() {
       const sat = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
       if (!best || sat > best.s) best = { hue, s: sat };
     });
-    return best ? `hsl(${best.hue} ${Math.round(Math.min(60, Math.max(35, best.s * 100)))}% 44%)` : '#3E63DD';
+    const h = best ? best.hue : 226;
+    const s = best ? Math.round(Math.min(60, Math.max(35, best.s * 100))) : 60;
+    return { css: `hsl(${h} ${s}% 44%)`, h, s };
   })();
+  const tint = tintInfo.css;
 
   // Modo borda a borda: sobe a barra de status até a altura do notch
   const edge = isFullscreen || (typeof window !== 'undefined' && (
@@ -2065,6 +2264,9 @@ export default function App() {
   };
 
   const renderAppPreviewContent = (appName: string) => {
+    if (isCustomAppId(appName)) {
+      return <div className="w-full h-full flex items-center justify-center text-sm opacity-60">{getCustomApp(appName)?.name}</div>;
+    }
     switch (appName) {
       case 'configuracoes':
         return (
@@ -2213,6 +2415,9 @@ export default function App() {
             onInstall={handleInstallApp}
             onUninstall={handleUninstallApp}
             onOpenApp={openApp}
+            customApps={customApps}
+            onImportCustomApp={handleImportCustomApp}
+            onDeleteCustomApp={handleDeleteCustomApp}
           />
         );
       case 'notas':
@@ -2255,11 +2460,11 @@ export default function App() {
     <div className="fixed inset-0 overflow-hidden select-none bg-black">
       <div
         id="screen-container"
-        className={`${darkMode ? 'dark theme-dark' : 'theme-light'} ${activeApp !== null ? 'app-open' : ''} ${immersiveApp ? 'app-immersive' : ''} ${(anySheetOpen || recentAppsOpen) ? 'sheet-open' : ''} ${justUnlocked ? 'just-unlocked' : ''} ${edge ? 'edge' : ''} ${prefs.iconTint ? 'icons-tinted' : ''}`}
+        className={`${darkMode ? 'dark theme-dark' : 'theme-light'} ${activeApp !== null ? 'app-open' : ''} ${immersiveApp ? 'app-immersive' : ''} ${(anySheetOpen || recentAppsOpen) ? 'sheet-open' : ''} ${justUnlocked ? 'just-unlocked' : ''} ${edge ? 'edge' : ''} ${prefs.iconTint ? 'icons-tinted' : ''} ${prefs.navStyle === 'buttons' ? 'nav-buttons' : ''}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ filter: `brightness(${brightness}%)`, '--tint': tint } as React.CSSProperties}
+        style={{ filter: `brightness(${brightness}%)`, '--tint': tint, '--tint-h': `${tintInfo.h}deg`, '--tint-s': `${tintInfo.s}%` } as React.CSSProperties}
       >
 
         {/* Filtro de luz noturna */}
@@ -2372,7 +2577,8 @@ export default function App() {
           ) : (
             <div className="notif-list">
               {notifications.map(item => (
-                <div key={item.id} className="notif-item">
+                <SwipeDismiss key={item.id} onDismiss={() => removeNotification(item.id)}>
+                <div className="notif-item">
                   <strong>{item.title}</strong>
                   <p>{item.body}</p>
                   <time>{item.time}</time>
@@ -2385,6 +2591,7 @@ export default function App() {
                     <X size={14} />
                   </button>
                 </div>
+                </SwipeDismiss>
               ))}
             </div>
           )}
@@ -2555,11 +2762,20 @@ export default function App() {
             {widgets.map(w => {
               const sz = WIDGETS[w.type];
               if (!sz) return null;
+              const dd = widgetDrag && widgetDrag.id === w.id && widgetDrag.moved ? widgetDrag : null;
               return (
                 <div
                   key={w.id}
-                  className="home-widget"
-                  style={{ gridColumn: `${w.c + 1} / span ${sz.w}`, gridRow: `${w.r + 1} / span ${sz.h}` }}
+                  data-no-sheet-gesture=""
+                  className={`home-widget ${isEditingHome && !dd ? 'jiggle' : ''}`}
+                  style={{
+                    gridColumn: `${w.c + 1} / span ${sz.w}`,
+                    gridRow: `${w.r + 1} / span ${sz.h}`,
+                    ...(isEditingHome ? { touchAction: 'none' } : {}),
+                    ...(dd ? { transform: `translate(${dd.x - dd.startX}px, ${dd.y - dd.startY}px) scale(1.04)`, zIndex: 30, opacity: 0.92, transition: 'none' } : {}),
+                  } as React.CSSProperties}
+                  onMouseDown={(e) => handleWidgetPressStart(e, w)}
+                  onTouchStart={(e) => handleWidgetPressStart(e, w)}
                   onClick={(e) => e.stopPropagation()}
                 >
                   {isEditingHome && (
@@ -2587,6 +2803,12 @@ export default function App() {
               );
             })}
 
+            {widgetDrag && widgetDrag.moved && widgetDrag.target && (
+              <div
+                className="home-widget-ghost"
+                style={{ gridColumn: `${widgetDrag.target.c + 1} / span ${widgetDrag.w}`, gridRow: `${widgetDrag.target.r + 1} / span ${widgetDrag.h}` }}
+              />
+            )}
             {homeApps
               .filter(appId => installedApps.includes(appId))
               .map((appId, index) => {
@@ -2974,6 +3196,9 @@ export default function App() {
               onInstall={handleInstallApp}
               onUninstall={handleUninstallApp}
               onOpenApp={openApp}
+              customApps={customApps}
+              onImportCustomApp={handleImportCustomApp}
+              onDeleteCustomApp={handleDeleteCustomApp}
             />
           </div>
         </div>
@@ -3074,6 +3299,28 @@ export default function App() {
             <CameraApp darkMode={darkMode} isActive={activeApp === 'camera'} />
           </div>
         </div>
+
+        {/* Apps HTML importados: cada um roda isolado num iframe sem acesso ao sistema */}
+        {customApps.map(app => (
+          <div key={app.id} className={`app-window ${activeApp === app.id ? '' : 'closed'}`}>
+            <div className="app-window-header">
+              <div className="app-window-drag-handle" />
+              <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
+                <ChevronDown size={18} />
+              </button>
+            </div>
+            <div className="app-content p-0" style={{ display: 'flex', flexDirection: 'column', paddingBottom: 0 }}>
+              {activeApp === app.id && (
+                <iframe
+                  title={app.name}
+                  srcDoc={app.html}
+                  sandbox="allow-scripts allow-forms allow-modals"
+                  style={{ flex: 1, width: '100%', height: '100%', border: 0, background: '#fff' }}
+                />
+              )}
+            </div>
+          </div>
+        ))}
 
         {/* Dock */}
         <footer
@@ -3230,21 +3477,23 @@ export default function App() {
             <motion.div
               key={activePopup.id}
               className="toast"
-              initial={{ x: "-50%", y: -90, opacity: 0 }}
-              animate={{ x: "-50%", y: 0, opacity: 1 }}
-              exit={{ x: "-50%", y: -90, opacity: 0 }}
+              initial={{ y: -90, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -90, opacity: 0 }}
               transition={{ type: 'spring', damping: 30, stiffness: 340 }}
-              drag="y"
-              dragConstraints={{ top: -150, bottom: 150 }}
-              dragElastic={{ top: 0.15, bottom: 0.4 }}
+              drag
+              dragSnapToOrigin
+              dragMomentum={false}
+              dragConstraints={{ left: -320, right: 320, top: -160, bottom: 160 }}
+              dragElastic={0.35}
+              onDragStart={() => { toastDraggedRef.current = true; }}
               onDragEnd={(event, info) => {
-                if (info.offset.y < -35 || info.velocity.y < -300) {
-                  setActivePopup(null);
-                } else if (info.offset.y > 50 || info.velocity.y > 300) {
-                  handlePopupAction(activePopup);
-                }
+                const dist = Math.hypot(info.offset.x, info.offset.y);
+                const speed = Math.hypot(info.velocity.x, info.velocity.y);
+                if (dist > 70 || speed > 600) setActivePopup(null);
+                window.setTimeout(() => { toastDraggedRef.current = false; }, 0);
               }}
-              onClick={() => handlePopupAction(activePopup)}
+              onClick={() => { if (!toastDraggedRef.current) handlePopupAction(activePopup); }}
             >
               {activePopup.avatar ? (
                 <div className="toast-avatar">{activePopup.avatar}</div>
@@ -3496,6 +3745,21 @@ export default function App() {
           />
         )}
 
+        {/* Navegação por botões (estilo Android) */}
+        {prefs.navStyle === 'buttons' && !isBooting && !isLocked && !screenOff && (
+          <nav id="nav-bar" aria-label={language === 'en' ? 'Navigation' : 'Navegação'}>
+            <button type="button" className="nav-btn" onClick={goBack} aria-label={language === 'en' ? 'Back' : 'Voltar'}>
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15.5 5.5 L8 12 L15.5 18.5 Z" fill="currentColor" /></svg>
+            </button>
+            <button type="button" className="nav-btn" onClick={goHome} aria-label={language === 'en' ? 'Home' : 'Início'}>
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" /></svg>
+            </button>
+            <button type="button" className="nav-btn" onClick={toggleRecents} aria-label={language === 'en' ? 'Recent apps' : 'Apps em segundo plano'}>
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5" fill="none" stroke="currentColor" strokeWidth="2" /></svg>
+            </button>
+          </nav>
+        )}
+
         {/* Boot & Setup wizard Screen overlay */}
         {isBooting && (
           <BootSetupScreen
@@ -3533,7 +3797,8 @@ export default function App() {
             userAvatar={userAvatar}
             pincode={pincode}
             wallpaper={currentLockWallpaper}
-            notifications={notifications}
+            notifications={notifications.map(n => ({ id: n.id, app: n.app, title: n.title, message: n.body, time: n.time }))}
+            onDismissNotification={(id) => removeNotification(id)}
             onOpenApp={(appName) => {
               openApp(appName);
               setIsLocked(false);

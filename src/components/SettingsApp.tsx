@@ -192,7 +192,7 @@ export default function SettingsApp({
     { id: 'bluetooth', label: 'Bluetooth', description: 'Conexão sem fio e pareamento', keywords: 'bluetooth pareamento conexao sem fio fone' },
     { id: 'aviao', label: 'Modo avião', description: 'Desativa todas as redes transmissoras', keywords: 'aviao rede desligar sinal voo' },
     { id: 'notificacoes', label: 'Notificações', description: 'Banner, sons, avisos e contagens', keywords: 'notificacoes avisos alertas som barulho' },
-    { id: 'tela', label: 'Configurações da tela', description: 'Brilho, Tema Escuro, Papel de Parede', keywords: 'tela brilho wallpaper papel de parede escuro dark modo noturno protecao ocular' },
+    { id: 'tela', label: 'Configurações da tela', description: 'Brilho, Tema Escuro, Papel de Parede', keywords: 'tela brilho wallpaper papel de parede escuro dark modo noturno protecao ocular navegacao botoes gestos android' },
     { id: 'bateria', label: 'Bateria', description: 'Nível, saúde e simulador manual', keywords: 'bateria nivel simulador carga carregador carregando' },
     { id: 'privacidade', label: 'Privacidade e segurança', description: 'Permissões de câmera, microfone, GPS', keywords: 'privacidade seguranca permissao gps localizacao' },
     { id: 'som', label: 'Som e vibração', description: 'Volume, toque e feedback tátil', keywords: 'som volume toque vibracao ringtone barulho' },

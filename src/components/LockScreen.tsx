@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Lock, ArrowUp, RefreshCw, Delete } from 'lucide-react';
 import ClockFace from './ClockFace';
 import { usePrefs } from '../prefs';
+import SwipeDismiss from './SwipeDismiss';
 
 interface LockScreenProps {
   language: 'pt' | 'en';
@@ -18,6 +19,7 @@ interface LockScreenProps {
     time: string;
   }>;
   onOpenApp?: (appId: string) => void;
+  onDismissNotification?: (id: string) => void;
   onUnlock: () => void;
   onReset: () => void;
 }
@@ -30,6 +32,7 @@ export default function LockScreen({
   wallpaper,
   notifications,
   onOpenApp,
+  onDismissNotification,
   onUnlock,
   onReset
 }: LockScreenProps) {
@@ -188,14 +191,15 @@ export default function LockScreen({
               {notifications && notifications.length > 0 && (
                 <div className="w-full max-w-[300px] mx-auto mt-6 flex flex-col gap-2.5 max-h-[220px] overflow-y-auto no-scrollbar">
                   {notifications.slice(0, 3).map((notif) => (
-                    <motion.div
+                    <SwipeDismiss
                       key={notif.id}
+                      onTap={() => handleUnlockAttempt(notif.app)}
+                      onDismiss={() => onDismissNotification?.(notif.id)}
+                      className="w-full"
+                    >
+                    <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUnlockAttempt(notif.app);
-                      }}
                       className="w-full bg-white/15 hover:bg-white/20 active:scale-[0.98] transition-all border border-white/20 rounded-2xl p-3.5 flex flex-col gap-1 cursor-pointer text-left group"
                     >
                       <div className="flex items-center justify-between text-[11px] font-semibold text-white/80">
@@ -205,18 +209,13 @@ export default function LockScreen({
                       <div className="font-bold text-xs text-white leading-tight">{notif.title}</div>
                       <div className="text-[11px] text-white/80 line-clamp-2 leading-snug font-normal">{notif.message}</div>
                     </motion.div>
+                    </SwipeDismiss>
                   ))}
                 </div>
               )}
             </div>
 
             <div className="flex flex-col items-center gap-6">
-              {/* Profile badge */}
-              <div className="flex items-center gap-2.5 px-4 py-2 bg-white/10 border border-white/15 rounded-full max-w-max mx-auto">
-                <span className="text-base">{userAvatar}</span>
-                <span className="text-xs font-medium text-white/90 truncate max-w-[120px]">{userName}</span>
-              </div>
-
               {/* Bottom Swipe hint */}
               <div className="flex flex-col items-center gap-1.5 text-center cursor-pointer opacity-80">
                 <ArrowUp size={16} className="text-white" />

@@ -955,10 +955,12 @@
 .toast {
   position: absolute;
   top: calc(var(--top) + 4px);
-  left: 50%;
+  left: 12px;
+  right: 12px;
+  margin: 0 auto;
   z-index: 10000;
-  width: calc(100% - 24px);
   max-width: 400px;
+  touch-action: none;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1080,7 +1082,58 @@
 #screen-container.edge #status-bar { padding-top: 0; }
 #screen-container.edge .app-window-header { display: none; }
 
-#screen-container.icons-tinted .app-tile { background: var(--tint); }
+/* Ícones da cor do papel de parede: cada app tem uma variação própria (matiz, saturação e brilho),
+   e um leve degradê, para o conjunto parecer orgânico em vez de tudo igual */
+#screen-container.icons-tinted .app-tile {
+  background: linear-gradient(155deg,
+    hsl(calc(var(--tint-h, 226deg) + var(--hue-shift, 0) * 1deg) calc(var(--tint-s, 60%) + var(--sat-shift, 0) * 1%) calc(45% + var(--lum-shift, 0) * 1%)) 0%,
+    hsl(calc(var(--tint-h, 226deg) + var(--hue-shift, 0) * 1deg + 26deg) calc(var(--tint-s, 60%) + var(--sat-shift, 0) * 1%) calc(35% + var(--lum-shift, 0) * 1%)) 100%);
+}
+
+/* Apps importados da App Store */
+.tile-custom { background: var(--custom-color, #6F737B); }
+.custom-app-initial { font-size: calc(var(--s, 52px) * 0.42); font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+
+/* Widgets arrastáveis: sombra de destino enquanto arrasta */
+.home-widget-ghost {
+  margin: 4px;
+  border-radius: 24px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+/* Navegação por botões (estilo Android) */
+#nav-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--nav-h, 44px) + var(--sab));
+  padding: 0 max(24px, var(--sar)) var(--sab) max(24px, var(--sal));
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  z-index: 46;
+  color: #fff;
+  transition: color var(--t-med) var(--ease);
+}
+#screen-container.app-open #nav-bar { color: var(--text); }
+.nav-btn {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: var(--nav-h, 44px);
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.nav-btn:active { background: rgba(127, 127, 127, 0.22); transform: scale(0.92); }
+#screen-container.nav-buttons { --nav-h: 44px; --dock-b: calc(var(--sab) + var(--nav-h) + 10px); }
+#screen-container.nav-buttons .app-content { padding-bottom: calc(var(--sab) + var(--nav-h) + 14px); }
 
 .home-grid {
   display: grid;
