@@ -120,6 +120,9 @@ O app roda dentro de uma área isolada (iframe com "sandbox"). Por isso:
   - A barra de status fica por cima da parte de cima do app: deixe
     cerca de 36 px de respiro no topo (padding-top: 36px no body).
   - Use "100%" de altura (ou 100dvh), não 100vh, para caber na tela.
+  - O app ocupa a tela só até a área de gestos ou dos botões (a parte de
+    baixo fica reservada ao sistema). Não tente desenhar nela: ela nunca
+    chega ao seu app.
   - Modo claro e escuro: use @media (prefers-color-scheme: light) para
     trocar as cores. O app não recebe o tema do sistema sozinho.
   - Animações curtas e suaves (entre 0,4 s e 1,5 s) ficam mais elegantes.
