@@ -38,8 +38,9 @@ import CameraApp from './components/CameraApp';
 import BootSetupScreen from './components/BootSetupScreen';
 import LockScreen from './components/LockScreen';
 import SwipeDismiss from './components/SwipeDismiss';
-import { CustomApp, CUSTOM_APPS_KEY, loadCustomApps, setCustomAppRegistry, getCustomApp, isCustomAppId } from './customApps';
-import { useWallpaperTint, setIconTint, getIconTint, tintBackground } from './wallpaperTint';
+import { CustomApp, setCustomAppRegistry, getCustomApp, isCustomAppId, withThemeBridge } from './customApps';
+import { loadAllApps, putApp, deleteApp } from './appStorage';
+import { useWallpaperTint, setIconTint, getIconTint, tintBackground, buildAccentPalette, buildAppTheme } from './wallpaperTint';
 
 // Animated Matrix Code wallpaper component
 function MatrixWallpaper() {
@@ -814,11 +815,11 @@ export default function App() {
   const [cellularActive, setCellularActive] = useState(true);
   const [airplaneMode, setAirplaneMode] = useState(false);
 
-  // Apps HTML importados pela App Store (guardados no navegador)
-  const [customApps, setCustomApps] = useState<CustomApp[]>(() => loadCustomApps());
+  // Apps HTML importados pela App Store (guardados no IndexedDB)
+  const [customApps, setCustomApps] = useState<CustomApp[]>([]);
   useEffect(() => {
-    try { localStorage.setItem(CUSTOM_APPS_KEY, JSON.stringify(customApps)); } catch { /* sem espaço */ }
-  }, [customApps]);
+    loadAllApps().then(setCustomApps).catch(() => { /* sem apps salvos */ });
+  }, []);
   setCustomAppRegistry(customApps);
 
   // Nomes localizados + ícones padronizados
@@ -1111,18 +1112,26 @@ export default function App() {
   };
 
   // App Store: importar e excluir apps HTML
-  const handleImportCustomApp = (app: CustomApp): boolean => {
-    const next = [...customApps, app];
+  const handleImportCustomApp = async (app: CustomApp): Promise<boolean> => {
     try {
-      localStorage.setItem(CUSTOM_APPS_KEY, JSON.stringify(next));
+      await putApp(app);
     } catch {
-      return false; // sem espaço no navegador
+      return false; // falhou ao gravar no aparelho
     }
-    setCustomApps(next);
+    setCustomApps(prev => [...prev, app]);
     return true;
   };
 
+  const handleSetCustomFollow = (appId: string, value: boolean) => {
+    const cur = customApps.find(a => a.id === appId);
+    if (!cur) return;
+    const updated = { ...cur, followWallpaper: value };
+    putApp(updated).catch(() => { /* mantém o valor da sessão */ });
+    setCustomApps(prev => prev.map(a => (a.id === appId ? updated : a)));
+  };
+
   const handleDeleteCustomApp = (appId: string) => {
+    deleteApp(appId).catch(() => { /* ignora */ });
     setCustomApps(prev => prev.filter(a => a.id !== appId));
     setInstalledApps(prev => prev.filter(id => id !== appId));
     setHomeApps(prev => prev.filter(id => id !== appId));
@@ -2251,6 +2260,32 @@ export default function App() {
   const tintInfo = { h: wpTint.h, s: wpTint.s, css: `hsl(${wpTint.h} ${wpTint.s}% 44%)` };
   const tint = tintInfo.css;
   setIconTint({ enabled: prefs.iconTint, h: tintInfo.h, s: tintInfo.s });
+  // Modo "ícones da cor do papel de parede": a cor de destaque do sistema segue a cor média dos ícones
+  const accentVars: Record<string, string> = prefs.iconTint ? buildAccentPalette(tintInfo.h, tintInfo.s) : {};
+
+  // Apps HTML que seguem o papel de parede: recebem o tema por postMessage
+  const appTheme = buildAppTheme(tintInfo.h, tintInfo.s, darkMode);
+  const appThemeKey = JSON.stringify(appTheme);
+  const customFrames = useRef<Record<string, HTMLIFrameElement | null>>({});
+  const themeStateRef = useRef({ apps: customApps, theme: appTheme });
+  themeStateRef.current = { apps: customApps, theme: appTheme };
+  useEffect(() => {
+    // O app avisa quando carregou: envia o tema se ele estiver marcado para seguir o papel de parede
+    const onMsg = (e: MessageEvent) => {
+      if (!e.data || e.data.type !== 'aeroos-ready') return;
+      const cur = themeStateRef.current;
+      const app = cur.apps.find(a => customFrames.current[a.id]?.contentWindow === e.source);
+      if (app?.followWallpaper && e.source) (e.source as Window).postMessage({ type: 'aeroos-theme', vars: cur.theme }, '*');
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+  useEffect(() => {
+    // Quando o papel de parede, o modo claro/escuro ou a lista de apps mudam, atualiza os apps abertos
+    customApps.forEach(a => {
+      if (a.followWallpaper) customFrames.current[a.id]?.contentWindow?.postMessage({ type: 'aeroos-theme', vars: appTheme }, '*');
+    });
+  }, [appThemeKey, activeApp, customApps]);
 
   // Modo borda a borda: sobe a barra de status até a altura do notch
   const edge = isFullscreen || (typeof window !== 'undefined' && (
@@ -2421,6 +2456,7 @@ export default function App() {
             customApps={customApps}
             onImportCustomApp={handleImportCustomApp}
             onDeleteCustomApp={handleDeleteCustomApp}
+              onSetFollowWallpaper={handleSetCustomFollow}
           />
         );
       case 'notas':
@@ -2467,7 +2503,7 @@ export default function App() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ filter: `brightness(${brightness}%)`, '--tint': tint, '--tint-h': `${tintInfo.h}deg`, '--tint-s': `${tintInfo.s}%` } as React.CSSProperties}
+        style={{ filter: `brightness(${brightness}%)`, '--tint': tint, '--tint-h': `${tintInfo.h}deg`, '--tint-s': `${tintInfo.s}%`, ...accentVars } as React.CSSProperties}
       >
 
         {/* Filtro de luz noturna */}
@@ -3202,6 +3238,7 @@ export default function App() {
               customApps={customApps}
               onImportCustomApp={handleImportCustomApp}
               onDeleteCustomApp={handleDeleteCustomApp}
+              onSetFollowWallpaper={handleSetCustomFollow}
             />
           </div>
         </div>
@@ -3315,8 +3352,9 @@ export default function App() {
             <div className="app-content p-0" style={{ display: 'flex', flexDirection: 'column', paddingBottom: 0 }}>
               {activeApp === app.id && (
                 <iframe
+                  ref={(el) => { customFrames.current[app.id] = el; }}
                   title={app.name}
-                  srcDoc={app.html}
+                  srcDoc={withThemeBridge(app.html)}
                   sandbox="allow-scripts allow-forms allow-modals"
                   style={{ flex: 1, width: '100%', height: '100%', border: 0, background: '#fff' }}
                 />

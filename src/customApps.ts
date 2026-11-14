@@ -8,6 +8,8 @@ export interface CustomApp {
   color: string;
   /** data: URL de imagem, ou um emoji; vem de <meta name="aeroos-icon"> no HTML */
   iconUrl?: string;
+  /** Quando true, o app recebe as cores do papel de parede (variáveis --aero-*) */
+  followWallpaper?: boolean;
   size: string;
   createdAt: number;
 }
@@ -59,6 +61,16 @@ export function extractIcon(html: string): string | undefined {
   if (meta) return meta[1].trim();
   const link = html.match(/<link[^>]+rel=["'](?:shortcut )?icon["'][^>]*href=["'](data:image\/[^"']+)["']/i);
   return link ? link[1] : undefined;
+}
+
+// Injeta valores padrão e uma ponte que recebe o tema do sistema por postMessage
+const THEME_DEFAULTS = '<style>:root{--aero-accent:#3E63DD;--aero-accent-soft:rgba(62,99,221,.16);--aero-bg:#0b0b0d;--aero-surface:#18181b;--aero-fg:#f4f4f5;--aero-muted:#8a8a94;--aero-mode:dark}</style>';
+const THEME_BRIDGE = "<script>(function(){var r=document.documentElement;function apply(v){if(!v)return;for(var k in v){r.style.setProperty('--aero-'+k,v[k]);}r.setAttribute('data-aero-mode',v.mode||'dark');}window.addEventListener('message',function(e){if(e.data&&e.data.type==='aeroos-theme')apply(e.data.vars);});window.parent.postMessage({type:'aeroos-ready'},'*');})();</script>";
+
+export function withThemeBridge(html: string): string {
+  const inject = THEME_DEFAULTS + THEME_BRIDGE;
+  const m = html.match(/<head[^>]*>/i);
+  return m ? html.replace(m[0], m[0] + inject) : inject + html;
 }
 
 export function extractTitle(html: string, fallback: string) {

@@ -272,8 +272,9 @@ interface StoreAppProps {
   onUninstall: (id: string) => void;
   onOpenApp: (id: string) => void;
   customApps: CustomApp[];
-  onImportCustomApp: (app: CustomApp) => boolean;
+  onImportCustomApp: (app: CustomApp) => Promise<boolean>;
   onDeleteCustomApp: (id: string) => void;
+  onSetFollowWallpaper: (id: string, value: boolean) => void;
 }
 
 // Ícone de um app da loja: imagem enviada pelo app importado, ou o desenho padrão
@@ -302,7 +303,7 @@ function customToItem(app: CustomApp): AppItem {
   };
 }
 
-export default function StoreApp({ darkMode, installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp }: StoreAppProps) {
+export default function StoreApp({ darkMode, installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp, onSetFollowWallpaper }: StoreAppProps) {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -329,7 +330,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const html = String(reader.result || '');
       if (!html.trim()) {
         notify(false, 'O arquivo está vazio');
@@ -345,8 +346,8 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
         iconUrl: extractIcon(html),
         createdAt: Date.now(),
       };
-      const ok = onImportCustomApp(app);
-      notify(ok, ok ? `"${name}" foi importado e já está na loja.` : 'Sem espaço para salvar. Exclua apps importados e tente de novo.');
+      const ok = await onImportCustomApp(app).catch(() => false);
+      notify(ok, ok ? `"${name}" foi importado e já está na loja.` : 'Não foi possível salvar este app no aparelho. Tente de novo.');
       if (ok) setAvatarMenuOpen(false);
     };
     reader.onerror = () => notify(false, 'Não foi possível ler o arquivo');
@@ -618,6 +619,22 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                 </button>
               )}
             </div>
+
+            {selectedApp.id.startsWith('custom-') && (
+              <div className="flex items-center justify-between gap-4 p-4 rounded-[20px] bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5">
+                <div className="min-w-0">
+                  <h4 className="text-xs font-semibold text-slate-900 dark:text-white">Mudar com o papel de parede</h4>
+                  <p className="text-[11px] opacity-60 mt-0.5 text-slate-500 dark:text-slate-400">O app recebe as cores do papel de parede pelas variáveis --aero-*.</p>
+                </div>
+                <input
+                  type="checkbox"
+                  className="os-switch"
+                  aria-label="Mudar com o papel de parede"
+                  checked={!!customApps.find(a => a.id === selectedApp.id)?.followWallpaper}
+                  onChange={(e) => onSetFollowWallpaper(selectedApp.id, e.target.checked)}
+                />
+              </div>
+            )}
 
             {selectedApp.id.startsWith('custom-') && (
               <button

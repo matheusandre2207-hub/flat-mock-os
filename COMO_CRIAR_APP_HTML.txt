@@ -166,5 +166,38 @@ npm run build de novo.
     a causa. Verifique também se há um </html> no final.
   - Ícone não aparece: a tag precisa estar dentro do <head> e o conteúdo
     entre aspas. Para base64, confirme que começa com "data:image/".
-  - "Sem espaço para salvar": os apps importados são guardados no
-    navegador (cerca de 5 MB no total). Exclua apps antigos da loja.
+  - "Não foi possível salvar este app": o aparelho recusou a gravação
+    (pouco espaço livre no armazenamento do navegador). Libere espaço ou
+    exclua apps importados antigos da loja.
+
+
+10. APPS QUE MUDAM COM O PAPEL DE PAREDE
+----------------------------------------
+Cada app importado pode seguir o papel de parede. Na App Store, abra o
+app e ative "Mudar com o papel de parede". Desligado por padrão.
+
+Quando ativado, o app recebe estas variáveis CSS, que mudam sozinhas
+sempre que você troca o papel de parede ou o modo claro/escuro:
+
+  --aero-accent        cor de destaque (botões, linhas, detalhes)
+  --aero-accent-soft   a mesma cor, transparente (fundos suaves)
+  --aero-bg            cor de fundo da tela
+  --aero-surface       cor de cartões e painéis
+  --aero-fg            cor do texto principal
+  --aero-muted         cor do texto secundário
+  --aero-mode          "dark" ou "light"
+
+Use-as no CSS. Sempre dê um valor padrão (o segundo parâmetro de var),
+para o app continuar bonito com o recurso desligado:
+
+  .botao { background: var(--aero-accent, #3E63DD); color: #fff; }
+  body   { background: var(--aero-bg, #0b0b0d); color: var(--aero-fg, #f4f4f5); }
+
+Importante: o app só muda se o CSS dele usar essas variáveis. Um app que
+usa cores fixas (como #3E63DD direto no CSS) não muda de cor.
+
+Exemplo: exemplo-logo-aeroos.html já usa var(--aero-accent) na linha
+da logo. Ative o recurso nele para ver a cor mudando.
+
+Para ler as variáveis também no JavaScript (por exemplo, num canvas):
+  getComputedStyle(document.documentElement).getPropertyValue('--aero-accent')

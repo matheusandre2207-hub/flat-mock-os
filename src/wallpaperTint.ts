@@ -105,3 +105,44 @@ export function tintBackground(h: number, s: number, seed: number): string {
   const light = 45 + (((seed >> 10) % 13) - 6);
   return `linear-gradient(155deg, hsl(${hue} ${sat}% ${light}%) 0%, hsl(${(hue + 26) % 360} ${sat}% ${light - 10}%) 100%)`;
 }
+
+// Paleta de destaque (azul do sistema) tirada da cor média dos ícones.
+// Vira as variáveis --accent e as escalas blue/sky/indigo do próprio sistema, só na tela.
+export function buildAccentPalette(h: number, s: number): Record<string, string> {
+  const sat = Math.max(35, Math.min(62, s));
+  const steps: Array<[string, number]> = [
+    ['50', 96], ['100', 92], ['200', 85], ['300', 76], ['400', 66], ['500', 56],
+    ['600', 46], ['700', 40], ['800', 33], ['900', 26], ['950', 18],
+  ];
+  const vars: Record<string, string> = {};
+  for (const fam of ['blue', 'sky', 'indigo']) {
+    for (const [k, l] of steps) vars[`--color-${fam}-${k}`] = `hsl(${h} ${sat}% ${l}%)`;
+  }
+  vars['--accent'] = `hsl(${h} ${sat}% 46%)`;
+  vars['--accent-soft'] = `hsl(${h} ${sat}% 46% / 0.16)`;
+  return vars;
+}
+
+// Cores que um app HTML recebe quando marcado para "mudar com o papel de parede" (--aero-*)
+export function buildAppTheme(h: number, s: number, dark: boolean): Record<string, string> {
+  if (dark) {
+    return {
+      mode: 'dark',
+      accent: `hsl(${h} ${s}% 58%)`,
+      'accent-soft': `hsl(${h} ${s}% 58% / 0.18)`,
+      bg: `hsl(${h} 18% 7%)`,
+      surface: `hsl(${h} 16% 12%)`,
+      fg: '#f4f4f5',
+      muted: '#8a8a94',
+    };
+  }
+  return {
+    mode: 'light',
+    accent: `hsl(${h} ${s}% 46%)`,
+    'accent-soft': `hsl(${h} ${s}% 46% / 0.14)`,
+    bg: `hsl(${h} 25% 97%)`,
+    surface: '#ffffff',
+    fg: '#18181b',
+    muted: '#71717a',
+  };
+}
