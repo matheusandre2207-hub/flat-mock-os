@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lock, ArrowUp, RefreshCw, Delete } from 'lucide-react';
+import ClockFace from './ClockFace';
+import { usePrefs } from '../prefs';
 
 interface LockScreenProps {
   language: 'pt' | 'en';
@@ -32,6 +34,8 @@ export default function LockScreen({
   onReset
 }: LockScreenProps) {
   
+  const { prefs: lockPrefs } = usePrefs();
+  const lockPos = lockPrefs.lock.pos;
   const [showKeypad, setShowKeypad] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [isWiggling, setIsWiggling] = useState(false);
@@ -177,9 +181,8 @@ export default function LockScreen({
             className="flex-1 flex flex-col justify-between w-full py-6 z-10"
           >
             {/* Clock, Date & Notifications */}
-            <div className="flex flex-col items-center mt-4 text-center">
-              <span className="text-7xl font-light text-white tabular-nums">{timeStr}</span>
-              <span className="text-xs font-semibold text-white/70 mt-1">{dateStr}</span>
+            <div className="flex flex-col flex-1 w-full text-center" style={{ justifyContent: lockPos === 'top' ? 'flex-start' : lockPos === 'center' ? 'center' : 'flex-end' }}>
+              <ClockFace scope="lock" time={timeStr} date={dateStr} />
 
               {/* Lock Screen Notifications */}
               {notifications && notifications.length > 0 && (

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Wifi, Bluetooth, Sun, Moon, Volume2, Smartphone, RefreshCw, User, Info, BatteryCharging, Check, ChevronRight, ChevronLeft, Search, Bell, Lock, Grid, Accessibility, Play, Shield, Activity, Smartphone as PhoneIcon, Volume1, VolumeX, Eye, Sparkles, CheckCircle2, ChevronDown, Trash2, Maximize, Plus, X, Plane } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Wallpaper } from '../types';
+import DisplayPrefs from './DisplayPrefs';
 
 interface SettingsAppProps {
   userName: string;
@@ -1275,6 +1276,8 @@ export default function SettingsApp({
                       />
                     </div>
                   </div>
+
+                   <DisplayPrefs />
 
                    {/* Wallpapers Selection */}
                   <div className="space-y-2">

@@ -1072,3 +1072,71 @@
     transition-delay: 0s !important;
   }
 }
+
+/* ==========================================================================
+   v2 · notch, grade livre, relógios, widgets, tela apagada, ícones coloridos
+   ========================================================================== */
+#screen-container.edge { --sat: 0px; --status-h: 40px; }
+#screen-container.edge #status-bar { padding-top: 0; }
+#screen-container.edge .app-window-header { display: none; }
+
+#screen-container.icons-tinted .app-tile { background: var(--tint); }
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+.home-app { justify-content: center; align-self: stretch; }
+.home-slot { width: 54px; height: 54px; justify-self: center; }
+
+.home-clock-layer { position: absolute; left: 0; right: 0; padding: 0 24px; z-index: 1; pointer-events: none; }
+.home-clock-layer.pos-top { top: 6px; }
+.home-clock-layer.pos-center { top: 50%; transform: translateY(-50%); }
+.home-clock-layer.pos-bottom { bottom: 6px; }
+
+.clock { display: flex; flex-direction: column; gap: 4px; width: 100%; color: #fff; }
+.clock-t { font-size: 60px; font-weight: 300; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.clock-bold .clock-t { font-weight: 700; font-size: 58px; letter-spacing: -0.045em; }
+.clock-stacked .clock-t { font-size: 88px; font-weight: 600; line-height: 0.86; }
+.clock-stacked .clock-m { color: #8CA3F7; }
+.clock-mono .clock-t { font-size: 30px; font-weight: 500; letter-spacing: 0; }
+.clock-d { font-size: 14px; font-weight: 500; opacity: 0.78; }
+.clock-mono .clock-d { font-size: 12px; }
+
+.home-widget {
+  position: relative;
+  display: flex;
+  margin: 4px;
+  padding: 14px;
+  overflow: hidden;
+  border-radius: 24px;
+  background: rgba(14, 14, 16, 0.55);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  color: #fff;
+}
+
+.sheet-bottom-wrap { position: absolute; inset: 0; z-index: 250; display: flex; align-items: flex-end; background: rgba(0, 0, 0, 0.5); }
+.sheet-bottom {
+  width: 100%; max-width: 480px; margin: 0 auto;
+  padding: 18px 16px max(var(--sab), 18px);
+  display: flex; flex-direction: column; gap: 10px;
+  border-radius: 28px 28px 0 0;
+  background: var(--surface); color: var(--text);
+}
+.widget-opt {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px; border: 0; border-radius: 16px;
+  background: var(--surface-2); color: var(--text); text-align: left; font-size: 14px;
+}
+.widget-opt .ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--accent); color: #fff; }
+.widget-opt small { margin-left: auto; color: var(--text-3); }
+.widget-opt:active { transform: scale(0.98); }
+
+.screen-off { position: absolute; inset: 0; z-index: 100000; background: #000; }

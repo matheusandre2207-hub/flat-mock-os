@@ -17,6 +17,10 @@ import { generateBackgroundCheckIn } from './ai/LocalAIEngine';
 
 // Component imports
 import BatteryDots from './components/BatteryDots';
+import ClockFace from './components/ClockFace';
+import { WidgetView, WIDGETS } from './components/Widgets';
+import { usePrefs } from './prefs';
+import { COLS, ROWS, resolveLayout, occupiedCells, findFree, WidgetItem } from './homeGrid';
 import Calculator from './components/Calculator';
 import SettingsApp from './components/SettingsApp';
 import MessagesApp from './components/MessagesApp';
@@ -1263,6 +1267,9 @@ export default function App() {
   const touchStartYRef = useRef<number>(0);
   const touchCurrentYRef = useRef<number>(0);
   const isHoldingBottomSwipeRef = useRef<boolean>(false);
+  const lastDragPos = useRef({ x: 0, y: 0 });
+  const stateRef = useRef<any>(null);
+  const lastTapRef = useRef(0);
 
   // 2. Volume Change HUD display trigger (disabled by user request)
   useEffect(() => {
@@ -1527,6 +1534,7 @@ export default function App() {
     });
 
     setDragPosition({ x: clientX, y: clientY });
+      lastDragPos.current = { x: clientX, y: clientY };
     dragStartCoordsRef.current = { x: clientX, y: clientY };
     setDragHasMoved(origin === 'drawer'); // If originating from drawer, long press already occurred so we drag immediately
     
@@ -1552,6 +1560,7 @@ export default function App() {
       }
 
       setDragPosition({ x: clientX, y: clientY });
+      lastDragPos.current = { x: clientX, y: clientY };
 
       if (!dragHasMoved) {
         const dx = Math.abs(clientX - dragStartCoordsRef.current.x);
@@ -1602,16 +1611,22 @@ export default function App() {
           return [...prev, appId];
         });
       } else if (dragOverZone === 'home' || !dragOverZone) {
-        // Drop shortcut in the home screen grid
-        setHomeApps(prev => {
-          if (prev.includes(appId)) return prev; // Avoid duplicates
-          
-          // Remove from bottom dock if it was dragged from there
-          if (origin === 'dock') {
-            setDockApps(d => d.filter(id => id !== appId));
+        // Solta o atalho na célula exata da grade (qualquer canto livre)
+        const g = document.getElementById('home-grid');
+        const st = stateRef.current;
+        if (g && st) {
+          const rc = g.getBoundingClientRect();
+          const pt = lastDragPos.current;
+          const c = Math.max(0, Math.min(COLS - 1, Math.floor((pt.x - rc.left) / (rc.width / COLS))));
+          const r = Math.max(0, Math.min(ROWS - 1, Math.floor((pt.y - rc.top) / (rc.height / ROWS))));
+          const occ = occupiedCells(st.placed, st.widgets, appId);
+          const spot = occ.has(c + ',' + r) ? findFree(occ, 1, 1, { c, r }) : { c, r };
+          if (spot) {
+            setLayout(l => ({ ...l, [appId]: spot }));
+            setHomeApps(prev => (prev.includes(appId) ? prev : [...prev, appId]));
+            if (origin === 'dock') setDockApps(d => d.filter(id => id !== appId));
           }
-          return [...prev, appId];
-        });
+        }
       }
 
       setDraggedApp(null);
@@ -1995,6 +2010,52 @@ export default function App() {
     return () => clearTimeout(t);
   }, [isBooting, isLocked]);
 
+  // ------------------------------------------------------------------
+  // Preferências de tela, grade livre, widgets e tela apagada
+  // ------------------------------------------------------------------
+  const { prefs } = usePrefs();
+  const [layout, setLayout] = useState<Record<string, { c: number; r: number }>>(() => {
+    try { return JSON.parse(localStorage.getItem('os_home_layout') || '{}'); } catch { return {}; }
+  });
+  const [widgets, setWidgets] = useState<WidgetItem[]>(() => {
+    try { return JSON.parse(localStorage.getItem('os_widgets') || '[]'); } catch { return []; }
+  });
+  const [widgetSheet, setWidgetSheet] = useState(false);
+  const [screenOff, setScreenOff] = useState(false);
+  useEffect(() => { localStorage.setItem('os_home_layout', JSON.stringify(layout)); }, [layout]);
+  useEffect(() => { localStorage.setItem('os_widgets', JSON.stringify(widgets)); }, [widgets]);
+
+  const autoStart = prefs.home.style === 'none' || prefs.home.pos !== 'top' ? 0 : prefs.home.style === 'stacked' ? 3 : 2;
+  const placed = resolveLayout(homeApps.filter(a => installedApps.includes(a)), layout, widgets, autoStart);
+  stateRef.current = { placed, widgets };
+
+  const addWidget = (type: string) => {
+    const sz = WIDGETS[type];
+    const spot = findFree(occupiedCells(placed, widgets), sz.w, sz.h, { c: 0, r: autoStart });
+    if (spot) setWidgets(ws => [...ws, { id: 'w' + Date.now(), type, c: spot.c, r: spot.r }]);
+    setWidgetSheet(false);
+  };
+
+  // Cor dos ícones a partir do papel de parede
+  const tint = (() => {
+    let best: { hue: number; s: number } | null = null;
+    (currentWallpaper.gradient.match(/#[0-9a-fA-F]{6}/g) || []).forEach(h => {
+      const r = parseInt(h.slice(1, 3), 16) / 255, g = parseInt(h.slice(3, 5), 16) / 255, b = parseInt(h.slice(5, 7), 16) / 255;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
+      let hue = 0;
+      if (d) { hue = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; hue = Math.round(hue * 60); if (hue < 0) hue += 360; }
+      const sat = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
+      if (!best || sat > best.s) best = { hue, s: sat };
+    });
+    return best ? `hsl(${best.hue} ${Math.round(Math.min(60, Math.max(35, best.s * 100)))}% 44%)` : '#3E63DD';
+  })();
+
+  // Modo borda a borda: sobe a barra de status até a altura do notch
+  const edge = isFullscreen || (typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as any).standalone === true));
+
   const anySheetOpen = notificationsOpen || utilitiesOpen || appDrawerOpen;
   const immersiveApp = activeApp === 'camera' || activeApp === 'clima';
   const closeSheets = () => {
@@ -2194,11 +2255,11 @@ export default function App() {
     <div className="fixed inset-0 overflow-hidden select-none bg-black">
       <div
         id="screen-container"
-        className={`${darkMode ? 'dark theme-dark' : 'theme-light'} ${activeApp !== null ? 'app-open' : ''} ${immersiveApp ? 'app-immersive' : ''} ${(anySheetOpen || recentAppsOpen) ? 'sheet-open' : ''} ${justUnlocked ? 'just-unlocked' : ''}`}
+        className={`${darkMode ? 'dark theme-dark' : 'theme-light'} ${activeApp !== null ? 'app-open' : ''} ${immersiveApp ? 'app-immersive' : ''} ${(anySheetOpen || recentAppsOpen) ? 'sheet-open' : ''} ${justUnlocked ? 'just-unlocked' : ''} ${edge ? 'edge' : ''} ${prefs.iconTint ? 'icons-tinted' : ''}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ filter: `brightness(${brightness}%)` }}
+        style={{ filter: `brightness(${brightness}%)`, '--tint': tint } as React.CSSProperties}
       >
 
         {/* Filtro de luz noturna */}
@@ -2455,38 +2516,83 @@ export default function App() {
           onMouseUp={handleHomePressEnd}
           onTouchStart={handleHomePressStart}
           onTouchEnd={handleHomePressEnd}
-          onClick={() => {
-            if (isEditingHome) {
-              setIsEditingHome(false);
+          onClick={(e) => {
+            if (isEditingHome) { setIsEditingHome(false); return; }
+            const t = e.target as HTMLElement;
+            if (t.id === 'home-screen' || t.id === 'home-grid' || t.classList.contains('home-bg-area')) {
+              const now = Date.now();
+              if (prefs.doubleTapSleep && now - lastTapRef.current < 320) { setScreenOff(true); lastTapRef.current = 0; }
+              else lastTapRef.current = now;
             }
           }}
         >
-          {isEditingHome ? (
+          {!isEditingHome && prefs.home.style !== 'none' && (
+            <div className={`home-clock-layer pos-${prefs.home.pos}`} style={{ '--i': 0 } as React.CSSProperties}>
+              <ClockFace scope="home" time={systemTime} date={systemDate} />
+            </div>
+          )}
+
+          {isEditingHome && (
             <div className="edit-bar" onClick={(e) => e.stopPropagation()}>
-              <span>{language === 'en' ? 'Edit home screen' : 'Editar tela inicial'}</span>
+              <span>{language === 'en' ? 'Edit' : 'Editar'}</span>
               <div className="edit-bar-actions">
+                <button type="button" className="btn" onClick={() => setWidgetSheet(true)}>
+                  <Grid size={14} />
+                  Widgets
+                </button>
                 <button type="button" className="btn" onClick={() => setWallpaperPickerOpen(true)}>
                   <ImageIcon size={14} />
-                  {language === 'en' ? 'Wallpaper' : 'Papel de parede'}
+                  {language === 'en' ? 'Wallpaper' : 'Fundo'}
                 </button>
                 <button type="button" className="btn primary" onClick={() => setIsEditingHome(false)}>
                   {language === 'en' ? 'Done' : 'Pronto'}
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="home-clock home-bg-area" style={{ '--i': 0 } as React.CSSProperties}>
-              <span className="home-clock-time home-bg-area">{systemTime}</span>
-              <span className="home-clock-date home-bg-area">{systemDate}</span>
-            </div>
           )}
 
-          <div className="home-grid home-bg-area">
+          <div id="home-grid" className="home-grid home-bg-area">
+            {widgets.map(w => {
+              const sz = WIDGETS[w.type];
+              if (!sz) return null;
+              return (
+                <div
+                  key={w.id}
+                  className="home-widget"
+                  style={{ gridColumn: `${w.c + 1} / span ${sz.w}`, gridRow: `${w.r + 1} / span ${sz.h}` }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {isEditingHome && (
+                    <button
+                      type="button"
+                      className="remove-badge"
+                      style={{ right: 8, top: 8 }}
+                      onClick={(e) => { e.stopPropagation(); setWidgets(ws => ws.filter(x => x.id !== w.id)); }}
+                    >
+                      <X size={12} strokeWidth={3} />
+                    </button>
+                  )}
+                  <WidgetView
+                    type={w.type}
+                    batteryLevel={batteryLevel}
+                    isCharging={isCharging}
+                    track={tracksList[currentTrackIndex]}
+                    playing={musicPlaying}
+                    onPrev={() => setCurrentTrackIndex(currentTrackIndex === 0 ? tracksList.length - 1 : currentTrackIndex - 1)}
+                    onToggle={() => setMusicPlaying(!musicPlaying)}
+                    onNext={() => setCurrentTrackIndex((currentTrackIndex + 1) % tracksList.length)}
+                    onOpen={(id) => { if (!isEditingHome) openApp(id); }}
+                  />
+                </div>
+              );
+            })}
+
             {homeApps
               .filter(appId => installedApps.includes(appId))
               .map((appId, index) => {
                 const meta = appMetadata[appId];
-                if (!meta) return null;
+                const cell = placed[appId];
+                if (!meta || !cell) return null;
                 return (
                   <div
                     key={appId}
@@ -2507,7 +2613,7 @@ export default function App() {
                       }
                     }}
                     className={`home-app ${isEditingHome ? (index % 2 === 0 ? 'jiggle' : 'jiggle-alt') : ''}`}
-                    style={{ '--i': index + 1 } as React.CSSProperties}
+                    style={{ '--i': index + 1, gridColumn: cell.c + 1, gridRow: cell.r + 1, opacity: draggedApp?.appId === appId && dragHasMoved ? 0.35 : 1 } as React.CSSProperties}
                   >
                     {isEditingHome && (
                       <button
@@ -2531,9 +2637,14 @@ export default function App() {
                 );
               })}
 
-            {draggedApp && dragHasMoved && (
-              <div className="home-slot"><Plus size={18} /></div>
-            )}
+            {draggedApp && dragHasMoved && dragOverZone === 'home' && (() => {
+              const g = document.getElementById('home-grid');
+              if (!g) return null;
+              const rc = g.getBoundingClientRect();
+              const c = Math.max(0, Math.min(COLS - 1, Math.floor((dragPosition.x - rc.left) / (rc.width / COLS))));
+              const r = Math.max(0, Math.min(ROWS - 1, Math.floor((dragPosition.y - rc.top) / (rc.height / ROWS))));
+              return <div className="home-slot" style={{ gridColumn: c + 1, gridRow: r + 1, alignSelf: 'center' }}><Plus size={18} /></div>;
+            })()}
           </div>
 
           <div
@@ -3165,6 +3276,40 @@ export default function App() {
           title="Toque para voltar à tela inicial / ver aplicativos recentes"
         />
 
+        {/* Escolher widget */}
+        <AnimatePresence>
+          {widgetSheet && (
+            <motion.div
+              className="sheet-bottom-wrap"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setWidgetSheet(false)}
+            >
+              <motion.div
+                className="sheet-bottom"
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 32, stiffness: 320 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="sheet-title">
+                  <span>Widgets</span>
+                  <button type="button" className="sheet-action" onClick={() => setWidgetSheet(false)}>Fechar</button>
+                </div>
+                {Object.entries(WIDGETS).map(([type, m]) => (
+                  <button key={type} type="button" className="widget-opt" onClick={() => addWidget(type)}>
+                    <span className="ico">{m.icon}</span>
+                    <span className="font-medium">{m.label}</span>
+                    <small>{m.w}×{m.h}</small>
+                  </button>
+                ))}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Wallpaper Picker Sheet (Long-Press Home Screen overlay) */}
         <AnimatePresence>
           {wallpaperPickerOpen && (
@@ -3326,6 +3471,29 @@ export default function App() {
               {appMetadata[draggedApp.appId]?.label}
             </span>
           </div>
+        )}
+
+        {/* Tela apagada: dois toques ligam na tela de bloqueio */}
+        {screenOff && (
+          <div
+            className="screen-off"
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+            onClick={() => {
+              const now = Date.now();
+              if (now - lastTapRef.current < 320) {
+                setScreenOff(false);
+                setIsLocked(true);
+                setActiveApp(null);
+                setRecentAppsOpen(false);
+                closeSheets();
+                lastTapRef.current = 0;
+              } else {
+                lastTapRef.current = now;
+              }
+            }}
+          />
         )}
 
         {/* Boot & Setup wizard Screen overlay */}
