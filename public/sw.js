@@ -92,6 +92,8 @@ async function serveFolderFile(rest, head) {
   const slash = rest.indexOf('/');
   if (slash < 0) return new Response('Pacote inválido', { status: 400 });
   const appId = decodeURIComponent(rest.slice(0, slash));
+  // Ping de verificação: responde 200 só quando esta versão do Service Worker está ativa
+  if (appId === '__ping__') return new Response('aeroos-sw', { status: 200, headers: { 'Content-Type': 'text/plain' } });
   let path = decodeURIComponent(rest.slice(slash + 1)).split('?')[0];
   if (!path || path.endsWith('/')) path += 'index.html';
   try {

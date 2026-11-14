@@ -838,7 +838,8 @@ export default function App() {
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-  const stage = stageFor(landscape, viewport.w, viewport.h);
+  // O sistema fica sempre em retrato; a paisagem gira só a janela do app aberto
+  const stage = stageFor(false, viewport.w, viewport.h);
   setScreenSize(stage.w, stage.h);
 
 
@@ -1047,7 +1048,10 @@ export default function App() {
   const [utilitiesOpen, setUtilitiesOpen] = useState(false);
   const [activeApp, setActiveApp] = useState<string | null>(null);
   useEffect(() => {
-    if (!activeApp) return;
+    if (!activeApp) {
+      setLandscape(false); // ao sair do app, o sistema volta ao retrato
+      return;
+    }
     const pref = customApps.find(a => a.id === activeApp)?.orientation;
     if (pref) setLandscape(pref === 'landscape');
   }, [activeApp]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2555,7 +2559,7 @@ export default function App() {
       <div className="absolute overflow-hidden" style={{ left: stage.left, top: stage.top, width: stage.w, height: stage.h }}>
       <div
         id="screen-container"
-        className={`${darkMode ? 'dark theme-dark' : 'theme-light'} ${activeApp !== null ? 'app-open' : ''} ${immersiveApp ? 'app-immersive' : ''} ${(anySheetOpen || recentAppsOpen) ? 'sheet-open' : ''} ${justUnlocked ? 'just-unlocked' : ''} ${edge ? 'edge' : ''} ${prefs.iconTint ? 'icons-tinted' : ''} ${prefs.navStyle === 'buttons' ? 'nav-buttons' : ''} ${(isLocked && !isBooting) ? 'is-locked' : ''}`}
+        className={`${darkMode ? 'dark theme-dark' : 'theme-light'} ${activeApp !== null ? 'app-open' : ''} ${immersiveApp ? 'app-immersive' : ''} ${(anySheetOpen || recentAppsOpen) ? 'sheet-open' : ''} ${justUnlocked ? 'just-unlocked' : ''} ${edge ? 'edge' : ''} ${prefs.iconTint ? 'icons-tinted' : ''} ${prefs.navStyle === 'buttons' ? 'nav-buttons' : ''} ${(isLocked && !isBooting) ? 'is-locked' : ''} ${(landscape && activeApp !== null) ? 'app-rotated' : ''}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}

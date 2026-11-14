@@ -1278,3 +1278,19 @@
 .nf-body strong { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nf-body p { font-size: 12.5px; line-height: 1.35; color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .toast-icon { flex: none; }
+
+
+/* ==========================================================================
+   PAISAGEM DO APP
+   Gira só a janela do app aberto (ex.: um jogo). Barra de status e botões ficam em pé.
+   ========================================================================== */
+#screen-container.app-rotated .app-window:not(.closed) {
+  --rot-area: calc(100dvh - var(--top) - var(--sys-bottom));
+  inset: auto;
+  left: 50%;
+  top: calc(var(--top) + var(--rot-area) / 2);
+  width: var(--rot-area);
+  height: 100vw;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center;
+}

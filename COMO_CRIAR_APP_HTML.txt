@@ -232,14 +232,14 @@ Se um pacote foi instalado antes de uma atualização e não abre, exclua
 o jogo na loja e instale a pasta de novo.
 
 
-12. GIRAR A TELA (PAISAGEM)
----------------------------
-Você pode deixar a tela na horizontal em qualquer momento:
+12. GIRAR O APP (PAISAGEM)
+--------------------------
+Você pode deixar só o app aberto na horizontal, como um jogo:
 
-  - Ajustes rápidos: toque em "Girar". Vale para qualquer app, inclusive
-    os jogos instalados. Toque de novo para voltar ao retrato.
+  - Ajustes rápidos: com um app aberto, toque em "Girar". Toque de novo
+    para voltar ao retrato.
   - Por app: na loja, abra um app importado e escolha "Paisagem" em
-    "Orientação ao abrir". Ao abrir esse app, a tela gira sozinha.
+    "Orientação ao abrir". Ao abrir esse app, ele já abre girado.
 
-Na paisagem, o aparelho vira um palco horizontal centralizado na janela,
-com a proporção de um celular deitado. Assim o jogo não fica esticado.
+A barra de status e os botões do sistema continuam em pé. Ao sair do app,
+o sistema volta ao retrato.

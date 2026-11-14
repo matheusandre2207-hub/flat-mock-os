@@ -56,8 +56,8 @@ export async function registerFolderServer(): Promise<boolean> {
 // Pergunta ao Service Worker por um caminho inexistente: só a versão nova responde com a nossa mensagem
 async function probeFolderServer(): Promise<boolean> {
   try {
-    const res = await fetch(`${BASE}aeroapps/__probe__/index.html`, { cache: 'no-store' });
-    return (await res.text()).includes('Arquivo não encontrado no pacote');
+    const res = await fetch(`${BASE}aeroapps/__ping__/index.html`, { cache: 'no-store' });
+    return res.ok && (await res.text()) === 'aeroos-sw';
   } catch {
     return false;
   }
