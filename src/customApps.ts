@@ -10,6 +10,10 @@ export interface CustomApp {
   iconUrl?: string;
   /** Quando true, o app recebe as cores do papel de parede (variáveis --aero-*) */
   followWallpaper?: boolean;
+  /** 'html' = arquivo único; 'folder' = pacote de pasta servido pelo Service Worker */
+  kind?: 'html' | 'folder';
+  entry?: string;
+  fileCount?: number;
   size: string;
   createdAt: number;
 }

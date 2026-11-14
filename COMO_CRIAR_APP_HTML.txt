@@ -204,3 +204,27 @@ da logo. Ative o recurso nele para ver a cor mudando.
 
 Para ler as variáveis também no JavaScript (por exemplo, num canvas):
   getComputedStyle(document.documentElement).getPropertyValue('--aero-accent')
+
+
+11. INSTALAR UMA PASTA DE JOGO (COM JS, CSS, IMAGENS E ÁUDIO)
+------------------------------------------------------------
+Para jogos ou apps que são uma pasta inteira (index.html + src + resources...):
+
+  a) Na App Store, toque no avatar e escolha "Instalar pasta de jogo".
+  b) Escolha a pasta. Pode ter 200 MB ou mais, até 1,5 GB.
+  c) Acompanhe o progresso. Quando terminar, o jogo aparece na loja.
+  d) Obter, e ele vai para a gaveta de apps como os outros.
+
+O que é ignorado: arquivos .exe, .dll, .msi, .bat e .zip (inclusive
+as partes resources.zip.part1, part2...). Um Runtime.exe, por exemplo,
+não faz parte do jogo no navegador.
+
+Dois avisos importantes:
+  - Zip dividido: junte e extraia antes de instalar. No Windows, abra o
+    prompt na pasta e rode:  copy /b resources.zip.part* resources.zip
+    Depois extraia resources.zip. Só a pasta extraída pode ser instalada.
+  - Acesso: pacotes de pasta rodam com o mesmo acesso do AeroOS (é
+    preciso para o jogo salvar dados e carregar os próprios arquivos).
+    Instale só pastas de fontes em que você confia.
+
+Pacotes de pasta precisam que o AeroOS esteja em HTTPS ou em localhost.

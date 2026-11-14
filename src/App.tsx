@@ -41,7 +41,8 @@ import SwipeDismiss from './components/SwipeDismiss';
 import SignInScreen from './components/SignInScreen';
 import { getAccount, isSignedIn, signOut, type PublicAccount } from './accountDb';
 import { CustomApp, setCustomAppRegistry, getCustomApp, isCustomAppId, withThemeBridge } from './customApps';
-import { loadAllApps, putApp, deleteApp } from './appStorage';
+import { loadAllApps, putApp, deleteApp, deleteAppFiles } from './appStorage';
+import { folderUrl, registerFolderServer } from './folderApps';
 import { useWallpaperTint, setIconTint, getIconTint, tintBackground, buildAccentPalette, buildAppTheme } from './wallpaperTint';
 
 // Animated Matrix Code wallpaper component
@@ -821,6 +822,11 @@ export default function App() {
   // Conta AeroOS: quem existe neste aparelho e se alguém está conectado
   const [account, setAccount] = useState<PublicAccount | null>(() => getAccount());
   const [signedIn, setSignedIn] = useState<boolean>(() => isSignedIn());
+  // Pacotes de pasta precisam do Service Worker (HTTPS ou localhost)
+  const [folderServer, setFolderServer] = useState<'loading' | 'ready' | 'error'>('loading');
+  useEffect(() => {
+    registerFolderServer().then(ok => setFolderServer(ok ? 'ready' : 'error'));
+  }, []);
 
   const [wifiActive, setWifiActive] = useState(true);
   const [bluetoothActive, setBluetoothActive] = useState(true);
@@ -1132,6 +1138,7 @@ export default function App() {
     try {
       await putApp(app);
     } catch {
+      if (app.kind === 'folder') await deleteAppFiles(app.id).catch(() => {});
       return false; // falhou ao gravar no aparelho
     }
     setCustomApps(prev => [...prev, app]);
@@ -1148,6 +1155,7 @@ export default function App() {
 
   const handleDeleteCustomApp = (appId: string) => {
     deleteApp(appId).catch(() => { /* ignora */ });
+    deleteAppFiles(appId).catch(() => { /* ignora */ });
     setCustomApps(prev => prev.filter(a => a.id !== appId));
     setInstalledApps(prev => prev.filter(id => id !== appId));
     setHomeApps(prev => prev.filter(id => id !== appId));
@@ -3383,7 +3391,26 @@ export default function App() {
               </button>
             </div>
             <div className="app-content p-0" style={{ display: 'flex', flexDirection: 'column', paddingBottom: 0 }}>
-              {activeApp === app.id && (
+              {activeApp === app.id && app.kind === 'folder' && (
+                folderServer === 'ready' ? (
+                  <iframe
+                    ref={(el) => { customFrames.current[app.id] = el; }}
+                    title={app.name}
+                    src={folderUrl(app.id)}
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-pointer-lock"
+                    allow="autoplay; fullscreen; gamepad; pointer-lock"
+                    allowFullScreen
+                    style={{ flex: 1, width: '100%', height: '100%', border: 0, background: '#000' }}
+                  />
+                ) : folderServer === 'error' ? (
+                  <div className="flex-1 flex items-center justify-center p-8 text-center text-xs opacity-70">
+                    Pacotes de pasta precisam que o AeroOS rode em HTTPS ou em localhost.
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-xs opacity-60">Preparando…</div>
+                )
+              )}
+              {activeApp === app.id && app.kind !== 'folder' && (
                 <iframe
                   ref={(el) => { customFrames.current[app.id] = el; }}
                   title={app.name}

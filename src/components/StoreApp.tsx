@@ -3,9 +3,10 @@ import {
   Search, Download, Trash2, Check, Star, ArrowLeft, ArrowUpRight, ShieldCheck, 
   Heart, Sparkles, User, Award, FileText, Bird, Sun, Palette, Sliders, 
   Image as ImageIcon, Music as MusicIcon, Globe, Folder, Settings, MessageSquare, 
-  ShoppingBag, Phone, Users, Camera, Upload, FileCode
+  ShoppingBag, Phone, Users, Camera, Upload, FileCode, FolderOpen
 } from 'lucide-react';
 import { CustomApp, MAX_CUSTOM_APP_BYTES, extractIcon, extractTitle, makeCustomAppId, pickColor } from '../customApps';
+import { installFolderApp } from '../folderApps';
 
 function renderAppStoreIcon(iconName: string, size: number = 24, className?: string) {
   switch (iconName) {
@@ -295,11 +296,13 @@ function customToItem(app: CustomApp): AppItem {
     icon: 'Custom',
     iconBgClass: 'bg-slate-500',
     size: app.size,
-    version: 'v1.0.0',
+    version: app.kind === 'folder' ? `${app.fileCount ?? 0} arquivos` : 'v1.0.0',
     rating: 0,
     downloads: 'Importado',
     iconUrl: app.iconUrl,
-    desc: 'App HTML importado por você. Roda isolado do sistema e não tem acesso aos seus dados.',
+    desc: app.kind === 'folder'
+      ? 'Pacote instalado de uma pasta, com os arquivos dele. Roda com o mesmo acesso do AeroOS: instale só pastas de fontes confiáveis.'
+      : 'App HTML importado por você. Roda isolado do sistema e não tem acesso aos seus dados.',
   };
 }
 
@@ -307,6 +310,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const catalog: AppItem[] = [...STORE_APPS, ...customApps.map(customToItem)];
 
   useEffect(() => {
@@ -314,6 +318,23 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
     const t = window.setTimeout(() => setImportMsg(null), 3800);
     return () => window.clearTimeout(t);
   }, [importMsg]);
+
+  // Pasta de jogo/app (com JS, CSS, imagens, áudio...): grava tudo no IndexedDB
+  const handleFolderChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const list: File[] = e.target.files ? Array.from(e.target.files) : [];
+    e.target.value = '';
+    if (!list.length) return;
+    setAvatarMenuOpen(false);
+    const notify = (ok: boolean, text: string) => setImportMsg({ ok, text });
+    notify(true, 'Preparando a pasta…');
+    try {
+      const app = await installFolderApp(list, pct => notify(true, `Instalando pacote… ${pct}%`));
+      const ok = await onImportCustomApp(app).catch(() => false);
+      notify(ok, ok ? `"${app.name}" foi instalado e já está na loja.` : 'Não foi possível salvar este pacote no aparelho.');
+    } catch (err) {
+      notify(false, err instanceof Error ? err.message : 'Não foi possível instalar esta pasta.');
+    }
+  };
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -512,10 +533,29 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                 <span className="block text-[11px] opacity-60">Um arquivo .html vira um app na loja</span>
               </span>
             </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); folderInputRef.current?.click(); }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border-none bg-transparent cursor-pointer text-left hover:bg-slate-500/10 transition-colors"
+            >
+              <span className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0"><FolderOpen size={15} /></span>
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold">Instalar pasta de jogo</span>
+                <span className="block text-[11px] opacity-60">Pasta inteira, com JS e arquivos (até 1,5 GB)</span>
+              </span>
+            </button>
           </div>
         </>
       )}
       <input ref={importInputRef} type="file" accept=".html,.htm,text/html" className="hidden" onChange={handleImportFile} />
+      <input
+        ref={folderInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={handleFolderChosen}
+        {...({ webkitdirectory: '', directory: '' } as any)}
+      />
 
       {importMsg && (
         <div className={`mx-4 mt-3 rounded-xl px-3.5 py-2.5 text-xs font-medium border ${importMsg.ok ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>

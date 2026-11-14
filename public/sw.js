@@ -18,6 +18,13 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.pathname.startsWith('/api/')) return;
 
+  // Pacotes de pasta instalados (jogos): servidos do IndexedDB, nunca em cache
+  const folderPrefix = new URL('aeroapps/', self.registration.scope).pathname;
+  if (url.pathname.startsWith(folderPrefix)) {
+    e.respondWith(serveFolderFile(url.pathname.slice(folderPrefix.length)));
+    return;
+  }
+
   if (req.mode === 'navigate') {
     e.respondWith(
       fetch(req)
@@ -46,3 +53,48 @@ self.addEventListener('fetch', e => {
     })
   );
 });
+
+
+// ---------- Pacotes de pasta (jogos) guardados no IndexedDB do AeroOS ----------
+const AERO_DB = 'aeroos';
+const AERO_DB_VERSION = 2;
+const AERO_FILES = 'files';
+
+function openAeroDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(AERO_DB, AERO_DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('apps')) db.createObjectStore('apps', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains(AERO_FILES)) db.createObjectStore(AERO_FILES, { keyPath: 'key' });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function readFolderRecord(key) {
+  const db = await openAeroDb();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(AERO_FILES).objectStore(AERO_FILES).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function serveFolderFile(rest) {
+  const slash = rest.indexOf('/');
+  if (slash < 0) return new Response('Pacote inválido', { status: 400 });
+  const appId = decodeURIComponent(rest.slice(0, slash));
+  let path = decodeURIComponent(rest.slice(slash + 1)).split('?')[0];
+  if (!path || path.endsWith('/')) path += 'index.html';
+  try {
+    const rec = await readFolderRecord(appId + '|' + path);
+    if (!rec) return new Response('Arquivo não encontrado no pacote', { status: 404 });
+    return new Response(rec.blob, {
+      headers: { 'Content-Type': rec.type || 'application/octet-stream', 'Cache-Control': 'no-cache' },
+    });
+  } catch (err) {
+    return new Response('Erro ao ler o pacote', { status: 500 });
+  }
+}
