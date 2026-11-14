@@ -701,6 +701,12 @@ function AppIcon({ id, size = 52 }: { id: string; size?: number }) {
   );
 }
 
+// Ícone do app que enviou a notificação (ou um sino, se for de sistema)
+function NotifAppIcon({ app }: { app: string }) {
+  if (baseAppMetadata[app] || getCustomApp(app)) return <AppIcon id={app} size={36} />;
+  return <div className="app-tile tile-gray" style={{ '--s': '36px' } as React.CSSProperties}><Bell size={16} /></div>;
+}
+
 // Atalho rápido do painel de configurações
 function QSTile({ icon, label, active, disabled, warn, onClick }: {
   icon: React.ReactNode; label: string; active: boolean; disabled?: boolean; warn?: boolean; onClick: () => void;
@@ -1142,6 +1148,7 @@ export default function App() {
 
   // Standalone gallery lightbox state
   const [selectedGalleryImg, setSelectedGalleryImg] = useState<number | null>(null);
+  const [galleryFilter, setGalleryFilter] = useState<'all' | 'gradient' | 'photo'>('all');
 
   // Status bar pull-down gesture detection
   const statusPullRef = useRef<{ startY: number; type: 'notif' | 'util' | null; triggered: boolean }>({
@@ -1931,6 +1938,7 @@ export default function App() {
 
   // Gesto de deslizar (Swipe) para abrir a gaveta pela esquerda, voltar pela direita ou multitarefa de baixo
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (isLocked || isBooting || screenOff) return;
     const x = e.touches[0].clientX;
     const y = e.touches[0].clientY;
     touchNoGestureRef.current = !!(e.target as HTMLElement).closest?.('[data-no-sheet-gesture]');
@@ -1999,6 +2007,7 @@ export default function App() {
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (isLocked || isBooting || screenOff) return;
     if (swipeUpTimerRef.current) {
       clearTimeout(swipeUpTimerRef.current);
       swipeUpTimerRef.current = null;
@@ -2499,7 +2508,7 @@ export default function App() {
     <div className="fixed inset-0 overflow-hidden select-none bg-black">
       <div
         id="screen-container"
-        className={`${darkMode ? 'dark theme-dark' : 'theme-light'} ${activeApp !== null ? 'app-open' : ''} ${immersiveApp ? 'app-immersive' : ''} ${(anySheetOpen || recentAppsOpen) ? 'sheet-open' : ''} ${justUnlocked ? 'just-unlocked' : ''} ${edge ? 'edge' : ''} ${prefs.iconTint ? 'icons-tinted' : ''} ${prefs.navStyle === 'buttons' ? 'nav-buttons' : ''}`}
+        className={`${darkMode ? 'dark theme-dark' : 'theme-light'} ${activeApp !== null ? 'app-open' : ''} ${immersiveApp ? 'app-immersive' : ''} ${(anySheetOpen || recentAppsOpen) ? 'sheet-open' : ''} ${justUnlocked ? 'just-unlocked' : ''} ${edge ? 'edge' : ''} ${prefs.iconTint ? 'icons-tinted' : ''} ${prefs.navStyle === 'buttons' ? 'nav-buttons' : ''} ${(isLocked && !isBooting) ? 'is-locked' : ''}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -2617,19 +2626,17 @@ export default function App() {
             <div className="notif-list">
               {notifications.map(item => (
                 <SwipeDismiss key={item.id} onDismiss={() => removeNotification(item.id)}>
-                <div className="notif-item">
-                  <strong>{item.title}</strong>
-                  <p>{item.body}</p>
-                  <time>{item.time}</time>
-                  <button
-                    type="button"
-                    className="notif-x"
-                    onClick={(e) => { e.stopPropagation(); removeNotification(item.id); }}
-                    title={language === 'en' ? 'Dismiss' : 'Dispensar'}
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
+                  <div className="nf-card">
+                    <div className="nf-icon"><NotifAppIcon app={item.app} /></div>
+                    <div className="nf-body">
+                      <div className="nf-head">
+                        <span className="nf-app">{appMetadata[item.app]?.label ?? item.app}</span>
+                        <time>{item.time}</time>
+                      </div>
+                      <strong>{item.title}</strong>
+                      <p>{item.body}</p>
+                    </div>
+                  </div>
                 </SwipeDismiss>
               ))}
             </div>
@@ -3047,6 +3054,18 @@ export default function App() {
               <p className="text-xs opacity-65">Escolha um gradiente ou envie uma foto para ser seu papel de parede do sistema.</p>
             </div>
             
+            <div className="flex p-1 rounded-2xl bg-slate-200/60 dark:bg-white/5 gap-1">
+              {(['all', 'gradient', 'photo'] as const).map(f => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setGalleryFilter(f)}
+                  className={`flex-1 py-1.5 rounded-xl text-[11px] font-semibold transition-all ${galleryFilter === f ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
+                >
+                  {f === 'all' ? (language === 'en' ? 'All' : 'Todos') : f === 'gradient' ? (language === 'en' ? 'Gradients' : 'Gradientes') : (language === 'en' ? 'Photos' : 'Fotos')}
+                </button>
+              ))}
+            </div>
             <div className="grid grid-cols-2 gap-3.5 pt-2">
               {/* Option to upload wallpaper from real device */}
               <button
@@ -3070,7 +3089,10 @@ export default function App() {
                 onChange={handleCustomWallpaperUpload} 
               />
 
-              {wallpapers.map((wp, idx) => (
+              {wallpapers.map((wp, idx) => {
+                const isPhoto = wp.gradient.startsWith('url(');
+                if ((galleryFilter === 'photo' && !isPhoto) || (galleryFilter === 'gradient' && isPhoto)) return null;
+                return (
                 <button
                   key={idx}
                   onClick={() => setSelectedGalleryImg(idx)}
@@ -3081,7 +3103,8 @@ export default function App() {
                     <p className="font-bold text-xs leading-tight">{wp.name}</p>
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
 
             {/* LIGHTBOX CONFIRMAÇÃO DE PAPEL DE PAREDE */}
@@ -3537,11 +3560,7 @@ export default function App() {
               }}
               onClick={() => { if (!toastDraggedRef.current) handlePopupAction(activePopup); }}
             >
-              {activePopup.avatar ? (
-                <div className="toast-avatar">{activePopup.avatar}</div>
-              ) : (
-                <div className="toast-avatar accent"><Bell size={18} /></div>
-              )}
+              <div className="toast-icon"><NotifAppIcon app={activePopup.app} /></div>
               <div className="toast-body">
                 <div className="toast-head">
                   <span className="toast-title">{activePopup.title}</span>
@@ -3841,6 +3860,8 @@ export default function App() {
             wallpaper={currentLockWallpaper}
             notifications={notifications.map(n => ({ id: n.id, app: n.app, title: n.title, message: n.body, time: n.time }))}
             onDismissNotification={(id) => removeNotification(id)}
+            renderAppIcon={(id) => <NotifAppIcon app={id} />}
+            appLabel={(id) => appMetadata[id]?.label ?? id}
             onOpenApp={(appName) => {
               openApp(appName);
               setIsLocked(false);

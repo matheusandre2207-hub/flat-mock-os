@@ -1126,7 +1126,7 @@
 }
 .nav-btn:active { background: rgba(127, 127, 127, 0.22); transform: scale(0.92); }
 #screen-container.nav-buttons { --nav-h: 44px; --dock-b: calc(var(--sab) + var(--nav-h) + 10px); }
-#screen-container.nav-buttons .app-content { padding-bottom: calc(var(--sab) + var(--nav-h) + 14px); }
+#screen-container.nav-buttons .app-content { padding-bottom: 14px; }
 /* No modo botões a barra de navegação substitui o indicador de gesto (evita sobreposição) */
 #screen-container.nav-buttons .home-indicator { display: none; }
 
@@ -1188,3 +1188,93 @@
 .widget-opt:active { transform: scale(0.98); }
 
 .screen-off { position: absolute; inset: 0; z-index: 100000; background: #000; }
+
+
+/* ==========================================================================
+   ZONA DO SISTEMA
+   Nenhum app passa da área de status (topo) nem avança sobre os botões
+   ou a barra de gestos (base). Apps, inclusive os importados, ficam acima dela.
+   ========================================================================== */
+#screen-container { --sys-bottom: calc(var(--sab) + 26px); }
+#screen-container.nav-buttons { --sys-bottom: calc(var(--sab) + var(--nav-h, 44px)); }
+.app-window { inset: 0 0 var(--sys-bottom) 0; }
+.app-window.immersive { inset: 0 0 var(--sys-bottom) 0; }
+
+/* ==========================================================================
+   TELA DE BLOQUEIO
+   Com a tela bloqueada, a tela de início fica desfocada por baixo.
+   ========================================================================== */
+#wallpaper, #home-screen, #bottom-dock {
+  transition: filter 0.7s var(--ease), transform 0.7s var(--ease);
+}
+#screen-container.is-locked #wallpaper,
+#screen-container.is-locked #home-screen,
+#screen-container.is-locked #bottom-dock {
+  filter: blur(22px) brightness(0.78);
+  transform: scale(1.05);
+}
+
+/* ==========================================================================
+   ÍCONES
+   Brilho sutil no topo e contorno interno: mais profundidade, sem sombras pesadas
+   ========================================================================== */
+.app-tile { position: relative; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07); }
+.app-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 52%);
+  pointer-events: none;
+}
+.app-tile svg { position: relative; z-index: 1; }
+
+/* ==========================================================================
+   GAVETA DE APPS: grade de ícones com nome embaixo
+   ========================================================================== */
+#app-drawer .drawer-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px 6px;
+  align-content: start;
+  padding: 10px 16px 24px;
+}
+#app-drawer .drawer-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  transition: transform var(--t-fast) var(--ease);
+}
+#app-drawer .drawer-item:active { transform: scale(0.94); }
+#app-drawer .drawer-item .app-label {
+  max-width: 78px;
+  font-size: 11px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==========================================================================
+   NOTIFICAÇÕES: ícone do app, nome, horário, título e conteúdo
+   ========================================================================== */
+.nf-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 20px;
+  background: var(--surface-2);
+}
+.nf-icon { flex: none; }
+.nf-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nf-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--text-3); }
+.nf-app { font-weight: 600; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nf-body strong { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nf-body p { font-size: 12.5px; line-height: 1.35; color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.toast-icon { flex: none; }
