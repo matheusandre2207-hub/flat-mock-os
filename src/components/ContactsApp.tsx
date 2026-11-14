@@ -106,13 +106,13 @@ export default function ContactsApp({
           </div>
 
           <div className="flex-1 flex flex-col items-center justify-start space-y-6 pt-4">
-            <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-5xl shadow-lg border border-slate-300 dark:border-white/10">
+            <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-5xl border border-slate-300 dark:border-white/10">
               {selectedContact.avatar}
             </div>
             
             <div className="text-center space-y-1">
               <h2 className="text-xl font-bold tracking-tight">{selectedContact.name}</h2>
-              <span className="inline-block bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-white/80 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+              <span className="inline-block bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-white/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
                 {selectedContact.role}
               </span>
             </div>
@@ -126,7 +126,7 @@ export default function ContactsApp({
                 <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
                   <Phone size={18} />
                 </div>
-                <span className="text-[10px] font-bold">Ligar</span>
+                <span className="text-[11px] font-bold">Ligar</span>
               </button>
 
               <button 
@@ -136,7 +136,7 @@ export default function ContactsApp({
                 <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
                   <MessageSquare size={18} />
                 </div>
-                <span className="text-[10px] font-bold">Conversar</span>
+                <span className="text-[11px] font-bold">Conversar</span>
               </button>
             </div>
 
@@ -146,7 +146,7 @@ export default function ContactsApp({
                 <div className="flex items-center gap-3">
                   <Phone size={14} className="text-slate-400" />
                   <div>
-                    <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Telefone</p>
+                    <p className="text-[11px] font-bold text-slate-500">Telefone</p>
                     <p className="text-xs font-semibold mt-0.5">{selectedContact.phone}</p>
                   </div>
                 </div>
@@ -154,7 +154,7 @@ export default function ContactsApp({
                 <div className="flex items-center gap-3">
                   <Mail size={14} className="text-slate-400" />
                   <div>
-                    <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Email</p>
+                    <p className="text-[11px] font-bold text-slate-500">Email</p>
                     <p className="text-xs font-semibold mt-0.5 truncate">{selectedContact.email}</p>
                   </div>
                 </div>
@@ -162,7 +162,7 @@ export default function ContactsApp({
                 <div className="flex items-center gap-3">
                   <MapPin size={14} className="text-slate-400" />
                   <div>
-                    <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Localização</p>
+                    <p className="text-[11px] font-bold text-slate-500">Localização</p>
                     <p className="text-xs font-semibold mt-0.5">{selectedContact.location}</p>
                   </div>
                 </div>
@@ -174,10 +174,10 @@ export default function ContactsApp({
 
       {/* Add Contact Modal */}
       {showAddModal && (
-        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-5">
+        <div className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-5">
           <form 
             onSubmit={handleAddContact}
-            className={`w-full max-w-sm ${darkMode ? 'bg-slate-900 text-white border-white/10' : 'bg-white text-slate-900 border-slate-200'} rounded-3xl p-6 border space-y-4 shadow-2xl`}
+            className={`w-full max-w-sm ${darkMode ? 'bg-slate-900 text-white border-white/10' : 'bg-white text-slate-900 border-slate-200'} rounded-3xl p-6 border space-y-4`}
           >
             <div className="flex justify-between items-center pb-1">
               <h3 className="font-bold text-sm">Novo Contato</h3>
@@ -198,8 +198,8 @@ export default function ContactsApp({
                   key={em}
                   onClick={() => setNewAvatar(em)}
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all border-none cursor-pointer ${
-                    newAvatar === em ? 'bg-blue-600 scale-110' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
+ newAvatar === em ? 'bg-blue-600 scale-110' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700'
+ }`}
                 >
                   {em}
                 </button>
@@ -208,7 +208,7 @@ export default function ContactsApp({
 
             <div className="space-y-3 text-xs text-left">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nome completo</label>
+                <label className="text-[11px] font-bold text-slate-400">Nome completo</label>
                 <input 
                   type="text" 
                   required
@@ -221,7 +221,7 @@ export default function ContactsApp({
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Relação</label>
+                  <label className="text-[11px] font-bold text-slate-400">Relação</label>
                   <input 
                     type="text" 
                     placeholder="Ex: Amigo, Família" 
@@ -231,7 +231,7 @@ export default function ContactsApp({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Telefone</label>
+                  <label className="text-[11px] font-bold text-slate-400">Telefone</label>
                   <input 
                     type="text" 
                     placeholder="(11) 99999-9999" 
@@ -243,7 +243,7 @@ export default function ContactsApp({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email</label>
+                <label className="text-[11px] font-bold text-slate-400">Email</label>
                 <input 
                   type="email" 
                   placeholder="email@exemplo.com" 
@@ -254,7 +254,7 @@ export default function ContactsApp({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Localização</label>
+                <label className="text-[11px] font-bold text-slate-400">Localização</label>
                 <input 
                   type="text" 
                   placeholder="Ex: São Paulo, SP" 
@@ -308,10 +308,10 @@ export default function ContactsApp({
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className={`w-full text-xs rounded-xl pl-10 pr-4 py-2.5 border focus:outline-none focus:border-blue-500 ${
-              darkMode 
-                ? 'bg-slate-900/60 border-white/5 text-white placeholder-slate-500' 
-                : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 shadow-sm'
-            }`}
+ darkMode 
+ ? 'bg-slate-900/60 border-white/5 text-white placeholder-slate-500' 
+ : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400'
+ }`}
           />
         </div>
 
@@ -327,18 +327,18 @@ export default function ContactsApp({
                 key={contact.id} 
                 onClick={() => setSelectedContact(contact)}
                 className={`p-3.5 rounded-2xl flex items-center justify-between transition-all cursor-pointer ${
-                  darkMode 
-                    ? 'bg-slate-900/40 hover:bg-slate-900/70 border border-white/5' 
-                    : 'bg-white hover:bg-slate-100 border border-slate-200 shadow-sm'
-                }`}
+ darkMode 
+ ? 'bg-slate-900/40 hover:bg-slate-900/70 border border-white/5' 
+ : 'bg-white hover:bg-slate-100 border border-slate-200'
+ }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-800/80 flex items-center justify-center text-xl border border-white/5 shadow-sm">
+                  <div className="w-10 h-10 rounded-full bg-slate-800/80 flex items-center justify-center text-xl border border-white/5">
                     {contact.avatar}
                   </div>
                   <div>
                     <h4 className="font-bold text-xs">{contact.name}</h4>
-                    <span className="inline-block text-[8px] font-bold tracking-wider uppercase bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded mt-1">
+                    <span className="inline-block text-[11px] font-bold bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded mt-1">
                       {contact.role}
                     </span>
                   </div>

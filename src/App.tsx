@@ -6,7 +6,9 @@ import {
   Image as ImageIcon, Music as MusicIcon, Globe, Settings, 
   ChevronRight, ChevronLeft, X, Play, Pause, SkipForward, SkipBack, 
   Send, Trash2, Clock, Smartphone, Bell, MessageSquare, Plus, Minus,
-  Grid, Compass, FolderClosed, PlayCircle, Eye, EyeOff, Maximize, Minimize, Check
+  Grid, Compass, FolderClosed, PlayCircle, Eye, EyeOff, Maximize, Minimize, Check,
+  Calculator as CalculatorIcon, MessageCircle, NotebookPen, Bird, CloudSun, Palette,
+  Phone, Users, Camera, ShoppingBag, SunMedium, BellOff, ChevronDown
 } from 'lucide-react';
 
 import { Wallpaper, NotificationItem, PopupNotification, Track, Chat, Folder as FolderType, Contact, CapturedPhoto } from './types';
@@ -633,23 +635,52 @@ function LavaLampWallpaper() {
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
 }
 
-const appMetadata: Record<string, { label: string; icon: string; iconBgClass: string }> = {
-  arquivos: { label: 'Arquivos', icon: '📁', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  calculadora: { label: 'Calculadora', icon: '🧮', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  configuracoes: { label: 'Configurações', icon: '⚙️', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  galeria: { label: 'Galeria', icon: '🖼️', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  mensagens: { label: 'Mensagens', icon: '💬', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  musica: { label: 'Música', icon: '🎵', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  navegador: { label: 'Navegador', icon: '🌐', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  loja: { label: 'App Store', icon: '🛍️', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  notas: { label: 'Bloco de Notas', icon: '📝', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  flappy: { label: 'Flappy Bird', icon: '🐦', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  clima: { label: 'Previsão do Tempo', icon: '☀️', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  paint: { label: 'Mini Paint', icon: '🎨', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  telefone: { label: 'Telefone', icon: '📞', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  contatos: { label: 'Contatos', icon: '👥', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' },
-  camera: { label: 'Câmera', icon: '📷', iconBgClass: 'bg-zinc-900 border border-zinc-800/80 text-zinc-300' }
+const baseAppMetadata: Record<string, { label: string; icon: React.ReactNode; iconBgClass: string }> = {
+  arquivos:       { label: 'Arquivos',      icon: <Folder />,         iconBgClass: 'tile-blue' },
+  calculadora:    { label: 'Calculadora',   icon: <CalculatorIcon />, iconBgClass: 'tile-graphite' },
+  configuracoes:  { label: 'Configurações', icon: <Settings />,       iconBgClass: 'tile-gray' },
+  galeria:        { label: 'Galeria',       icon: <ImageIcon />,      iconBgClass: 'tile-pink' },
+  mensagens:      { label: 'Mensagens',     icon: <MessageCircle />,  iconBgClass: 'tile-green' },
+  musica:         { label: 'Música',        icon: <MusicIcon />,      iconBgClass: 'tile-red' },
+  navegador:      { label: 'Navegador',     icon: <Globe />,          iconBgClass: 'tile-sky' },
+  loja:           { label: 'App Store',     icon: <ShoppingBag />,    iconBgClass: 'tile-teal' },
+  notas:          { label: 'Notas',         icon: <NotebookPen />,    iconBgClass: 'tile-amber' },
+  flappy:         { label: 'Flappy Bird',   icon: <Bird />,           iconBgClass: 'tile-orange' },
+  clima:          { label: 'Clima',         icon: <CloudSun />,       iconBgClass: 'tile-sky' },
+  paint:          { label: 'Paint',         icon: <Palette />,        iconBgClass: 'tile-purple' },
+  telefone:       { label: 'Telefone',      icon: <Phone />,          iconBgClass: 'tile-green' },
+  contatos:       { label: 'Contatos',      icon: <Users />,          iconBgClass: 'tile-indigo' },
+  camera:         { label: 'Câmera',        icon: <Camera />,         iconBgClass: 'tile-graphite' }
 };
+
+// Ícone de app padronizado: quadrado chapado + glifo branco
+function AppIcon({ id, size = 52 }: { id: string; size?: number }) {
+  const meta = baseAppMetadata[id];
+  if (!meta) return null;
+  return (
+    <div className={`app-tile ${meta.iconBgClass}`} style={{ '--s': `${size}px` } as React.CSSProperties}>
+      {meta.icon}
+    </div>
+  );
+}
+
+// Atalho rápido do painel de configurações
+function QSTile({ icon, label, active, disabled, warn, onClick }: {
+  icon: React.ReactNode; label: string; active: boolean; disabled?: boolean; warn?: boolean; onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`qs-tile ${active ? 'active' : ''} ${warn ? 'warn' : ''}`}
+      disabled={disabled}
+      aria-pressed={active}
+      onClick={onClick}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
 
 const randomIncomingMessages = [
   {
@@ -733,25 +764,28 @@ export default function App() {
   const [cellularActive, setCellularActive] = useState(true);
   const [airplaneMode, setAirplaneMode] = useState(false);
 
-  // Localized app names and metadata
-  const appMetadata: Record<string, { label: string; icon: string; iconBgClass: string }> = {
-    arquivos: { label: language === 'en' ? 'Files' : 'Arquivos', icon: '📁', iconBgClass: 'bg-sky-100 dark:bg-sky-950/80 border border-sky-200/60 dark:border-sky-900/40 text-sky-600 dark:text-sky-400' },
-    calculadora: { label: language === 'en' ? 'Calculator' : 'Calculadora', icon: '🧮', iconBgClass: 'bg-orange-100 dark:bg-orange-950/80 border border-orange-200/60 dark:border-orange-900/40 text-orange-600 dark:text-orange-400' },
-    configuracoes: { label: language === 'en' ? 'Settings' : 'Configurações', icon: '⚙️', iconBgClass: 'bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300' },
-    galeria: { label: language === 'en' ? 'Gallery' : 'Galeria', icon: '🖼️', iconBgClass: 'bg-indigo-100 dark:bg-indigo-950/80 border border-indigo-200/60 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400' },
-    mensagens: { label: language === 'en' ? 'Messages' : 'Mensagens', icon: '💬', iconBgClass: 'bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400' },
-    musica: { label: language === 'en' ? 'Music' : 'Música', icon: '🎵', iconBgClass: 'bg-rose-100 dark:bg-rose-950/80 border border-rose-200/60 dark:border-rose-900/40 text-rose-600 dark:text-rose-400' },
-    navegador: { label: language === 'en' ? 'Browser' : 'Navegador', icon: '🌐', iconBgClass: 'bg-blue-100 dark:bg-blue-950/80 border border-blue-200/60 dark:border-blue-900/40 text-blue-600 dark:text-blue-400' },
-    loja: { label: 'App Store', icon: '🛍️', iconBgClass: 'bg-violet-100 dark:bg-violet-950/80 border border-violet-200/60 dark:border-violet-900/40 text-violet-600 dark:text-violet-400' },
-    notas: { label: language === 'en' ? 'Notes' : 'Bloco de Notas', icon: '📝', iconBgClass: 'bg-yellow-100 dark:bg-yellow-950/80 border border-yellow-200/60 dark:border-yellow-900/40 text-yellow-600 dark:text-yellow-400' },
-    flappy: { label: 'Flappy Bird', icon: '🐦', iconBgClass: 'bg-sky-100 dark:bg-sky-950/80 border border-sky-200/60 dark:border-sky-900/40 text-sky-600 dark:text-sky-400' },
-    clima: { label: language === 'en' ? 'Weather' : 'Previsão do Tempo', icon: '☀️', iconBgClass: 'bg-cyan-100 dark:bg-cyan-950/80 border border-cyan-200/60 dark:border-cyan-900/40 text-cyan-600 dark:text-cyan-400' },
-    paint: { label: 'Mini Paint', icon: '🎨', iconBgClass: 'bg-fuchsia-100 dark:bg-fuchsia-950/80 border border-fuchsia-200/60 dark:border-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400' },
-    telefone: { label: language === 'en' ? 'Phone' : 'Telefone', icon: '📞', iconBgClass: 'bg-green-100 dark:bg-green-950/80 border border-green-200/60 dark:border-green-900/40 text-green-600 dark:text-green-400' },
-    contatos: { label: language === 'en' ? 'Contacts' : 'Contatos', icon: '👥', iconBgClass: 'bg-teal-100 dark:bg-teal-950/80 border border-teal-200/60 dark:border-teal-900/40 text-teal-600 dark:text-teal-400' },
-    camera: { label: language === 'en' ? 'Camera' : 'Câmera', icon: '📷', iconBgClass: 'bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-300' }
+  // Nomes localizados + ícones padronizados
+  const appLabels: Record<string, [string, string]> = {
+    arquivos: ['Arquivos', 'Files'],
+    calculadora: ['Calculadora', 'Calculator'],
+    configuracoes: ['Configurações', 'Settings'],
+    galeria: ['Galeria', 'Gallery'],
+    mensagens: ['Mensagens', 'Messages'],
+    musica: ['Música', 'Music'],
+    navegador: ['Navegador', 'Browser'],
+    loja: ['App Store', 'App Store'],
+    notas: ['Notas', 'Notes'],
+    flappy: ['Flappy Bird', 'Flappy Bird'],
+    clima: ['Clima', 'Weather'],
+    paint: ['Paint', 'Paint'],
+    telefone: ['Telefone', 'Phone'],
+    contatos: ['Contatos', 'Contacts'],
+    camera: ['Câmera', 'Camera']
   };
-  
+  const appMetadata: Record<string, { label: string; icon: React.ReactNode; iconBgClass: string }> = Object.fromEntries(
+    Object.entries(baseAppMetadata).map(([id, m]) => [id, { ...m, label: appLabels[id]?.[language === 'en' ? 1 : 0] ?? m.label }])
+  );
+
   // Theme & screen settings
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('os_dark_mode');
@@ -1903,6 +1937,72 @@ export default function App() {
     }
   };
 
+  // ------------------------------------------------------------------
+  // Tela cheia automática, cor da barra do sistema e animação de desbloqueio
+  // ------------------------------------------------------------------
+  const [autoFullscreen, setAutoFullscreen] = useState<boolean>(() => {
+    const saved = localStorage.getItem('os_auto_fullscreen');
+    if (saved !== null) return saved === 'true';
+    // Padrão: ligado em aparelhos de toque (celular/tablet), desligado no desktop
+    return typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+  });
+  const [justUnlocked, setJustUnlocked] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('os_auto_fullscreen', String(autoFullscreen));
+  }, [autoFullscreen]);
+
+  // Navegadores só liberam tela cheia após um gesto do usuário: entra no primeiro toque.
+  useEffect(() => {
+    if (!autoFullscreen) return;
+    const enter = () => {
+      const doc = document as any;
+      const el = document.documentElement as any;
+      const already = doc.fullscreenElement || doc.webkitFullscreenElement;
+      if (!already) {
+        try {
+          const req = el.requestFullscreen
+            ? el.requestFullscreen({ navigationUI: 'hide' })
+            : el.webkitRequestFullscreen?.();
+          if (req && typeof req.catch === 'function') req.catch(() => {});
+        } catch (e) {
+          // Sem suporte (ex.: iPhone) — o modo instalado (PWA) já ocupa a tela toda
+        }
+      }
+    };
+    window.addEventListener('pointerup', enter, { once: true });
+    return () => window.removeEventListener('pointerup', enter);
+  }, [autoFullscreen, isFullscreen]);
+
+  // Barra do sistema com a mesma cor da tela: nada de faixa preta sobrando
+  useEffect(() => {
+    let color = darkMode ? '#0B0B0C' : '#F5F5F6';
+    if (isBooting || isLocked || activeApp === null) {
+      const wp = isLocked ? currentLockWallpaper : currentWallpaper;
+      const m = wp?.gradient?.match(/#[0-9a-fA-F]{6}\b/);
+      color = m ? m[0] : '#0B0B0C';
+    } else if (activeApp === 'camera' || activeApp === 'clima') {
+      color = '#000000';
+    }
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color);
+    document.documentElement.style.backgroundColor = color;
+  }, [darkMode, isBooting, isLocked, activeApp, currentWallpaper, currentLockWallpaper]);
+
+  useEffect(() => {
+    if (isBooting || isLocked) return;
+    setJustUnlocked(true);
+    const t = setTimeout(() => setJustUnlocked(false), 1200);
+    return () => clearTimeout(t);
+  }, [isBooting, isLocked]);
+
+  const anySheetOpen = notificationsOpen || utilitiesOpen || appDrawerOpen;
+  const immersiveApp = activeApp === 'camera' || activeApp === 'clima';
+  const closeSheets = () => {
+    setNotificationsOpen(false);
+    setUtilitiesOpen(false);
+    setAppDrawerOpen(false);
+  };
+
   const renderAppPreviewContent = (appName: string) => {
     switch (appName) {
       case 'configuracoes':
@@ -1945,6 +2045,8 @@ export default function App() {
             onUninstall={handleUninstallApp}
             isFullscreen={isFullscreen}
             onToggleFullscreen={toggleFullscreen}
+            autoFullscreen={autoFullscreen}
+            setAutoFullscreen={setAutoFullscreen}
             language={language}
             setLanguage={setLanguage}
             pincode={pincode}
@@ -1958,10 +2060,10 @@ export default function App() {
         return <Calculator />;
       case 'galeria':
         return (
-          <div className={`no-scrollbar pt-4 pb-24 px-5 space-y-6 overflow-y-auto h-full ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+          <div className="no-scrollbar pt-4 pb-24 px-5 space-y-6 overflow-y-auto h-full bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
             {capturedPhotos.length > 0 && (
               <div className="space-y-2">
-                <h3 className="font-bold text-base flex items-center gap-2"><span>📸</span> Fotos Capturadas</h3>
+                <h3 className="font-semibold text-base">Fotos capturadas</h3>
                 <div className="grid grid-cols-2 gap-3.5 pt-1">
                   {capturedPhotos.map((photo) => (
                     <div
@@ -1969,14 +2071,14 @@ export default function App() {
                       onClick={() => {
                         setActiveApp('camera');
                       }}
-                      className={`aspect-[3/4] rounded-2xl overflow-hidden relative shadow-md border border-white/10 bg-gradient-to-tr ${photo.url} cursor-pointer hover:scale-[1.02] transition-transform`}
+                      className={`aspect-[3/4] rounded-2xl overflow-hidden relative border border-white/10 bg-gradient-to-tr ${photo.url} cursor-pointer transition-transform`}
                     >
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <span className="text-3xl">📸</span>
+                        <Camera size={28} />
                       </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3 text-white">
                         <p className="font-bold text-xs leading-tight">Foto Capturada</p>
-                        <p className="text-[9px] font-mono opacity-70">{photo.timestamp} • {photo.filter}</p>
+                        <p className="text-[11px] font-mono opacity-70">{photo.timestamp} • {photo.filter}</p>
                       </div>
                     </div>
                   ))}
@@ -1991,7 +2093,7 @@ export default function App() {
               {wallpapers.map((wp, idx) => (
                 <div
                   key={idx}
-                  className="aspect-[9/16] rounded-2xl overflow-hidden relative shadow-md border border-white/5 cursor-pointer"
+                  className="aspect-[9/16] rounded-2xl overflow-hidden relative border border-white/5 cursor-pointer"
                   style={{ background: wp.gradient }}
                   onClick={() => {
                     setWallpaperIndex(idx);
@@ -2089,40 +2191,21 @@ export default function App() {
   };
 
   return (
-    <div className="w-screen h-screen overflow-hidden select-none bg-black">
-      <div 
+    <div className="fixed inset-0 overflow-hidden select-none bg-black">
+      <div
         id="screen-container"
-        className={`
-          ${darkMode ? 'dark theme-dark' : 'theme-light'}
-        `}
+        className={`${darkMode ? 'dark theme-dark' : 'theme-light'} ${activeApp !== null ? 'app-open' : ''} ${immersiveApp ? 'app-immersive' : ''} ${(anySheetOpen || recentAppsOpen) ? 'sheet-open' : ''} ${justUnlocked ? 'just-unlocked' : ''}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ 
-          filter: `brightness(${brightness}%)`
-        }}
+        style={{ filter: `brightness(${brightness}%)` }}
       >
-        
-        {/* ==========================================
-           1. CORE SCREEN OVERLAYS (Comfort Warmth)
-           ========================================== */}
-        {/* Night comfort amber tint filter screen */}
-        <div 
-          className="night-shield-overlay" 
-          style={{ opacity: nightMode ? 1 : 0 }} 
-        />
 
+        {/* Filtro de luz noturna */}
+        <div className="night-shield-overlay" style={{ opacity: nightMode ? 1 : 0 }} />
 
-
-        {/* ==========================================
-           2. SYSTEM WALLPAPER BACKGROUND (Metal Shift Animado)
-           ========================================== */}
-        <div 
-          id="wallpaper"
-          className="transition-all duration-500 overflow-hidden relative w-full h-full"
-          style={{ background: currentWallpaper.gradient }}
-        >
-          {/* Animated elements based on type */}
+        {/* Papel de parede */}
+        <div id="wallpaper" style={{ background: currentWallpaper.gradient }}>
           {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'aurora' && (
             <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-50">
               <div className="absolute w-[240px] h-[240px] rounded-full bg-emerald-500/30 blur-[60px] top-[10%] left-[10%] animate-[float1_12s_infinite_alternate]" />
@@ -2130,64 +2213,40 @@ export default function App() {
               <div className="absolute w-[200px] h-[200px] rounded-full bg-purple-500/20 blur-[50px] top-[40%] right-[25%] animate-[float3_15s_infinite_alternate]" />
             </div>
           )}
-          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'matrix' && (
-            <MatrixWallpaper />
-          )}
-          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'particles' && (
-            <ParticlesWallpaper />
-          )}
-          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'metal-liquid' && (
-            <LiquidMetalWallpaper />
-          )}
-          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'gradient-shift' && (
-            <GradientShiftWallpaper />
-          )}
-          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'waves' && (
-            <OceanWavesWallpaper />
-          )}
-          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'geometric' && (
-            <GeometricSaturnWallpaper />
-          )}
-          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'cyber-neon' && (
-            <CyberNeonWallpaper />
-          )}
-          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'starfield' && (
-            <StarfieldWallpaper />
-          )}
-          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'lava-lamp' && (
-            <LavaLampWallpaper />
-          )}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'matrix' && <MatrixWallpaper />}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'particles' && <ParticlesWallpaper />}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'metal-liquid' && <LiquidMetalWallpaper />}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'gradient-shift' && <GradientShiftWallpaper />}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'waves' && <OceanWavesWallpaper />}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'geometric' && <GeometricSaturnWallpaper />}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'cyber-neon' && <CyberNeonWallpaper />}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'starfield' && <StarfieldWallpaper />}
+          {currentWallpaper.isAnimated && currentWallpaper.animatedType === 'lava-lamp' && <LavaLampWallpaper />}
         </div>
 
-        {/* Background visual blur overlay when utilities, notifications or app drawer is open */}
-        {(notificationsOpen || utilitiesOpen || appDrawerOpen) && (
-          <button 
-            id="overlay-blur"
-            onClick={(e) => {
-              e.stopPropagation();
-              setNotificationsOpen(false);
-              setUtilitiesOpen(false);
-              setAppDrawerOpen(false);
-            }}
-            onTouchStart={(e) => e.stopPropagation()}
-            onTouchMove={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            className={`w-full h-full text-left border-none focus:outline-none cursor-pointer ${(notificationsOpen || utilitiesOpen || appDrawerOpen) ? 'status-active' : ''}`}
-          />
-        )}
+        {/* Fundo escurecido atrás de painéis e gaveta */}
+        <button
+          id="overlay-blur"
+          type="button"
+          aria-label="Fechar"
+          tabIndex={-1}
+          className={anySheetOpen ? 'open' : ''}
+          onClick={(e) => { e.stopPropagation(); closeSheets(); }}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        />
 
-        {/* ==========================================
-           3. SYSTEM STATUS BAR (Clock & Pill - mix-blend-mode: difference)
-           ========================================== */}
-        <header 
+        {/* Barra de status */}
+        <header
           id="status-bar"
           onMouseMove={handleStatusPullMove}
           onTouchMove={handleStatusPullMove}
           onMouseUp={handleStatusPullEnd}
           onTouchEnd={handleStatusPullEnd}
         >
-          <div 
-            className="status-zone left cursor-pointer select-none" 
+          <div
+            className="status-zone"
             id="trigger-notifications"
             onMouseDown={(e) => handleStatusPullStart(e, 'notif')}
             onTouchStart={(e) => handleStatusPullStart(e, 'notif')}
@@ -2201,9 +2260,9 @@ export default function App() {
           >
             <span id="status-time">{systemTime}</span>
           </div>
-          
-          <div 
-            className="status-zone right cursor-pointer select-none" 
+
+          <div
+            className="status-zone"
             id="trigger-utilities"
             onMouseDown={(e) => handleStatusPullStart(e, 'util')}
             onTouchStart={(e) => handleStatusPullStart(e, 'util')}
@@ -2216,13 +2275,10 @@ export default function App() {
             }}
           >
             <div className="status-pill">
-              <svg className="pill-svg" viewBox="0 0 24 24" id="wifi-icon" style={{ width: '17px', height: '13px', fill: 'none', stroke: 'currentColor', strokeWidth: 2.5, strokeLinecap: 'round' }}>
-                <circle cx="12" cy="19.5" r="1.2" fill="currentColor" stroke="none" />
-                <path d="M8.5 15.5a5 3.2 0 0 1 7 0" />
-                <path d="M5 11.5a10 6 0 0 1 14 0" />
-                <path d="M1.5 7.5a15 8.5 0 0 1 21 0" />
-              </svg>
-              <div className="cellular-bars">
+              {airplaneMode && <Plane size={14} strokeWidth={2.4} />}
+              {!airplaneMode && bluetoothActive && <Bluetooth size={14} strokeWidth={2.4} />}
+              {wifiActive && !airplaneMode ? <Wifi size={15} strokeWidth={2.4} /> : <WifiOff size={15} strokeWidth={2.4} className="opacity-50" />}
+              <div className="cellular-bars" style={{ opacity: cellularActive && !airplaneMode ? 1 : 0.35 }}>
                 <div className="bar bar1"></div>
                 <div className="bar bar2"></div>
                 <div className="bar bar3"></div>
@@ -2233,194 +2289,168 @@ export default function App() {
           </div>
         </header>
 
-        {/* ==========================================
-           4. DROPDOWN CONTROL PANELS (Animações Nativas do OS)
-           ========================================== */}
-        
-        {/* PANEL 4A: NOTIFICATIONS LIST DRAWER */}
-        <div 
-          id="panel-notifications"
-          className={notificationsOpen ? '' : 'closed'}
-        >
-          <div className="panel-top-cap" />
-          <div className="panel-center-content">
-            <div className="panel-header flex justify-between items-center w-full">
-              <span>{language === 'en' ? 'Notifications' : 'Notificações'}</span>
-              {notifications.length > 0 && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setNotifications([]); }}
-                  className="text-[10px] text-blue-400 font-bold hover:underline bg-transparent border-none cursor-pointer"
-                >
-                  {language === 'en' ? 'Clear All' : 'Limpar Tudo'}
-                </button>
-              )}
+        {/* Painel de notificações */}
+        <div id="panel-notifications" className={notificationsOpen ? '' : 'closed'}>
+          <div className="sheet-title">
+            <span>{language === 'en' ? 'Notifications' : 'Notificações'}</span>
+            {notifications.length > 0 && (
+              <button
+                type="button"
+                className="sheet-action"
+                onClick={(e) => { e.stopPropagation(); setNotifications([]); }}
+              >
+                {language === 'en' ? 'Clear all' : 'Limpar tudo'}
+              </button>
+            )}
+          </div>
+          {notifications.length === 0 ? (
+            <div className="empty-state">
+              <BellOff size={22} />
+              <span>{language === 'en' ? 'No notifications' : 'Nenhuma notificação'}</span>
             </div>
-
-            <div className="panel-content w-full space-y-2 overflow-y-auto no-scrollbar max-h-72">
-              {notifications.length === 0 ? (
-                <p className="text-center py-6 text-xs text-white/40">
-                  {language === 'en' ? 'No recent notifications' : 'Nenhuma notificação recente'}
-                </p>
-              ) : (
-                notifications.map(item => (
-                  <div 
-                    key={item.id} 
-                    className="notification-item relative"
+          ) : (
+            <div className="notif-list">
+              {notifications.map(item => (
+                <div key={item.id} className="notif-item">
+                  <strong>{item.title}</strong>
+                  <p>{item.body}</p>
+                  <time>{item.time}</time>
+                  <button
+                    type="button"
+                    className="notif-x"
+                    onClick={(e) => { e.stopPropagation(); removeNotification(item.id); }}
+                    title={language === 'en' ? 'Dismiss' : 'Dispensar'}
                   >
-                    <strong>{item.title}</strong>
-                    <p>{item.body}</p>
-                    <span className="text-[9px] text-white/30 font-mono mt-1.5 block">{item.time}</span>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); removeNotification(item.id); }}
-                      className="absolute top-3 right-3 text-white/40 hover:text-white bg-transparent border-none cursor-pointer"
-                      title={language === 'en' ? 'Remove' : 'Remover'}
-                    >
-                      <X size={11} />
-                    </button>
-                  </div>
-                ))
-              )}
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
             </div>
-          </div>
-          <div className="panel-bottom-cap" />
+          )}
         </div>
 
-        {/* PANEL 4B: UTILITY ATALHOS PANEL */}
-        <div 
-          id="panel-utilities"
-          className={utilitiesOpen ? '' : 'closed'}
-        >
-          <div className="panel-top-cap" />
-          <div className="panel-center-content">
-            
-            {/* 1. Fileira de 4 botões redondos */}
-            <div className="panel-row-round-buttons">
-              <button 
-                onClick={() => !airplaneMode && setWifiActive(!wifiActive)}
-                disabled={airplaneMode}
-                className={`round-btn ${wifiActive ? 'active' : ''}`}
-                title="Wi-Fi"
-              >
-                <Wifi size={20} />
-              </button>
-              <button 
-                onClick={() => !airplaneMode && setBluetoothActive(!bluetoothActive)}
-                disabled={airplaneMode}
-                className={`round-btn ${bluetoothActive ? 'active' : ''}`}
-                title="Bluetooth"
-              >
-                <Bluetooth size={20} />
-              </button>
-              <button 
-                onClick={() => !airplaneMode && setCellularActive(!cellularActive)}
-                disabled={airplaneMode}
-                className={`round-btn ${cellularActive ? 'active' : ''}`}
-                title="Dados Móveis"
-              >
-                <Signal size={20} />
-              </button>
-              <button 
-                onClick={() => {
-                  const val = !airplaneMode;
-                  setAirplaneMode(val);
-                  if (val) {
-                    setWifiActive(false);
-                    setBluetoothActive(false);
-                    setCellularActive(false);
-                  }
-                }}
-                className={`round-btn ${airplaneMode ? 'active bg-amber-500 text-white' : ''}`}
-                title="Modo Avião"
-              >
-                <Plane size={20} className="rotate-45" />
-              </button>
-            </div>
-
-            {/* 2. Duas barras deslizantes largas e arredondadas */}
-            <div className="panel-sliders-container">
-              <div className="panel-slider-row">
-                <span className="slider-glyph">⛭</span>
-                <input 
-                  type="range" 
-                  min="20" 
-                  max="100" 
-                  value={brightness} 
-                  onChange={e => setBrightness(parseInt(e.target.value))}
-                />
-              </div>
-              <div className="panel-slider-row">
-                <span className="slider-glyph">🔊</span>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="100" 
-                  value={volume} 
-                  onChange={e => setVolume(parseInt(e.target.value))}
-                />
-              </div>
-            </div>
-
-            {/* 3. Grid de baixo (Toggles na esquerda, Mídia na direita) */}
-            <div className="panel-bottom-grid">
-              <div className="panel-vertical-toggles">
-                <button 
-                  onClick={() => setDarkMode(!darkMode)}
-                  className={`toggle-btn ${darkMode ? 'active' : ''}`}
-                >
-                  <Moon size={16} />
-                  <span>{language === 'en' ? 'Dark Mode' : 'Modo Escuro'}</span>
-                </button>
-                <button 
-                  onClick={() => setNightMode(!nightMode)}
-                  className={`toggle-btn ${nightMode ? 'active' : ''}`}
-                >
-                  <Sun size={16} />
-                  <span>{language === 'en' ? 'Night Shield' : 'Modo Noturno'}</span>
-                </button>
-                <button 
-                  onClick={() => toggleFullscreen()}
-                  className={`toggle-btn ${isFullscreen ? 'active bg-blue-600 text-white' : ''}`}
-                  title={language === 'en' ? 'Hide system status bar (Fullscreen)' : 'Esconder barra de status do celular Android (Tela Cheia)'}
-                >
-                  {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
-                  <span>
-                    {isFullscreen 
-                      ? (language === 'en' ? 'Minimize' : 'Minimizar') 
-                      : (language === 'en' ? 'Fullscreen' : 'Tela Cheia')}
-                  </span>
-                </button>
-              </div>
-              
-              <div className="panel-media-player">
-                <span className="media-icon">🎵</span>
-                <div className="flex-1 min-w-0 flex flex-col justify-center px-1">
-                  <p className="text-[10px] font-bold truncate text-white/95 leading-tight">
-                    {tracksList[currentTrackIndex].title}
-                  </p>
-                  <p className="text-[8px] text-white/60 truncate leading-none mt-0.5">
-                    {tracksList[currentTrackIndex].artist}
-                  </p>
-                </div>
-                <div className="media-controls">
-                  <span onClick={(e) => { e.stopPropagation(); setCurrentTrackIndex(currentTrackIndex === 0 ? tracksList.length - 1 : currentTrackIndex - 1); }} title="Anterior">⏮</span>
-                  <span onClick={(e) => { e.stopPropagation(); setMusicPlaying(!musicPlaying); }} title={musicPlaying ? "Pausar" : "Tocar"}>
-                    {musicPlaying ? '⏸' : '▶'}
-                  </span>
-                  <span onClick={(e) => { e.stopPropagation(); setCurrentTrackIndex((currentTrackIndex + 1) % tracksList.length); }} title="Próxima">⏭</span>
-                </div>
-              </div>
-            </div>
-
+        {/* Configurações rápidas */}
+        <div id="panel-utilities" className={utilitiesOpen ? '' : 'closed'}>
+          <div className="qs-tiles">
+            <QSTile
+              label="Wi-Fi"
+              icon={<Wifi size={22} />}
+              active={wifiActive}
+              disabled={airplaneMode}
+              onClick={() => setWifiActive(!wifiActive)}
+            />
+            <QSTile
+              label="Bluetooth"
+              icon={<Bluetooth size={22} />}
+              active={bluetoothActive}
+              disabled={airplaneMode}
+              onClick={() => setBluetoothActive(!bluetoothActive)}
+            />
+            <QSTile
+              label={language === 'en' ? 'Data' : 'Dados'}
+              icon={<Signal size={22} />}
+              active={cellularActive}
+              disabled={airplaneMode}
+              onClick={() => setCellularActive(!cellularActive)}
+            />
+            <QSTile
+              label={language === 'en' ? 'Airplane' : 'Avião'}
+              icon={<Plane size={22} />}
+              active={airplaneMode}
+              warn
+              onClick={() => {
+                const val = !airplaneMode;
+                setAirplaneMode(val);
+                if (val) {
+                  setWifiActive(false);
+                  setBluetoothActive(false);
+                  setCellularActive(false);
+                }
+              }}
+            />
           </div>
-          <div className="panel-bottom-cap" />
+
+          <div className="qs-slider">
+            <SunMedium size={20} />
+            <input
+              className="qs-range"
+              type="range"
+              min="20"
+              max="100"
+              value={brightness}
+              aria-label={language === 'en' ? 'Brightness' : 'Brilho'}
+              style={{ '--val': `${16 + ((brightness - 20) / 80) * 84}%` } as React.CSSProperties}
+              onChange={e => setBrightness(parseInt(e.target.value))}
+            />
+          </div>
+          <div className={`qs-slider ${volume < 8 ? 'is-empty' : ''}`}>
+            {volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+            <input
+              className="qs-range"
+              type="range"
+              min="0"
+              max="100"
+              value={volume}
+              aria-label={language === 'en' ? 'Volume' : 'Volume'}
+              style={{ '--val': `${volume}%` } as React.CSSProperties}
+              onChange={e => setVolume(parseInt(e.target.value))}
+            />
+          </div>
+
+          <div className="qs-chips">
+            <button type="button" className={`qs-chip ${darkMode ? 'active' : ''}`} onClick={() => setDarkMode(!darkMode)}>
+              <Moon size={16} />
+              <span>{language === 'en' ? 'Dark' : 'Escuro'}</span>
+            </button>
+            <button type="button" className={`qs-chip ${nightMode ? 'active' : ''}`} onClick={() => setNightMode(!nightMode)}>
+              <Sun size={16} />
+              <span>{language === 'en' ? 'Night' : 'Noturno'}</span>
+            </button>
+            <button type="button" className={`qs-chip ${isFullscreen ? 'active' : ''}`} onClick={() => toggleFullscreen()}>
+              {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+              <span>{language === 'en' ? 'Fullscreen' : 'Tela cheia'}</span>
+            </button>
+          </div>
+
+          <div className="qs-media">
+            <div className="qs-media-art"><MusicIcon size={18} /></div>
+            <div className="qs-media-meta">
+              <div className="qs-media-title">{tracksList[currentTrackIndex].title}</div>
+              <div className="qs-media-artist">{tracksList[currentTrackIndex].artist}</div>
+            </div>
+            <div className="qs-media-ctrls">
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label={language === 'en' ? 'Previous' : 'Anterior'}
+                onClick={(e) => { e.stopPropagation(); setCurrentTrackIndex(currentTrackIndex === 0 ? tracksList.length - 1 : currentTrackIndex - 1); }}
+              >
+                <SkipBack size={16} />
+              </button>
+              <button
+                type="button"
+                className="icon-btn solid"
+                aria-label={musicPlaying ? (language === 'en' ? 'Pause' : 'Pausar') : (language === 'en' ? 'Play' : 'Tocar')}
+                onClick={(e) => { e.stopPropagation(); setMusicPlaying(!musicPlaying); }}
+              >
+                {musicPlaying ? <Pause size={16} /> : <Play size={16} />}
+              </button>
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label={language === 'en' ? 'Next' : 'Próxima'}
+                onClick={(e) => { e.stopPropagation(); setCurrentTrackIndex((currentTrackIndex + 1) % tracksList.length); }}
+              >
+                <SkipForward size={16} />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* ==========================================
-           5. SYSTEM HOME SCREEN
-           ========================================== */}
-        <main 
+        {/* Tela inicial */}
+        <main
           id="home-screen"
-          className="home-bg-area relative p-4 pt-3 flex flex-col justify-start gap-3"
+          className="home-bg-area"
           onMouseDown={handleHomePressStart}
           onMouseUp={handleHomePressEnd}
           onTouchStart={handleHomePressStart}
@@ -2431,35 +2461,27 @@ export default function App() {
             }
           }}
         >
-          {/* iOS style Edit Mode active badge */}
-          {isEditingHome && (
-            <div 
-              className="w-full bg-slate-950/90 backdrop-blur-md rounded-2xl px-4 py-2.5 flex items-center justify-between border border-white/10 shadow-lg z-50 animate-pulse shrink-0"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="text-[10px] font-black text-amber-400 tracking-wider uppercase flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                Modo de Edição
-              </span>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => setWallpaperPickerOpen(true)}
-                  className="px-2.5 py-1 text-[9px] font-extrabold bg-white/10 hover:bg-white/20 text-white rounded-full transition-all border-none cursor-pointer"
-                >
-                  🖼️ Papel de Parede
+          {isEditingHome ? (
+            <div className="edit-bar" onClick={(e) => e.stopPropagation()}>
+              <span>{language === 'en' ? 'Edit home screen' : 'Editar tela inicial'}</span>
+              <div className="edit-bar-actions">
+                <button type="button" className="btn" onClick={() => setWallpaperPickerOpen(true)}>
+                  <ImageIcon size={14} />
+                  {language === 'en' ? 'Wallpaper' : 'Papel de parede'}
                 </button>
-                <button 
-                  onClick={() => setIsEditingHome(false)}
-                  className="px-3 py-1 text-[9px] font-extrabold bg-emerald-500 hover:bg-emerald-600 text-white rounded-full transition-all border-none cursor-pointer"
-                >
-                  Pronto
+                <button type="button" className="btn primary" onClick={() => setIsEditingHome(false)}>
+                  {language === 'en' ? 'Done' : 'Pronto'}
                 </button>
               </div>
             </div>
+          ) : (
+            <div className="home-clock home-bg-area" style={{ '--i': 0 } as React.CSSProperties}>
+              <span className="home-clock-time home-bg-area">{systemTime}</span>
+              <span className="home-clock-date home-bg-area">{systemDate}</span>
+            </div>
           )}
 
-          {/* Desktop Apps Shortcuts Grid */}
-          <div className="home-bg-area grid grid-cols-4 gap-x-3 gap-y-5 max-h-[78%] overflow-y-auto no-scrollbar pt-2 z-10 select-none">
+          <div className="home-grid home-bg-area">
             {homeApps
               .filter(appId => installedApps.includes(appId))
               .map((appId, index) => {
@@ -2484,15 +2506,13 @@ export default function App() {
                         openApp(appId);
                       }
                     }}
-                    className={`flex flex-col items-center gap-1.5 cursor-pointer relative text-center select-none group ${
-                      isEditingHome 
-                        ? (index % 2 === 0 ? 'jiggle' : 'jiggle-alt') 
-                        : 'hover:scale-105 active:scale-95 transition-all'
-                    }`}
+                    className={`home-app ${isEditingHome ? (index % 2 === 0 ? 'jiggle' : 'jiggle-alt') : ''}`}
+                    style={{ '--i': index + 1 } as React.CSSProperties}
                   >
-                    {/* iOS style delete button */}
                     {isEditingHome && (
                       <button
+                        type="button"
+                        className="remove-badge"
                         onClick={(e) => {
                           e.stopPropagation();
                           e.preventDefault();
@@ -2500,60 +2520,37 @@ export default function App() {
                         }}
                         onMouseDown={(e) => e.stopPropagation()}
                         onTouchStart={(e) => e.stopPropagation()}
-                        className="absolute w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border border-white shadow-md z-30 cursor-pointer active:scale-90 select-none"
-                        style={{ right: 'calc(50% - 24px)', top: '-2px' }}
                         title="Remover atalho"
                       >
-                        ✕
+                        <X size={12} strokeWidth={3} />
                       </button>
                     )}
-
-                    <div className={`w-11 h-11 rounded-[14px] ${meta.iconBgClass} flex items-center justify-center text-2xl shadow-md border border-white/5`}>
-                      {meta.icon}
-                    </div>
-                    <span 
-                      className="text-[9.5px] font-black text-white leading-tight truncate w-full max-w-[62px]"
-                      style={{ textShadow: '0 1.5px 3px rgba(0,0,0,0.85)' }}
-                    >
-                      {meta.label}
-                    </span>
+                    <AppIcon id={appId} size={54} />
+                    <span className="home-app-label">{meta.label}</span>
                   </div>
                 );
               })}
-              
-            {/* Dashed visual slot when dragging an item */}
+
             {draggedApp && dragHasMoved && (
-              <div className="border border-dashed border-white/25 rounded-[14px] w-11 h-11 flex items-center justify-center text-white/20 text-lg bg-white/5 animate-pulse">
-                +
-              </div>
+              <div className="home-slot"><Plus size={18} /></div>
             )}
           </div>
 
-          <div 
+          <div
             id="swipe-trigger"
             onClick={() => setAppDrawerOpen(true)}
-            title="Toque ou deslize da esquerda para abrir a Grade de Apps"
+            title="Toque ou deslize da esquerda para abrir os apps"
           />
         </main>
 
-        {/* ==========================================
-           6. SLIDE-OUT APP DRAWER (Visual e Animação Lateral do Usuário)
-           ========================================== */}
-        <aside 
-          id="app-drawer"
-          className={appDrawerOpen ? '' : 'closed'}
-        >
-          {/* Drawer Header */}
+        {/* Gaveta de apps */}
+        <aside id="app-drawer" className={appDrawerOpen ? '' : 'closed'}>
           <div className="drawer-header">
-            <div className="drawer-header-left">
-              <span className="grid-icon">⣿</span>
-              <span className="drawer-title">Grade de aplicativos</span>
-            </div>
+            <span className="drawer-title">{language === 'en' ? 'Apps' : 'Aplicativos'}</span>
             <span className="drawer-time">{systemTime}</span>
           </div>
 
-          {/* Apps List */}
-          <div className="drawer-list no-scrollbar flex flex-col gap-1">
+          <div className="drawer-list no-scrollbar">
             {[...installedApps]
               .sort((a, b) => {
                 const labelA = appMetadata[a]?.label || '';
@@ -2564,9 +2561,10 @@ export default function App() {
                 const meta = appMetadata[appName];
                 if (!meta) return null;
                 return (
-                  <button 
-                    key={appName} 
-                    className="drawer-item flex items-center p-2.5 transition-all active:scale-95 cursor-pointer text-left w-full hover:bg-white/10 select-none border-none outline-none bg-transparent" 
+                  <button
+                    key={appName}
+                    type="button"
+                    className="drawer-item"
                     onMouseDown={(e) => handleDrawerPressStart(e, appName)}
                     onTouchStart={(e) => handleDrawerPressStart(e, appName)}
                     onMouseMove={(e) => handleDrawerPressMove(e)}
@@ -2576,19 +2574,14 @@ export default function App() {
                     onMouseLeave={handleDrawerPressCancel}
                     onContextMenu={(e) => e.preventDefault()}
                   >
-                    <div className={`app-icon flex items-center justify-center text-xl shadow-sm ${meta.iconBgClass} rounded-2xl w-11 h-11 flex-shrink-0`}>
-                      {meta.icon}
-                    </div>
-                    <span className="app-label text-[11px] font-bold text-white truncate flex-1">{meta.label}</span>
+                    <AppIcon id={appName} size={40} />
+                    <span className="app-label">{meta.label}</span>
                   </button>
                 );
               })}
           </div>
 
-          {/* Drawer Footer */}
-          <div className="drawer-footer">
-            <span>{systemDate}</span>
-          </div>
+          <div className="drawer-footer">{systemDate}</div>
         </aside>
 
         {/* ==========================================
@@ -2596,11 +2589,11 @@ export default function App() {
            ========================================== */}
         
         {/* APP A: CONFIGURAÇÕES */}
-        <div className={`app-window ${activeApp === 'configuracoes' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+        <div className={`app-window ${activeApp === 'configuracoes' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2642,6 +2635,8 @@ export default function App() {
               onUninstall={handleUninstallApp}
               isFullscreen={isFullscreen}
               onToggleFullscreen={toggleFullscreen}
+            autoFullscreen={autoFullscreen}
+            setAutoFullscreen={setAutoFullscreen}
               language={language}
               setLanguage={setLanguage}
               pincode={pincode}
@@ -2654,11 +2649,11 @@ export default function App() {
         </div>
 
         {/* APP B: CALCULADORA */}
-        <div className={`app-window ${activeApp === 'calculadora' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+        <div className={`app-window ${activeApp === 'calculadora' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2667,11 +2662,11 @@ export default function App() {
         </div>
 
         {/* APP C: GALERIA */}
-        <div className={`app-window ${activeApp === 'galeria' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+        <div className={`app-window ${activeApp === 'galeria' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar pt-4 pb-24 px-5 space-y-4 overflow-y-auto">
@@ -2684,14 +2679,14 @@ export default function App() {
               {/* Option to upload wallpaper from real device */}
               <button
                 onClick={() => galleryFileInputRef.current?.click()}
-                className="aspect-[9/16] rounded-2xl overflow-hidden relative shadow-md hover:scale-[0.98] transition-all cursor-pointer border border-dashed border-slate-300 dark:border-white/20 bg-slate-100/50 dark:bg-white/5 flex flex-col items-center justify-center text-center p-4 gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 hover:border-blue-500"
+                className="aspect-[9/16] rounded-2xl overflow-hidden relative transition-all cursor-pointer border border-dashed border-slate-300 dark:border-white/20 bg-slate-100/50 dark:bg-white/5 flex flex-col items-center justify-center text-center p-4 gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 hover:border-blue-500"
               >
                 <div className="w-10 h-10 rounded-full bg-slate-200/80 dark:bg-white/10 flex items-center justify-center text-slate-700 dark:text-white">
                   <Plus size={20} />
                 </div>
                 <div>
                   <p className="font-bold text-xs">Adicionar Foto</p>
-                  <p className="text-[10px] opacity-60">Escolher do dispositivo</p>
+                  <p className="text-[11px] opacity-60">Escolher do dispositivo</p>
                 </div>
               </button>
 
@@ -2707,7 +2702,7 @@ export default function App() {
                 <button
                   key={idx}
                   onClick={() => setSelectedGalleryImg(idx)}
-                  className="aspect-[9/16] rounded-2xl overflow-hidden relative shadow-md hover:scale-[0.98] transition-transform cursor-pointer border border-white/5 text-left w-full"
+                  className="aspect-[9/16] rounded-2xl overflow-hidden relative transition-transform cursor-pointer border border-white/5 text-left w-full"
                   style={{ background: wp.gradient }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-3 text-white">
@@ -2720,8 +2715,8 @@ export default function App() {
             {/* LIGHTBOX CONFIRMAÇÃO DE PAPEL DE PAREDE */}
             {selectedGalleryImg !== null && wallpapers[selectedGalleryImg] && (
               <div className="absolute inset-0 bg-black/95 flex flex-col justify-center items-center p-6 z-50 text-white space-y-6">
-                <div className="w-44 aspect-[9/16] rounded-2xl border-4 border-white/10 shadow-2xl relative overflow-hidden" style={{ background: wallpapers[selectedGalleryImg].gradient }}>
-                  <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/40 px-3 py-1 rounded-full text-[9px] text-center">
+                <div className="w-44 aspect-[9/16] rounded-2xl border-4 border-white/10 relative overflow-hidden" style={{ background: wallpapers[selectedGalleryImg].gradient }}>
+                  <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/40 px-3 py-1 rounded-full text-[11px] text-center">
                     Visualização
                   </div>
                 </div>
@@ -2775,11 +2770,11 @@ export default function App() {
         </div>
 
         {/* APP D: MENSAGENS */}
-        <div className={`app-window ${activeApp === 'mensagens' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950' : 'bg-white'}`}>
+        <div className={`app-window ${activeApp === 'mensagens' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2799,11 +2794,11 @@ export default function App() {
         </div>
 
         {/* APP E: MÚSICA */}
-        <div className={`app-window ${activeApp === 'musica' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+        <div className={`app-window ${activeApp === 'musica' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2821,11 +2816,11 @@ export default function App() {
         </div>
 
         {/* APP F: NAVEGADOR */}
-        <div className={`app-window ${activeApp === 'navegador' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950' : 'bg-white'}`}>
+        <div className={`app-window ${activeApp === 'navegador' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2834,11 +2829,11 @@ export default function App() {
         </div>
 
         {/* APP G: ARQUIVOS */}
-        <div className={`app-window ${activeApp === 'arquivos' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+        <div className={`app-window ${activeApp === 'arquivos' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2854,11 +2849,11 @@ export default function App() {
         </div>
 
         {/* APP H: LOJA DE APLICATIVOS */}
-        <div className={`app-window ${activeApp === 'loja' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+        <div className={`app-window ${activeApp === 'loja' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2873,11 +2868,11 @@ export default function App() {
         </div>
 
         {/* APP I: BLOCO DE NOTAS */}
-        <div className={`app-window ${activeApp === 'notas' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+        <div className={`app-window ${activeApp === 'notas' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2886,11 +2881,11 @@ export default function App() {
         </div>
 
         {/* APP J: FLAPPY BIRD */}
-        <div className={`app-window ${activeApp === 'flappy' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+        <div className={`app-window ${activeApp === 'flappy' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2899,11 +2894,11 @@ export default function App() {
         </div>
 
         {/* APP K: PREVISÃO DO TEMPO */}
-        <div className={`app-window ${activeApp === 'clima' ? '' : 'closed'} ${darkMode ? 'dark text-white' : 'text-white'}`}>
+        <div className={`app-window immersive ${activeApp === 'clima' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2912,11 +2907,11 @@ export default function App() {
         </div>
 
         {/* APP L: MINI PAINT */}
-        <div className={`app-window ${activeApp === 'paint' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+        <div className={`app-window ${activeApp === 'paint' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2925,11 +2920,11 @@ export default function App() {
         </div>
 
         {/* APP M: TELEFONE */}
-        <div className={`app-window ${activeApp === 'telefone' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+        <div className={`app-window ${activeApp === 'telefone' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2938,11 +2933,11 @@ export default function App() {
         </div>
 
         {/* APP N: CONTATOS */}
-        <div className={`app-window ${activeApp === 'contatos' ? '' : 'closed'} ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-950'}`}>
+        <div className={`app-window ${activeApp === 'contatos' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2957,11 +2952,11 @@ export default function App() {
         </div>
 
         {/* APP O: CÂMERA */}
-        <div className={`app-window ${activeApp === 'camera' ? '' : 'closed'} dark bg-black text-white`}>
+        <div className={`app-window immersive ${activeApp === 'camera' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
-              <X size={14} />
+              <ChevronDown size={18} />
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
@@ -2969,14 +2964,11 @@ export default function App() {
           </div>
         </div>
 
-        {/* ==========================================
-           8. BOTTOM DOCK (Visual e Formato Original do Usuário)
-           ========================================== */}
-        <footer 
+        {/* Dock */}
+        <footer
           id="bottom-dock"
-          className={`flex items-center justify-center gap-5 transition-all duration-200 select-none ${
-            dragOverZone === 'dock' ? 'bg-white/20 scale-[1.05] ring-2 ring-white/10' : ''
-          }`}
+          className={dragOverZone === 'dock' ? 'drop-target' : ''}
+          style={{ '--i': 6 } as React.CSSProperties}
         >
           {dockApps
             .filter(appId => installedApps.includes(appId))
@@ -2984,7 +2976,7 @@ export default function App() {
               const meta = appMetadata[appId];
               if (!meta) return null;
               return (
-                <div 
+                <div
                   key={appId}
                   onClick={() => {
                     if (!draggedApp || !dragHasMoved) {
@@ -2993,17 +2985,14 @@ export default function App() {
                   }}
                   onMouseDown={(e) => handleStartDrag(e, appId, false, 'dock')}
                   onTouchStart={(e) => handleStartDrag(e, appId, false, 'dock')}
-                  className={`dock-icon flex items-center justify-center text-3xl shadow-md cursor-pointer relative group ${
-                    isEditingHome 
-                      ? (index % 2 === 0 ? 'jiggle' : 'jiggle-alt') 
-                      : 'hover:scale-105 active:scale-95 transition-all'
-                  }`}
-                  style={{ backgroundColor: 'transparent' }}
+                  className={`dock-icon ${isEditingHome ? (index % 2 === 0 ? 'jiggle' : 'jiggle-alt') : ''}`}
                   title={meta.label}
                 >
-                  {/* iOS style delete button */}
                   {isEditingHome && (
                     <button
+                      type="button"
+                      className="remove-badge"
+                      style={{ right: '-6px', top: '-6px' }}
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
@@ -3011,26 +3000,18 @@ export default function App() {
                       }}
                       onMouseDown={(e) => e.stopPropagation()}
                       onTouchStart={(e) => e.stopPropagation()}
-                      className="absolute w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border border-white shadow-md z-30 cursor-pointer active:scale-90 select-none"
-                      style={{ right: '-4px', top: '-4px' }}
                       title="Remover atalho"
                     >
-                      ✕
+                      <X size={12} strokeWidth={3} />
                     </button>
                   )}
-
-                  <div className={`w-11 h-11 flex items-center justify-center rounded-[14px] ${meta.iconBgClass} text-white`}>
-                    {meta.icon}
-                  </div>
+                  <AppIcon id={appId} size={52} />
                 </div>
               );
             })}
-            
-          {/* Visual slot indicator if dock has space */}
+
           {dockApps.filter(appId => installedApps.includes(appId)).length < 4 && (
-            <div className="w-11 h-11 border border-dashed border-white/20 rounded-[14px] flex items-center justify-center text-xs text-white/30 pointer-events-none bg-white/5 select-none">
-              +
-            </div>
+            <div className="dock-slot"><Plus size={18} /></div>
           )}
         </footer>
 
@@ -3043,7 +3024,7 @@ export default function App() {
               opacity: Math.min(1, (swipeBackStartX - swipeBackCurrentX) / 50)
             }}
           >
-            <div className="w-12 h-24 bg-black/50 backdrop-blur-md border border-white/10 rounded-l-full flex items-center justify-center text-white shadow-2xl">
+            <div className="w-12 h-24 bg-black/50 backdrop-blur-md border border-white/10 rounded-l-full flex items-center justify-center text-white">
               <ChevronLeft 
                 size={24} 
                 className="text-white/90 animate-pulse"
@@ -3055,36 +3036,27 @@ export default function App() {
           </div>
         )}
 
-        {/* ==========================================
-           MULTITASKING / RECENT APPS VIEW (Modo Multitarefa)
-           ========================================== */}
+        {/* Multitarefa */}
         {recentAppsOpen && (
-          <div 
-            onClick={() => setRecentAppsOpen(false)}
-            className="absolute inset-0 bg-black/75 backdrop-blur-2xl z-40 flex flex-col justify-between p-6 text-white select-none transition-all duration-300"
-          >
-            
-            {/* Middle Carousel of cards */}
-            <div 
-              className="flex-1 flex items-center justify-start overflow-x-auto gap-5 py-8 no-scrollbar px-6 w-full snap-x snap-mandatory"
-            >
+          <div className="recents" onClick={() => setRecentAppsOpen(false)}>
+            <div className="recents-track no-scrollbar">
               {openedApps.length === 0 ? (
-                <div className="text-center w-full flex flex-col items-center justify-center">
-                  <p className="text-sm text-slate-400 font-medium tracking-wide">nenhum app aberto</p>
+                <div className="empty-state" style={{ width: '100%', color: 'rgba(255,255,255,0.5)' }}>
+                  <span>Nenhum app aberto</span>
                 </div>
               ) : (
                 openedApps.map((appName) => {
-                  const meta = appMetadata[appName] || { label: appName, icon: '📱', iconBgClass: 'bg-slate-700' };
-                  const isActive = activeApp === appName;
-                  
+                  const meta = appMetadata[appName];
+                  if (!meta) return null;
                   return (
-                    <motion.div 
+                    <motion.div
                       key={appName}
+                      className="recent-card"
                       drag="y"
                       dragConstraints={{ top: -300, bottom: 0 }}
                       dragElastic={{ top: 0.8, bottom: 0.1 }}
                       onDragEnd={(event, info) => {
-                        // Se deslizou mais de 120px para cima, fecha o app
+                        // Deslizar mais de 120px para cima fecha o app
                         if (info.offset.y < -120) {
                           setOpenedApps(prev => prev.filter(name => name !== appName));
                           if (activeApp === appName) {
@@ -3093,149 +3065,95 @@ export default function App() {
                         }
                       }}
                       whileTap={{ scale: 0.98 }}
-                      className="w-48 h-72 flex-shrink-0 bg-slate-900 border border-white/15 rounded-2xl flex flex-col overflow-hidden relative shadow-2xl transition-all cursor-pointer group snap-center select-none touch-none"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         openApp(appName);
                         setRecentAppsOpen(false);
                       }}
                     >
-                       {/* Top App Header inside card */}
-                      <div className="p-3 bg-black/40 border-b border-white/5 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className={`w-6 h-6 rounded-lg ${meta.iconBgClass} flex items-center justify-center text-xs shadow`}>
-                            {meta.icon}
-                          </div>
-                          <span className="font-bold text-[11px] truncate text-white">{meta.label}</span>
-                        </div>
-                        
-                        {isActive ? (
-                          <span className="flex items-center gap-1 text-[8px] font-bold text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded-full border border-green-500/20">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                            Ativo
-                          </span>
-                        ) : (
-                          <span className="text-[8px] font-medium text-slate-400 bg-slate-500/10 px-1.5 py-0.5 rounded-full border border-slate-500/10">
-                            2º Plano
-                          </span>
-                        )}
+                      <div className="recent-card-head">
+                        <AppIcon id={appName} size={24} />
+                        <span>{meta.label}</span>
                       </div>
-
-                      {/* Real Preview Content */}
-                      <div className="flex-1 overflow-hidden pointer-events-none select-none relative bg-slate-900">
-                        <div 
-                          className="absolute top-0 left-0 origin-top-left" 
-                          style={{ 
-                            width: '384px', 
-                            height: '488px', 
-                            transform: 'scale(0.5)',
+                      <div className="recent-card-body">
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '384px',
+                            height: '488px',
+                            transformOrigin: 'top left',
+                            transform: 'scale(0.5)'
                           }}
                         >
                           {renderAppPreviewContent(appName)}
                         </div>
                       </div>
-
-                      {/* Small visual swipe-up hint bar at bottom of card */}
-                      <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/20 rounded-full group-hover:bg-white/40 transition-colors" />
                     </motion.div>
                   );
                 })
               )}
             </div>
 
-            {/* Bottom Actions - Center round 'X' button to clear everything */}
-            <div 
-              className="pb-8 flex flex-col items-center gap-2 w-full"
-            >
-              {openedApps.length > 0 && (
-                <>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenedApps([]);
-                      setActiveApp(null);
-                      setRecentAppsOpen(false);
-                    }}
-                    className="w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center shadow-2xl active:scale-90 hover:scale-105 transition-all cursor-pointer border-none"
-                    title="Fechar todos os apps"
-                  >
-                    <X size={24} strokeWidth={2.5} />
-                  </button>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Fechar Tudo</span>
-                </>
-              )}
-            </div>
+            {openedApps.length > 0 && (
+              <button
+                type="button"
+                className="recent-clear"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenedApps([]);
+                  setActiveApp(null);
+                  setRecentAppsOpen(false);
+                }}
+              >
+                Fechar tudo
+              </button>
+            )}
           </div>
         )}
 
-        {/* ==========================================
-           10. POPUP NOTIFICATION CAP (Deslizar para Cima para Fechar, Deslizar para Baixo para Abrir)
-           ========================================== */}
+        {/* Aviso de notificação (arraste para cima para dispensar, para baixo para abrir) */}
         <AnimatePresence>
           {activePopup && (
             <motion.div
               key={activePopup.id}
-              initial={{ x: "-50%", y: -120, opacity: 0, scale: 0.95 }}
-              animate={{ x: "-50%", y: 0, opacity: 1, scale: 1 }}
-              exit={{ x: "-50%", y: -120, opacity: 0, scale: 0.95 }}
-              transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+              className="toast"
+              initial={{ x: "-50%", y: -90, opacity: 0 }}
+              animate={{ x: "-50%", y: 0, opacity: 1 }}
+              exit={{ x: "-50%", y: -90, opacity: 0 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 340 }}
               drag="y"
               dragConstraints={{ top: -150, bottom: 150 }}
               dragElastic={{ top: 0.15, bottom: 0.4 }}
               onDragEnd={(event, info) => {
                 if (info.offset.y < -35 || info.velocity.y < -300) {
-                  // Swipe up: close/dismiss
                   setActivePopup(null);
                 } else if (info.offset.y > 50 || info.velocity.y > 300) {
-                  // Swipe down: open/activate
                   handlePopupAction(activePopup);
                 }
               }}
               onClick={() => handlePopupAction(activePopup)}
-              className="absolute top-14 left-1/2 z-[10000] w-[calc(100%-24px)] max-w-[360px] flex items-center gap-3.5 p-3.5 rounded-3xl bg-slate-900/95 dark:bg-[#1a1c22]/95 text-white shadow-[0_20px_45px_rgba(0,0,0,0.55)] border border-white/10 backdrop-blur-xl cursor-pointer select-none active:scale-[0.99] transition-transform duration-100"
             >
-              {/* Avatar / App Icon on Left */}
-              <div className="flex-shrink-0 relative">
-                {activePopup.avatar ? (
-                  <div className="w-11 h-11 rounded-2xl overflow-hidden bg-slate-800 flex items-center justify-center border border-white/10 shadow-inner">
-                    <span className="text-xl">{activePopup.avatar}</span>
-                  </div>
-                ) : (
-                  <div className="w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center border border-white/10 text-white shadow-inner">
-                    <Bell size={20} />
-                  </div>
-                )}
-                {/* Secondary tiny app icon indicator */}
-                <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-lg p-1 border border-slate-900 shadow">
-                  <MessageSquare size={10} className="text-white" />
+              {activePopup.avatar ? (
+                <div className="toast-avatar">{activePopup.avatar}</div>
+              ) : (
+                <div className="toast-avatar accent"><Bell size={18} /></div>
+              )}
+              <div className="toast-body">
+                <div className="toast-head">
+                  <span className="toast-title">{activePopup.title}</span>
+                  <span className="toast-time">Agora</span>
                 </div>
+                <p className="toast-text">{activePopup.body}</p>
               </div>
-
-              {/* Text content in middle */}
-              <div className="flex-1 min-w-0 pr-1">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="font-bold text-[12.5px] tracking-tight truncate text-white">
-                    {activePopup.title}
-                  </span>
-                  <span className="text-[9.5px] font-mono text-white/40 flex-shrink-0">
-                    Agora
-                  </span>
-                </div>
-                <p className="text-[11.5px] text-white/80 line-clamp-2 leading-snug mt-0.5">
-                  {activePopup.body}
-                </p>
-              </div>
-
-              {/* Pull handle / Drag hint line at the bottom of the card */}
-              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-white/20" />
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ==========================================
-           9. GESTURE NAVIGATION PILL BAR (Android/iOS Style)
-           ========================================== */}
-        <div 
-          className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/40 rounded-full z-[100] cursor-pointer hover:bg-white/60 active:scale-95 transition-all"
+        {/* Indicador de gesto: toque para voltar à tela inicial / ver recentes */}
+        <div
+          className="home-indicator"
           onClick={() => {
             if (activeApp !== null) {
               setActiveApp(null);
@@ -3244,7 +3162,7 @@ export default function App() {
               setRecentAppsOpen(!recentAppsOpen);
             }
           }}
-          title="Toque para Voltar à Tela Inicial / Ver Aplicativos Recentes"
+          title="Toque para voltar à tela inicial / ver aplicativos recentes"
         />
 
         {/* Wallpaper Picker Sheet (Long-Press Home Screen overlay) */}
@@ -3267,8 +3185,8 @@ export default function App() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-white font-black text-base tracking-tight">Alterar Papel de Parede</span>
-                    <span className="text-slate-400 text-[10px] tracking-wide uppercase font-bold">Toque para selecionar</span>
+                    <span className="text-white font-semibold text-base tracking-tight">Alterar Papel de Parede</span>
+                    <span className="text-slate-400 text-[11px] font-bold">Toque para selecionar</span>
                   </div>
                   <button 
                     onClick={() => setWallpaperPickerOpen(false)}
@@ -3281,19 +3199,19 @@ export default function App() {
                 <div className="flex bg-slate-800/80 p-1 rounded-xl border border-white/5 text-xs font-semibold">
                   <button
                     onClick={() => setWallpaperTarget('home')}
-                    className={`flex-1 py-1.5 rounded-lg border-none cursor-pointer transition-all ${wallpaperTarget === 'home' ? 'bg-blue-600 text-white shadow' : 'bg-transparent text-slate-400 hover:text-white'}`}
+                    className={`flex-1 py-1.5 rounded-lg border-none cursor-pointer transition-all ${wallpaperTarget === 'home' ? 'bg-blue-600 text-white' : 'bg-transparent text-slate-400 hover:text-white'}`}
                   >
                     Tela Inicial
                   </button>
                   <button
                     onClick={() => setWallpaperTarget('lock')}
-                    className={`flex-1 py-1.5 rounded-lg border-none cursor-pointer transition-all ${wallpaperTarget === 'lock' ? 'bg-emerald-600 text-white shadow' : 'bg-transparent text-slate-400 hover:text-white'}`}
+                    className={`flex-1 py-1.5 rounded-lg border-none cursor-pointer transition-all ${wallpaperTarget === 'lock' ? 'bg-emerald-600 text-white' : 'bg-transparent text-slate-400 hover:text-white'}`}
                   >
                     Tela de Bloqueio
                   </button>
                   <button
                     onClick={() => setWallpaperTarget('both')}
-                    className={`flex-1 py-1.5 rounded-lg border-none cursor-pointer transition-all ${wallpaperTarget === 'both' ? 'bg-violet-600 text-white shadow' : 'bg-transparent text-slate-400 hover:text-white'}`}
+                    className={`flex-1 py-1.5 rounded-lg border-none cursor-pointer transition-all ${wallpaperTarget === 'both' ? 'bg-violet-600 text-white' : 'bg-transparent text-slate-400 hover:text-white'}`}
                   >
                     Ambas
                   </button>
@@ -3302,8 +3220,8 @@ export default function App() {
                 <div className="flex-1 overflow-y-auto no-scrollbar pr-1 flex flex-col gap-6">
                   {/* Animados Section */}
                   <div className="flex flex-col gap-2.5">
-                    <span className="text-emerald-400 text-[10px] font-black tracking-wider uppercase flex items-center gap-1">
-                      <span>✨</span> Papéis de Parede Animados
+                    <span className="text-emerald-400 text-[11px] font-semibold flex items-center gap-1">
+                      Papéis de parede animados
                     </span>
                     <div className="grid grid-cols-2 gap-3">
                       {wallpapers
@@ -3319,13 +3237,13 @@ export default function App() {
                                 if (wallpaperTarget === 'lock' || wallpaperTarget === 'both') setLockWallpaperIndex(w.originalIdx);
                                 setWallpaperPickerOpen(false);
                               }}
-                              className={`group relative h-20 rounded-2xl border text-left overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
-                                isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/25' : 'border-white/10 hover:border-white/20'
-                              }`}
+                              className={`group relative h-20 rounded-2xl border text-left overflow-hidden transition-all active:scale-[0.98] cursor-pointer ${
+ isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/25' : 'border-white/10 hover:border-white/20'
+ }`}
                               style={{ background: w.gradient }}
                             >
                               <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-2.5">
-                                <span className="text-white text-[10.5px] font-extrabold truncate w-full group-hover:text-emerald-300 transition-colors">
+                                <span className="text-white text-[11px] font-semibold truncate w-full group-hover:text-emerald-300 transition-colors">
                                   {w.name.replace('★ ', '')}
                                 </span>
                                 {isSelected && (
@@ -3342,8 +3260,8 @@ export default function App() {
 
                   {/* Estáticos Section */}
                   <div className="flex flex-col gap-2.5">
-                    <span className="text-sky-400 text-[10px] font-black tracking-wider uppercase flex items-center gap-1">
-                      <span>🖼️</span> Estáticos Clássicos
+                    <span className="text-sky-400 text-[11px] font-semibold flex items-center gap-1">
+                      Papéis de parede estáticos
                     </span>
                     <div className="grid grid-cols-2 gap-3">
                       <button
@@ -3351,10 +3269,10 @@ export default function App() {
                           setActiveApp('galeria');
                           setWallpaperPickerOpen(false);
                         }}
-                        className="group relative h-20 rounded-2xl border border-dashed border-white/20 hover:border-white/45 bg-white/5 hover:bg-white/10 flex flex-col items-center justify-center text-center transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-slate-300 gap-1"
+                        className="group relative h-20 rounded-2xl border border-dashed border-white/20 hover:border-white/45 bg-white/5 hover:bg-white/10 flex flex-col items-center justify-center text-center transition-all active:scale-[0.98] cursor-pointer text-slate-300 gap-1"
                       >
                         <Plus size={16} />
-                        <span className="text-white text-[9px] font-black uppercase tracking-wider">Escolher da Galeria</span>
+                        <span className="text-white text-[11px] font-semibold">Escolher da Galeria</span>
                       </button>
                       {wallpapers
                         .map((w, idx) => ({ ...w, originalIdx: idx }))
@@ -3369,13 +3287,13 @@ export default function App() {
                                 if (wallpaperTarget === 'lock' || wallpaperTarget === 'both') setLockWallpaperIndex(w.originalIdx);
                                 setWallpaperPickerOpen(false);
                               }}
-                              className={`group relative h-20 rounded-2xl border text-left overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
-                                isSelected ? 'border-sky-500 ring-2 ring-sky-500/25' : 'border-white/10 hover:border-white/20'
-                              }`}
+                              className={`group relative h-20 rounded-2xl border text-left overflow-hidden transition-all active:scale-[0.98] cursor-pointer ${
+ isSelected ? 'border-sky-500 ring-2 ring-sky-500/25' : 'border-white/10 hover:border-white/20'
+ }`}
                               style={{ background: w.gradient }}
                             >
                               <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-2.5">
-                                <span className="text-white text-[10.5px] font-extrabold truncate w-full group-hover:text-sky-300 transition-colors">
+                                <span className="text-white text-[11px] font-semibold truncate w-full group-hover:text-sky-300 transition-colors">
                                   {w.name}
                                 </span>
                                 {isSelected && (
@@ -3395,19 +3313,16 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Global Floating Draggable App Shortcut visual feedback */}
+        {/* Atalho sendo arrastado */}
         {draggedApp && dragHasMoved && (
-          <div 
+          <div
             className="fixed pointer-events-none z-[9999] flex flex-col items-center gap-1.5 -translate-x-1/2 -translate-y-1/2 select-none"
-            style={{
-              left: dragPosition.x,
-              top: dragPosition.y,
-            }}
+            style={{ left: dragPosition.x, top: dragPosition.y }}
           >
-            <div className={`w-12 h-12 rounded-2xl ${appMetadata[draggedApp.appId]?.iconBgClass || 'bg-slate-500'} flex items-center justify-center text-3xl shadow-[0_15px_30px_rgba(0,0,0,0.4)] ring-4 ring-white/20 scale-110 opacity-90 animate-bounce`}>
-              {appMetadata[draggedApp.appId]?.icon}
+            <div style={{ transform: 'scale(1.12)', opacity: 0.94 }}>
+              <AppIcon id={draggedApp.appId} size={56} />
             </div>
-            <span className="text-[9px] font-black tracking-wider uppercase text-white bg-slate-950/80 px-2 py-0.5 rounded-md border border-white/10 shadow-lg leading-none">
+            <span className="text-[11px] font-medium text-white">
               {appMetadata[draggedApp.appId]?.label}
             </span>
           </div>

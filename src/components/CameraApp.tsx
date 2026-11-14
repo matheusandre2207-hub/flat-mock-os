@@ -201,13 +201,13 @@ export default function CameraApp({ darkMode, isActive = true, capturedPhotos: p
           {/* Full size photo display */}
           <div className="flex-1 flex items-center justify-center p-2">
             <div 
-              className={`w-full aspect-[3/4] max-w-sm rounded-3xl bg-gradient-to-tr ${viewingPhoto.url} shadow-2xl relative overflow-hidden flex flex-col justify-between p-6`}
+              className={`w-full aspect-[3/4] max-w-sm rounded-3xl bg-gradient-to-tr ${viewingPhoto.url} relative overflow-hidden flex flex-col justify-between p-6`}
             >
               <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
                 <div className="text-center space-y-2 select-none opacity-80 scale-110">
-                  <span className="text-4xl block">📸</span>
-                  <p className="text-[10px] font-bold tracking-widest uppercase text-white/90">Mock Capture</p>
-                  <p className="text-[8px] font-mono tracking-wider text-white/50">{viewingPhoto.filter.toUpperCase()} FILTER • ZOOM {zoomLevel.toFixed(1)}X</p>
+                  <Camera size={36} className="mx-auto" />
+                  <p className="text-[11px] font-bold text-white/90">Mock Capture</p>
+                  <p className="text-[11px] font-mono text-white/50">{viewingPhoto.filter.toUpperCase()} FILTER • ZOOM {zoomLevel.toFixed(1)}X</p>
                 </div>
               </div>
             </div>
@@ -247,7 +247,7 @@ export default function CameraApp({ darkMode, isActive = true, capturedPhotos: p
           >
             <Zap size={15} />
           </button>
-          <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">RESOLUÇÃO: 1080P</span>
+          <span className="text-[11px] font-bold text-slate-400">RESOLUÇÃO: 1080P</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -283,7 +283,7 @@ export default function CameraApp({ darkMode, isActive = true, capturedPhotos: p
         ) : (
           /* HIGH-FIDELITY VIEWPORT SIMULATION (Parallax moving sky / filter scene) */
           <div 
-            className={`w-full h-full bg-gradient-to-b from-slate-900 to-indigo-950 relative flex items-center justify-center transition-all duration-300 ${getFilterStyle()}`}
+            className={`w-full h-full bg-slate-900 relative flex items-center justify-center transition-all duration-300 ${getFilterStyle()}`}
             style={{ transform: `scale(${zoomLevel})` }}
           >
             {/* Viewfinder crosshairs and guidelines */}
@@ -296,13 +296,13 @@ export default function CameraApp({ darkMode, isActive = true, capturedPhotos: p
             </div>
 
             {/* Immersive moving SVG cosmic landscape for the simulator */}
-            <div className="w-44 h-44 rounded-full bg-gradient-to-tr from-pink-500/20 via-purple-600/30 to-cyan-500/10 blur-xl animate-pulse absolute" />
+            <div className="w-44 h-44 rounded-full bg-pink-500 blur-xl animate-pulse absolute" />
             
             <div className="text-center z-10 space-y-3 p-4">
-              <span className="text-5xl block animate-bounce">🪐</span>
+              <Camera size={44} className="mx-auto text-slate-500" />
               <div>
-                <p className="text-xs font-bold tracking-widest text-slate-300">Câmera Virtual</p>
-                <p className="text-[9px] text-slate-500 font-medium uppercase mt-1">Toque no botão central para capturar</p>
+                <p className="text-xs font-bold text-slate-300">Câmera Virtual</p>
+                <p className="text-[11px] text-slate-500 font-medium mt-1">Toque no botão central para capturar</p>
               </div>
             </div>
           </div>
@@ -310,7 +310,7 @@ export default function CameraApp({ darkMode, isActive = true, capturedPhotos: p
 
         {/* Live Filter Indicator Capsule */}
         {activeFilter !== 'none' && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-bold tracking-wider uppercase border border-white/10">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 px-3 py-1 rounded-full text-[11px] font-bold border border-white/10">
             Filtro: {activeFilter}
           </div>
         )}
@@ -331,11 +331,11 @@ export default function CameraApp({ darkMode, isActive = true, capturedPhotos: p
             <button
               key={f.id}
               onClick={() => setActiveFilter(f.id as any)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border-none cursor-pointer ${
-                activeFilter === f.id 
-                  ? 'bg-blue-600 text-white scale-105' 
-                  : 'bg-white/10 hover:bg-white/15 text-slate-300'
-              }`}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer ${
+ activeFilter === f.id 
+ ? 'bg-blue-600 text-white scale-105' 
+ : 'bg-white/10 hover:bg-white/15 text-slate-300'
+ }`}
             >
               {f.label}
             </button>
@@ -354,14 +354,14 @@ export default function CameraApp({ darkMode, isActive = true, capturedPhotos: p
                 style={{ backgroundImage: `linear-gradient(to top right, ${capturedPhotos[0].url.split(' ')[1] || '#3b82f6'}, ${capturedPhotos[0].url.split(' ')[3] || '#8b5cf6'})` }}
               />
             ) : (
-              <span className="text-xs text-slate-600">📁</span>
+              <Image size={14} className="text-slate-600" />
             )}
           </div>
 
           {/* Center: Big circular shutter button */}
           <button 
             onClick={capturePhoto}
-            className="w-16 h-16 rounded-full bg-white flex items-center justify-center border-none cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+            className="w-16 h-16 rounded-full bg-white flex items-center justify-center border-none cursor-pointer active:scale-95 transition-transform"
           >
             <div className="w-[52px] h-[52px] rounded-full border-2 border-black bg-white flex items-center justify-center">
               <div className="w-10 h-10 rounded-full bg-red-600" />

@@ -95,11 +95,11 @@ export default function Calculator({ darkMode = true }: CalculatorProps) {
   return (
     <div className={`w-full h-full flex flex-col justify-end p-4 pb-20 pt-4 ${darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
       {/* Display screen */}
-      <div className={`mb-3 text-right p-4 rounded-2xl border min-h-[110px] flex flex-col justify-end transition-colors ${darkMode ? 'bg-black/35 border-white/5' : 'bg-white border-slate-200 shadow-sm'}`}>
+      <div className={`mb-3 text-right p-4 rounded-2xl border min-h-[110px] flex flex-col justify-end transition-colors ${darkMode ? 'bg-black/35 border-white/5' : 'bg-white border-slate-200'}`}>
         <div className={`text-xs font-mono h-4 mb-1 truncate ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>
           {equation}
         </div>
-        <div className={`text-4xl font-semibold font-mono tracking-wider truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+        <div className={`text-4xl font-semibold font-mono truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
           {display}
         </div>
       </div>

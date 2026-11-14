@@ -251,7 +251,7 @@ export default function MessagesApp({
       <div className={`w-full md:w-80 flex flex-col border-r flex-shrink-0 ${darkMode ? 'border-white/10 bg-slate-950' : 'border-slate-100 bg-slate-50'} ${selectedChatId ? 'hidden md:flex' : 'flex'}`}>
         <div className="pt-4 pb-3 px-5 border-b border-white/5 flex items-center gap-2.5">
           <MessageSquare className="text-blue-500" size={22} />
-          <h2 className="font-extrabold text-lg tracking-tight">Conversas</h2>
+          <h2 className="font-semibold text-lg tracking-tight">Conversas</h2>
         </div>
 
         <div className="flex-1 overflow-y-auto divide-y divide-white/5 no-scrollbar pb-20">
@@ -262,12 +262,12 @@ export default function MessagesApp({
                 key={chat.id}
                 onClick={() => setSelectedChatId(chat.id)}
                 className={`w-full p-4 text-left flex items-start gap-3.5 transition-colors cursor-pointer border-none ${
-                  selectedChatId === chat.id 
-                    ? (darkMode ? 'bg-white/10' : 'bg-blue-50/80') 
-                    : (darkMode ? 'hover:bg-white/5 bg-transparent' : 'hover:bg-slate-100 bg-transparent')
-                }`}
+ selectedChatId === chat.id 
+ ? (darkMode ? 'bg-white/10' : 'bg-blue-50/80') 
+ : (darkMode ? 'hover:bg-white/5 bg-transparent' : 'hover:bg-slate-100 bg-transparent')
+ }`}
               >
-                <div className="w-12 h-12 rounded-2.5xl bg-gradient-to-tr from-slate-800 to-slate-700 flex items-center justify-center relative flex-shrink-0 shadow-sm border border-white/10">
+                <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center relative flex-shrink-0 border border-white/10">
                   {renderAvatarIcon(chat.avatar, 22)}
                   {chat.id !== 'self-notes' && (
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950"></span>
@@ -275,13 +275,13 @@ export default function MessagesApp({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-0.5">
-                    <span className="font-extrabold text-[13.5px] truncate text-slate-900 dark:text-white">{chat.name}</span>
-                    <span className="text-[10px] opacity-45 font-mono ml-2 shrink-0">{lastMsg?.timestamp || ''}</span>
+                    <span className="font-semibold text-[13.5px] truncate text-slate-900 dark:text-white">{chat.name}</span>
+                    <span className="text-[11px] opacity-45 font-mono ml-2 shrink-0">{lastMsg?.timestamp || ''}</span>
                   </div>
                   <p className="text-[12px] opacity-65 truncate leading-snug font-medium text-slate-600 dark:text-slate-300">{lastMsg?.text || ''}</p>
                 </div>
                 {chat.unread && (
-                  <div className="w-2.5 h-2.5 bg-blue-500 rounded-full self-center flex-shrink-0 shadow-sm animate-pulse" />
+                  <div className="w-2.5 h-2.5 bg-blue-500 rounded-full self-center flex-shrink-0 animate-pulse" />
                 )}
               </button>
             );
@@ -293,12 +293,12 @@ export default function MessagesApp({
       <div className={`flex-1 flex flex-col h-full min-w-0 ${selectedChatId ? 'flex' : 'hidden md:flex bg-slate-900/10 items-center justify-center'}`}>
         {activeChat ? (
           <div className={`flex-1 flex flex-col w-full h-full relative ${
-            darkMode ? 'bg-[#121214]' : 'bg-[#f8f9fa]'
-          }`}>
+ darkMode ? 'bg-slate-950' : 'bg-slate-50'
+ }`}>
             {/* Conversation Header */}
             <div className={`pt-3.5 pb-3.5 px-5 border-b flex items-center justify-between shrink-0 z-10 ${
-              darkMode ? 'border-white/10 bg-[#1c1c1e]/90 backdrop-blur-md' : 'border-slate-200/80 bg-white/90 backdrop-blur-md shadow-xs'
-            }`}>
+ darkMode ? 'border-white/10 bg-slate-900/90' : 'border-slate-200/80 bg-white/90'
+ }`}>
               <div className="flex items-center gap-3 min-w-0">
                 <button 
                   onClick={() => setSelectedChatId(null)}
@@ -306,12 +306,12 @@ export default function MessagesApp({
                 >
                   <ArrowLeft size={20} />
                 </button>
-                <div className="w-10 h-10 rounded-2.5xl bg-gradient-to-tr from-slate-800 to-slate-700 flex items-center justify-center border border-white/10 shadow-sm shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center border border-white/10 shrink-0">
                   {renderAvatarIcon(activeChat.avatar, 20)}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-extrabold text-[14.5px] truncate text-slate-900 dark:text-white">{activeChat.name}</h3>
+                    <h3 className="font-semibold text-[14.5px] truncate text-slate-900 dark:text-white">{activeChat.name}</h3>
                     {activeChat.id !== 'self-notes' && (
                       <span className="flex h-2 w-2 relative shrink-0">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -325,7 +325,7 @@ export default function MessagesApp({
                     {activeChat.id !== 'self-notes' && (
                       <>
                         <span className="opacity-40">•</span>
-                        <span className="text-[10px] text-emerald-500 font-bold tracking-wide uppercase">Online</span>
+                        <span className="text-[11px] text-emerald-500 font-bold">Online</span>
                       </>
                     )}
                   </p>
@@ -342,30 +342,30 @@ export default function MessagesApp({
                 <div 
                   key={msg.id} 
                   className={`flex flex-col max-w-[80%] ${
-                    msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
-                  }`}
+ msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
+ }`}
                 >
                   <div 
-                    className={`px-4 py-3 rounded-2.5xl text-[13.5px] font-medium leading-relaxed shadow-sm transition-all ${
-                      msg.sender === 'user' 
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-br-xs' 
-                        : (darkMode ? 'bg-[#262628] text-white rounded-bl-xs border border-white/10' : 'bg-white text-slate-800 rounded-bl-xs border border-slate-200/80 shadow-xs')
-                    }`}
+                    className={`px-4 py-3 rounded-2xl text-[13.5px] font-medium leading-relaxed transition-all ${
+ msg.sender === 'user' 
+ ? 'bg-blue-600 text-white rounded-br-xs' 
+ : (darkMode ? 'bg-slate-800 text-white rounded-bl-xs border border-white/10' : 'bg-white text-slate-800 rounded-bl-xs border border-slate-200/80')
+ }`}
                   >
                     {msg.text}
                   </div>
-                  <span className="text-[9px] font-semibold opacity-45 px-1 mt-1.5 font-mono">{msg.timestamp}</span>
+                  <span className="text-[11px] font-semibold opacity-45 px-1 mt-1.5 font-mono">{msg.timestamp}</span>
                 </div>
               ))}
 
               {/* Typing simulation feedback */}
               {typingChatId === activeChat.id && (
-                <div className={`flex items-center gap-1.5 px-4 py-3 rounded-2.5xl rounded-bl-xs max-w-max mr-auto shadow-sm ${
-                  darkMode ? 'bg-[#262628] border border-white/10' : 'bg-white border border-slate-200/80'
-                }`}>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce duration-500" />
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce duration-500 delay-150" />
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce duration-500 delay-300" />
+                <div className={`flex items-center gap-1.5 px-4 py-3 rounded-2xl rounded-bl-xs max-w-max mr-auto ${
+ darkMode ? 'bg-slate-800 border border-white/10' : 'bg-white border border-slate-200/80'
+ }`}>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full duration-500" />
+                  <div className="w-2 h-2 bg-blue-500 rounded-full duration-500 delay-150" />
+                  <div className="w-2 h-2 bg-blue-500 rounded-full duration-500 delay-300" />
                 </div>
               )}
             </div>
@@ -374,12 +374,12 @@ export default function MessagesApp({
             <form 
               onSubmit={handleSend} 
               className={`px-5 pt-3.5 pb-8 border-t flex gap-3 items-center shrink-0 ${
-                darkMode ? 'border-white/10 bg-[#1c1c1e]/95 backdrop-blur-md' : 'border-slate-200/80 bg-white/95 backdrop-blur-md shadow-lg'
-              }`}
+ darkMode ? 'border-white/10 bg-slate-900/95' : 'border-slate-200/80 bg-white/95'
+ }`}
             >
-              <div className={`flex-1 flex items-center rounded-2.5xl border px-4 py-1 transition-all focus-within:ring-2 focus-within:ring-blue-500/50 ${
-                darkMode ? 'bg-black/40 border-white/10 text-white' : 'bg-slate-100 border-slate-200/80 text-slate-900'
-              }`}>
+              <div className={`flex-1 flex items-center rounded-2xl border px-4 py-1 transition-all focus-within:ring-2 focus-within:ring-blue-500/50 ${
+ darkMode ? 'bg-black/40 border-white/10 text-white' : 'bg-slate-100 border-slate-200/80 text-slate-900'
+ }`}>
                 <input
                   type="text"
                   placeholder={activeChat.id === 'self-notes' ? "Anotar lembrete..." : "Escreva uma mensagem..."}
@@ -390,7 +390,7 @@ export default function MessagesApp({
               </div>
               <button 
                 type="submit" 
-                className="w-11 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2.5xl flex items-center justify-center transition-all cursor-pointer active:scale-95 flex-shrink-0 shadow-md border-none"
+                className="w-11 h-11 bg-blue-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl flex items-center justify-center transition-all cursor-pointer active:scale-95 flex-shrink-0 border-none"
               >
                 <Send size={18} className="translate-x-[1px]" />
               </button>

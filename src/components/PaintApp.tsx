@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Trash2, Download, Square, Circle } from 'lucide-react';
+import { Trash2, Download, Square, Circle, Eraser } from 'lucide-react';
 
 interface PaintAppProps {
   darkMode: boolean;
@@ -150,9 +150,9 @@ export default function PaintApp({ darkMode }: PaintAppProps) {
       </div>
 
       {/* Control Panel (Bottom Drawer Style) */}
-      <div className={`p-4 border-t flex flex-col gap-3.5 shrink-0 shadow-lg ${
-        darkMode ? 'bg-[#1e293b]/95 border-white/5 text-white' : 'bg-white/95 border-slate-200 text-slate-800'
-      }`}>
+      <div className={`p-4 border-t flex flex-col gap-3.5 shrink-0 ${
+ darkMode ? 'bg-slate-800/95 border-white/5 text-white' : 'bg-white/95 border-slate-200 text-slate-800'
+ }`}>
         
         {/* Colors + Brush slider row */}
         <div className="flex justify-between items-center gap-4">
@@ -164,11 +164,11 @@ export default function PaintApp({ darkMode }: PaintAppProps) {
                 setIsEraser(true);
               }}
               className={`w-6 h-6 rounded-full flex items-center justify-center border cursor-pointer ${
-                isEraser ? 'ring-2 ring-blue-500 bg-red-100 border-red-300' : 'bg-slate-100 dark:bg-slate-800 border-slate-300/50'
-              }`}
+ isEraser ? 'ring-2 ring-blue-500 bg-red-100 border-red-300' : 'bg-slate-100 dark:bg-slate-800 border-slate-300/50'
+ }`}
               title="Borracha"
             >
-              <span className="text-xs">🧽</span>
+              <Eraser size={14} />
             </button>
 
             {COLORS.map((c) => {
@@ -180,9 +180,9 @@ export default function PaintApp({ darkMode }: PaintAppProps) {
                     setCurrentColor(actualColor);
                     setIsEraser(false);
                   }}
-                  className={`w-6 h-6 rounded-full border-2 cursor-pointer relative shrink-0 transition-transform hover:scale-105 active:scale-95 ${
-                    !isEraser && currentColor === actualColor ? 'ring-2 ring-blue-500 scale-110' : 'border-white/10'
-                  }`}
+                  className={`w-6 h-6 rounded-full border-2 cursor-pointer relative shrink-0 transition-transform active:scale-95 ${
+ !isEraser && currentColor === actualColor ? 'ring-2 ring-blue-500 scale-110' : 'border-white/10'
+ }`}
                   style={{ backgroundColor: actualColor }}
                   title={c.label}
                 />
@@ -192,7 +192,7 @@ export default function PaintApp({ darkMode }: PaintAppProps) {
 
           {/* Brush Size Slider */}
           <div className="flex-1 flex items-center gap-2 max-w-[30%]">
-            <span className="text-[10px] opacity-50 font-bold uppercase shrink-0">Tam</span>
+            <span className="text-[11px] opacity-50 font-bold shrink-0">Tam</span>
             <input 
               type="range"
               min={1}
@@ -201,7 +201,7 @@ export default function PaintApp({ darkMode }: PaintAppProps) {
               onChange={(e) => setBrushSize(parseInt(e.target.value, 10))}
               className="w-full h-1 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
             />
-            <span className="text-[10px] font-mono shrink-0 w-4">{brushSize}</span>
+            <span className="text-[11px] font-mono shrink-0 w-4">{brushSize}</span>
           </div>
 
         </div>
@@ -222,8 +222,8 @@ export default function PaintApp({ darkMode }: PaintAppProps) {
             <button 
               onClick={clearCanvas}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-xl border-none cursor-pointer transition-colors ${
-                darkMode ? 'bg-red-900/30 hover:bg-red-900/50 text-red-400' : 'bg-red-50 hover:bg-red-100 text-red-600'
-              }`}
+ darkMode ? 'bg-red-900/30 hover:bg-red-900/50 text-red-400' : 'bg-red-50 hover:bg-red-100 text-red-600'
+ }`}
               title="Limpar tudo"
             >
               <Trash2 size={12} />
@@ -232,7 +232,7 @@ export default function PaintApp({ darkMode }: PaintAppProps) {
 
             <button 
               onClick={downloadImage}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl border-none cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold transition-transform active:scale-95 shadow-sm"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl border-none cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold transition-transform active:scale-95"
               title="Baixar imagem"
             >
               <Download size={12} />

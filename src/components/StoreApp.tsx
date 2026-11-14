@@ -158,7 +158,7 @@ const STORE_APPS: AppItem[] = [
     name: 'Bloco de Notas',
     category: 'productivity',
     icon: 'FileText',
-    iconBgClass: 'bg-gradient-to-tr from-amber-400 to-yellow-500',
+    iconBgClass: 'bg-amber-400',
     size: '4 MB',
     version: 'v1.1.0',
     rating: 4.8,
@@ -170,7 +170,7 @@ const STORE_APPS: AppItem[] = [
     name: 'Flappy Bird',
     category: 'games',
     icon: 'Bird',
-    iconBgClass: 'bg-gradient-to-tr from-cyan-400 to-blue-500',
+    iconBgClass: 'bg-cyan-400',
     size: '9 MB',
     version: 'v1.3.0',
     rating: 4.9,
@@ -182,7 +182,7 @@ const STORE_APPS: AppItem[] = [
     name: 'Previsão do Tempo',
     category: 'utilities',
     icon: 'Sun',
-    iconBgClass: 'bg-gradient-to-tr from-sky-400 to-amber-500',
+    iconBgClass: 'bg-sky-400',
     size: '6 MB',
     version: 'v1.2.1',
     rating: 4.7,
@@ -194,7 +194,7 @@ const STORE_APPS: AppItem[] = [
     name: 'Mini Paint',
     category: 'creativity',
     icon: 'Palette',
-    iconBgClass: 'bg-gradient-to-tr from-purple-500 to-pink-500',
+    iconBgClass: 'bg-purple-500',
     size: '7 MB',
     version: 'v1.0.5',
     rating: 4.6,
@@ -208,7 +208,7 @@ const STORE_APPS: AppItem[] = [
     name: 'Calculadora OS',
     category: 'system',
     icon: 'Sliders',
-    iconBgClass: 'bg-gradient-to-tr from-orange-400 to-red-500',
+    iconBgClass: 'bg-orange-400',
     size: '3 MB',
     version: 'v1.2.0',
     rating: 4.5,
@@ -221,7 +221,7 @@ const STORE_APPS: AppItem[] = [
     name: 'Minha Galeria',
     category: 'system',
     icon: 'Image',
-    iconBgClass: 'bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500',
+    iconBgClass: 'bg-pink-500',
     size: '18 MB',
     version: 'v1.0.0',
     rating: 4.6,
@@ -234,7 +234,7 @@ const STORE_APPS: AppItem[] = [
     name: 'Música Player',
     category: 'system',
     icon: 'Music',
-    iconBgClass: 'bg-gradient-to-tr from-red-500 to-rose-600',
+    iconBgClass: 'bg-red-500',
     size: '3 MB',
     version: 'v1.0.8',
     rating: 4.9,
@@ -247,7 +247,7 @@ const STORE_APPS: AppItem[] = [
     name: 'Navegador Web',
     category: 'system',
     icon: 'Globe',
-    iconBgClass: 'bg-gradient-to-tr from-indigo-500 to-purple-600',
+    iconBgClass: 'bg-indigo-500',
     size: '22 MB',
     version: 'v1.4.2',
     rating: 4.4,
@@ -360,13 +360,13 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
 
   return (
     <div className={`flex flex-col h-full select-none font-sans relative ${
-      darkMode ? 'bg-[#0f1013] text-slate-100' : 'bg-slate-50 text-slate-800'
-    }`}>
+ darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'
+ }`}>
       
       {/* 1. APP STORE PREMIUM HEADER BAR */}
       <div className={`px-5 py-4 flex justify-between items-center shrink-0 ${
-        darkMode ? 'bg-[#0f1013]' : 'bg-white border-b border-slate-200/60'
-      }`}>
+ darkMode ? 'bg-slate-950' : 'bg-white border-b border-slate-200/60'
+ }`}>
         <div className="flex items-center gap-3">
           {selectedApp ? (
             <button 
@@ -384,10 +384,10 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
             </div>
           )}
           <div className="text-left">
-            <h1 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <h1 className="text-[11px] font-bold text-slate-400">
               {selectedApp ? selectedApp.category : 'APLICATIVOS'}
             </h1>
-            <p className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
+            <p className="text-base font-semibold text-slate-900 dark:text-white leading-tight">
               {selectedApp ? selectedApp.name : 'App Store'}
             </p>
           </div>
@@ -399,7 +399,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
             <img 
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" 
               alt="User Profile" 
-              className="w-9 h-9 rounded-full object-cover border border-white/20 shadow-lg"
+              className="w-9 h-9 rounded-full object-cover border border-white/20"
               referrerPolicy="no-referrer"
             />
           </div>
@@ -415,36 +415,36 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
             
             {/* App Branding Info Card */}
             <div className="flex gap-4 items-center">
-              <div className="w-20 h-20 rounded-[22px] bg-slate-100 dark:bg-[#1a1a1e] border border-slate-200 dark:border-white/5 flex items-center justify-center shadow-xl shrink-0">
+              <div className="w-20 h-20 rounded-[22px] bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 flex items-center justify-center shrink-0">
                 {renderAppStoreIcon(selectedApp.icon, 36)}
               </div>
               <div className="min-w-0 flex-1 text-left">
-                <h2 className="font-black text-lg leading-tight tracking-tight text-slate-900 dark:text-white">{selectedApp.name}</h2>
+                <h2 className="font-semibold text-lg leading-tight tracking-tight text-slate-900 dark:text-white">{selectedApp.name}</h2>
                 <p className="text-xs font-bold text-blue-500 dark:text-blue-400 capitalize mt-0.5">{selectedApp.category}</p>
                 <div className="flex items-center gap-1.5 mt-2.5">
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold font-mono bg-blue-500/10 text-blue-500 dark:text-blue-400 border border-blue-500/10">
+                  <span className="text-[11px] px-2 py-0.5 rounded-full font-bold font-mono bg-blue-500/10 text-blue-500 dark:text-blue-400 border border-blue-500/10">
                     {selectedApp.version}
                   </span>
-                  <span className="text-[10px] font-medium opacity-40 font-mono text-slate-500 dark:text-slate-300">{selectedApp.size}</span>
+                  <span className="text-[11px] font-medium opacity-40 font-mono text-slate-500 dark:text-slate-300">{selectedApp.size}</span>
                 </div>
               </div>
             </div>
 
             {/* Quick Stats Banner Grid */}
-            <div className="grid grid-cols-3 gap-2.5 p-3.5 rounded-[20px] text-center text-xs bg-slate-100 dark:bg-[#18181c] border border-slate-200 dark:border-white/5">
+            <div className="grid grid-cols-3 gap-2.5 p-3.5 rounded-[20px] text-center text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5">
               <div className="flex flex-col justify-center items-center">
-                <span className="opacity-40 text-[9px] block mb-0.5 uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">Nota</span>
-                <span className="font-extrabold text-[12.5px] flex items-center gap-0.5 text-slate-900 dark:text-white">
+                <span className="opacity-40 text-[11px] block mb-0.5 font-bold text-slate-500 dark:text-slate-400">Nota</span>
+                <span className="font-semibold text-[12.5px] flex items-center gap-0.5 text-slate-900 dark:text-white">
                   {selectedApp.rating} <Star size={11} fill="currentColor" className="text-amber-500 border-none" />
                 </span>
               </div>
               <div className="border-x border-slate-200 dark:border-white/5 flex flex-col justify-center items-center">
-                <span className="opacity-40 text-[9px] block mb-0.5 uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">Baixados</span>
-                <span className="font-extrabold text-[12.5px] text-blue-500 dark:text-blue-400">{selectedApp.downloads}</span>
+                <span className="opacity-40 text-[11px] block mb-0.5 font-bold text-slate-500 dark:text-slate-400">Baixados</span>
+                <span className="font-semibold text-[12.5px] text-blue-500 dark:text-blue-400">{selectedApp.downloads}</span>
               </div>
               <div className="flex flex-col justify-center items-center">
-                <span className="opacity-40 text-[9px] block mb-0.5 uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">Segurança</span>
-                <span className="font-bold text-[10px] text-emerald-500 flex items-center gap-0.5">
+                <span className="opacity-40 text-[11px] block mb-0.5 font-bold text-slate-500 dark:text-slate-400">Segurança</span>
+                <span className="font-bold text-[11px] text-emerald-500 flex items-center gap-0.5">
                   <ShieldCheck size={11} /> Seguro
                 </span>
               </div>
@@ -454,16 +454,16 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
             <div className="space-y-2 pt-1">
               {installingId === selectedApp.id ? (
                 /* Installing custom progress loading bar */
-                <div className="w-full bg-slate-100 dark:bg-[#18181c] rounded-[18px] border border-blue-500/10 p-3.5 text-center space-y-2">
-                  <div className="flex justify-between items-center text-xs font-black font-mono px-1">
+                <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-[18px] border border-blue-500/10 p-3.5 text-center space-y-2">
+                  <div className="flex justify-between items-center text-xs font-semibold font-mono px-1">
                     <span className="animate-pulse text-blue-500 dark:text-blue-400 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 animate-ping" />
+                      <span className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400" />
                       Instalando aplicativo...
                     </span>
                     <span className="text-blue-500 dark:text-blue-400">{installProgress}%</span>
                   </div>
-                  <div className="w-full bg-slate-200 dark:bg-[#2a2a2e] h-2 rounded-full overflow-hidden">
-                    <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full transition-all duration-100" style={{ width: `${installProgress}%` }} />
+                  <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div className="bg-blue-500 h-full transition-all duration-100" style={{ width: `${installProgress}%` }} />
                   </div>
                 </div>
               ) : installedApps.includes(selectedApp.id) ? (
@@ -475,7 +475,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                       setSelectedApp(null);
                       playTone(659.25, 'sine', 0.05);
                     }}
-                    className="flex-1 py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-extrabold text-xs rounded-xl border-none cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all"
+                    className="flex-1 py-3.5 bg-blue-500 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold text-xs rounded-xl border-none cursor-pointer flex items-center justify-center gap-2 active:scale-95 transition-all"
                   >
                     <span>Iniciar Aplicativo</span>
                     <ArrowUpRight size={14} />
@@ -495,7 +495,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                 /* Uninstalled: Download and Install action button */
                 <button 
                   onClick={() => handleInstallClick(selectedApp.id)}
-                  className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-extrabold text-xs rounded-xl border-none cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all"
+                  className="w-full py-3.5 bg-blue-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold text-xs rounded-xl border-none cursor-pointer flex items-center justify-center gap-2 active:scale-95 transition-all"
                 >
                   <Download size={14} />
                   <span>Obter Aplicativo Grátis ({selectedApp.size})</span>
@@ -505,8 +505,8 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
 
             {/* Description section card */}
             <div className="space-y-2 text-left">
-              <h3 className="font-extrabold text-[10px] uppercase tracking-widest opacity-45 text-slate-500 dark:text-slate-400">Descrição Oficial</h3>
-              <p className="p-4 rounded-[20px] leading-relaxed text-xs bg-slate-100 dark:bg-[#18181c] border border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300">
+              <h3 className="font-semibold text-[11px] opacity-45 text-slate-500 dark:text-slate-400">Descrição Oficial</h3>
+              <p className="p-4 rounded-[20px] leading-relaxed text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300">
                 {selectedApp.desc}
               </p>
             </div>
@@ -514,15 +514,15 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
             {/* User review section card */}
             <div className="space-y-3.5 text-left pt-2">
               <div className="flex justify-between items-baseline">
-                <h3 className="font-extrabold text-[10px] uppercase tracking-widest opacity-45 text-slate-500 dark:text-slate-400">Avaliações & Opiniões</h3>
-                <span className="text-[10px] text-blue-500 dark:text-blue-400 font-bold hover:underline cursor-pointer">Ver todas</span>
+                <h3 className="font-semibold text-[11px] opacity-45 text-slate-500 dark:text-slate-400">Avaliações & Opiniões</h3>
+                <span className="text-[11px] text-blue-500 dark:text-blue-400 font-bold hover:underline cursor-pointer">Ver todas</span>
               </div>
               <div className="space-y-2">
                 {REVIEWS.map((rev, idx) => (
-                  <div key={idx} className="p-4 rounded-2xl border bg-slate-100 dark:bg-[#18181c] border-slate-200 dark:border-white/5">
+                  <div key={idx} className="p-4 rounded-2xl border bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-white/5">
                     <div className="flex justify-between items-baseline mb-1.5">
                       <span className="font-bold text-xs text-slate-900 dark:text-white">{rev.user}</span>
-                      <span className="text-[9px] opacity-40 text-slate-500 dark:text-slate-300">{rev.date}</span>
+                      <span className="text-[11px] opacity-40 text-slate-500 dark:text-slate-300">{rev.date}</span>
                     </div>
                     <div className="flex gap-0.5 text-amber-500 mb-2">
                       {Array.from({ length: 5 }).map((_, i) => (
@@ -546,13 +546,13 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                 setSelectedApp(STORE_APPS[1]);
                 playTone(493.88, 'sine', 0.05);
               }}
-              className="relative rounded-[28px] aspect-[16/9.5] overflow-hidden bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 shadow-2xl text-white p-5 flex flex-col justify-between group cursor-pointer border border-white/5"
+              className="relative rounded-[28px] aspect-[16/9.5] overflow-hidden bg-slate-800 text-white p-5 flex flex-col justify-between group cursor-pointer border border-white/5"
             >
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.15),transparent)] pointer-events-none" />
               
               {/* Purple Rocket & Star Graphic illustration on the right */}
               <div className="absolute right-4 bottom-2 top-2 flex items-center justify-center pointer-events-none transform group-hover:scale-105 transition-transform duration-500">
-                <svg viewBox="0 0 100 100" className="w-28 h-28 drop-shadow-[0_10px_15px_rgba(168,85,247,0.3)]">
+                <svg viewBox="0 0 100 100" className="w-28 h-28 drop-">
                   <path d="M15,25 Q15,20 18,17 Q15,14 15,9 Q15,14 12,17 Q15,20 15,25 Z" fill="#d8b4fe" opacity="0.8" className="animate-pulse" />
                   <path d="M85,45 Q85,42 87,40 Q85,38 85,35 Q85,38 83,40 Q85,42 85,45 Z" fill="#c084fc" opacity="0.6" />
                   <path d="M75,75 Q75,70 78,67 Q75,64 75,59 Q75,64 72,67 Q75,70 75,75 Z" fill="#f472b6" opacity="0.9" />
@@ -570,13 +570,13 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
               </div>
 
               {/* Tag / Badge */}
-              <span className="self-start text-[8px] font-extrabold uppercase tracking-widest px-3 py-1 bg-[#1a1b1e]/80 text-[#e4e4e7] rounded-full border border-white/5">
+              <span className="self-start text-[11px] font-semibold px-3 py-1 bg-slate-900/80 text-slate-200 rounded-full border border-white/5">
                 APP RECOMENDADO
               </span>
 
               {/* Title & info description */}
               <div className="space-y-1 relative z-10 text-left mb-2">
-                <h2 className="font-extrabold text-lg leading-tight text-white tracking-tight">Flappy Bird Arcade</h2>
+                <h2 className="font-semibold text-lg leading-tight text-white tracking-tight">Flappy Bird Arcade</h2>
               </div>
             </div>
 
@@ -584,11 +584,11 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
             <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
               {[
                 { id: 'all', label: 'Todos' },
-                { id: 'productivity', label: '📝 Produtividade' },
-                { id: 'games', label: '🎮 Jogos' },
-                { id: 'utilities', label: '☀️ Clima' },
-                { id: 'creativity', label: '🎨 Criatividade' },
-                { id: 'system', label: '⚙️ Sistema' },
+                { id: 'productivity', label: 'Produtividade' },
+                { id: 'games', label: 'Jogos' },
+                { id: 'utilities', label: 'Clima' },
+                { id: 'creativity', label: 'Criatividade' },
+                { id: 'system', label: 'Sistema' },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -597,10 +597,10 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                     playTone(550, 'sine', 0.03);
                   }}
                   className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold border shrink-0 cursor-pointer transition-all ${
-                    activeTab === tab.id 
-                      ? 'bg-slate-800 dark:bg-[#313136] text-white border-transparent' 
-                      : 'bg-transparent border-slate-300 dark:border-[#2c2c30] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-slate-700'
-                  }`}
+ activeTab === tab.id 
+ ? 'bg-slate-800 dark:bg-slate-700 text-white border-transparent' 
+ : 'bg-transparent border-slate-300 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-slate-700'
+ }`}
                 >
                   {tab.label}
                 </button>
@@ -609,7 +609,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
 
             {/* APPS LISTING */}
             <div className="space-y-3 pt-1 text-left">
-              <h3 className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 px-1">
+              <h3 className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-2 px-1">
                 {activeTab === 'all' ? 'APLICATIVOS DISPONÍVEIS' : 'RESULTADOS'}
               </h3>
 
@@ -630,16 +630,16 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
                         {/* Perfect Squared Icon Container with thin border */}
-                        <div className="w-14 h-14 rounded-[16px] bg-slate-100 dark:bg-[#1a1a1e] border border-slate-200 dark:border-white/5 flex items-center justify-center shrink-0 shadow-md">
+                        <div className="w-14 h-14 rounded-[16px] bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 flex items-center justify-center shrink-0">
                           {renderAppStoreIcon(app.icon, 24)}
                         </div>
                         <div className="min-w-0">
-                          <h4 className="font-extrabold text-sm text-slate-900 dark:text-white leading-tight truncate group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">{app.name}</h4>
+                          <h4 className="font-semibold text-sm text-slate-900 dark:text-white leading-tight truncate group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">{app.name}</h4>
                           <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5 max-w-[210px] sm:max-w-md">{app.desc}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{app.size}</span>
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500">•</span>
-                            <span className="text-[10px] font-bold text-amber-500 flex items-center gap-0.5">
+                            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">{app.size}</span>
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500">•</span>
+                            <span className="text-[11px] font-bold text-amber-500 flex items-center gap-0.5">
                               {app.rating} <Star size={10} fill="currentColor" className="border-none text-amber-500" />
                             </span>
                           </div>
@@ -649,7 +649,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                       {/* Circular Blue/Dark Download Button (Identical to Photo) */}
                       <div onClick={(e) => e.stopPropagation()} className="shrink-0">
                         {installingId === app.id ? (
-                          <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-[#1e2a3e] flex items-center justify-center border border-blue-500/20">
+                          <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-slate-800 flex items-center justify-center border border-blue-500/20">
                             <div className="w-4 h-4 border-2 border-blue-500 dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
                           </div>
                         ) : installedApps.includes(app.id) ? (
@@ -659,7 +659,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                                 onOpenApp(app.id);
                                 playTone(659.25, 'sine', 0.05);
                               }}
-                              className="px-3.5 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-extrabold text-[10px] rounded-lg border-none cursor-pointer transition-all active:scale-95"
+                              className="px-3.5 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold text-[11px] rounded-lg border-none cursor-pointer transition-all active:scale-95"
                             >
                               Abrir
                             </button>
@@ -675,7 +675,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                         ) : (
                           <button 
                             onClick={() => handleInstallClick(app.id)}
-                            className="w-9 h-9 rounded-full bg-blue-50 dark:bg-[#1e2a3e] hover:bg-blue-100 dark:hover:bg-[#253650] text-blue-600 dark:text-[#38bdf8] border-none cursor-pointer flex items-center justify-center transition-all active:scale-90 shadow-lg"
+                            className="w-9 h-9 rounded-full bg-blue-50 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 border-none cursor-pointer flex items-center justify-center transition-all active:scale-90"
                             title="Instalar"
                           >
                             <Download size={14} />
@@ -693,13 +693,13 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
 
       {/* 3. CUSTOM UNINSTALL CONFIRMATION MODAL/SHEET */}
       {uninstallConfirmApp && (
-        <div className="absolute inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-end justify-center">
-          <div className="w-full max-w-sm rounded-t-3xl p-6 space-y-5 animate-[slide-up_0.25s_ease-out] shadow-2xl border-t bg-white dark:bg-[#0f1013] border-slate-200 dark:border-white/10 text-slate-800 dark:text-white">
+        <div className="absolute inset-0 bg-black/75 z-50 flex items-end justify-center">
+          <div className="w-full max-w-sm rounded-t-3xl p-6 space-y-5 animate-[slide-up_0.25s_ease-out] border-t bg-white dark:bg-slate-950 border-slate-200 dark:border-white/10 text-slate-800 dark:text-white">
             <div className="flex flex-col items-center text-center space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center text-2xl shadow-inner mb-1">
-                🗑️
+              <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center text-2xl mb-1">
+                <Trash2 size={22} />
               </div>
-              <h3 className="font-black text-sm">Desinstalar Aplicativo?</h3>
+              <h3 className="font-semibold text-sm">Desinstalar Aplicativo?</h3>
               <p className="text-xs opacity-60 px-3 text-slate-500 dark:text-slate-300">
                 Deseja remover <strong>{uninstallConfirmApp.name}</strong> e todos os seus dados locais do Mock OS?
               </p>
@@ -711,13 +711,13 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                   setUninstallConfirmApp(null);
                   playTone(400, 'sine', 0.05);
                 }}
-                className="flex-1 py-3 text-xs font-extrabold rounded-xl border cursor-pointer bg-slate-100 dark:bg-[#1e1e24] border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                className="flex-1 py-3 text-xs font-semibold rounded-xl border cursor-pointer bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
               >
                 Cancelar
               </button>
               <button 
                 onClick={confirmUninstall}
-                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-xl border-none cursor-pointer shadow-md shadow-red-600/10 active:scale-95 transition-all"
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl border-none cursor-pointer shadow-red-600/10 active:scale-95 transition-all"
               >
                 Confirmar Remoção
               </button>

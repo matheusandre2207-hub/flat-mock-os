@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Globe, User, Check, ChevronRight, ChevronLeft, 
-  Lock, Unlock, Eye, EyeOff, Palette
-} from 'lucide-react';
+import { Globe, User, Check, ChevronRight, ChevronLeft, Lock, Unlock, Eye, EyeOff, Palette, Sun, Moon } from 'lucide-react';
 import { wallpapersList } from '../data';
 
 interface BootSetupScreenProps {
@@ -176,20 +173,20 @@ export default function BootSetupScreen({
               </svg>
             </motion.div>
 
-            <h1 className="text-sm font-light tracking-[0.25em] text-zinc-400 font-mono mb-2">
+            <h1 className="text-sm font-light text-zinc-400 font-mono mb-2">
               FlatOS
             </h1>
 
             <div className="flex items-center justify-center gap-1.5 h-6">
-              <span className="text-[11px] text-zinc-600 font-mono tracking-wider">
+              <span className="text-[11px] text-zinc-600 font-mono">
                 {language === 'en' ? 'Loading' : 'Carregando'}
               </span>
-              <span className="text-[11px] text-zinc-400 font-mono font-bold tracking-widest w-8 text-left">
+              <span className="text-[11px] text-zinc-400 font-mono font-bold w-8 text-left">
                 {ellipsis}
               </span>
             </div>
 
-            <div className="absolute bottom-4 text-[10px] text-zinc-600 font-mono tracking-[0.18em] uppercase">
+            <div className="absolute bottom-4 text-[11px] text-zinc-600 font-mono">
               Powered by FlatOS
             </div>
           </motion.div>
@@ -211,7 +208,7 @@ export default function BootSetupScreen({
             <h2 className="text-lg font-medium tracking-tight text-zinc-200 mb-1">
               Select Language
             </h2>
-            <p className="text-xs text-zinc-500 font-mono tracking-wider uppercase mb-8">
+            <p className="text-xs text-zinc-500 font-mono mb-8">
               FlatOS / Setup
             </p>
 
@@ -222,10 +219,10 @@ export default function BootSetupScreen({
                   playTone(400);
                 }}
                 className={`w-full py-3 px-4 rounded-xl flex items-center justify-between border transition-all cursor-pointer ${
-                  language === 'pt' 
-                    ? 'bg-zinc-900 border-zinc-700 text-zinc-100 font-medium' 
-                    : 'bg-zinc-950/40 border-zinc-900 text-zinc-500 hover:border-zinc-800'
-                }`}
+ language === 'pt' 
+ ? 'bg-zinc-900 border-zinc-700 text-zinc-100 font-medium' 
+ : 'bg-zinc-950/40 border-zinc-900 text-zinc-500 hover:border-zinc-800'
+ }`}
               >
                 <div className="flex items-center gap-3">
                   <span className="text-sm">🇧🇷</span>
@@ -240,10 +237,10 @@ export default function BootSetupScreen({
                   playTone(400);
                 }}
                 className={`w-full py-3 px-4 rounded-xl flex items-center justify-between border transition-all cursor-pointer ${
-                  language === 'en' 
-                    ? 'bg-zinc-900 border-zinc-700 text-zinc-100 font-medium' 
-                    : 'bg-zinc-950/40 border-zinc-900 text-zinc-500 hover:border-zinc-800'
-                }`}
+ language === 'en' 
+ ? 'bg-zinc-900 border-zinc-700 text-zinc-100 font-medium' 
+ : 'bg-zinc-950/40 border-zinc-900 text-zinc-500 hover:border-zinc-800'
+ }`}
               >
                 <div className="flex items-center gap-3">
                   <span className="text-sm">🇺🇸</span>
@@ -283,13 +280,13 @@ export default function BootSetupScreen({
                 <h2 className="text-sm font-medium text-zinc-200">
                   {language === 'en' ? 'Create Account' : 'Crie sua Conta'}
                 </h2>
-                <p className="text-[10px] text-zinc-500 font-mono tracking-wider uppercase">02 / 03</p>
+                <p className="text-[11px] text-zinc-500 font-mono">02 / 03</p>
               </div>
             </div>
 
             {/* Choose Avatar */}
             <div className="mb-6">
-              <label className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider mb-2.5 block">
+              <label className="text-[11px] font-mono text-zinc-500 mb-2.5 block">
                 {language === 'en' ? 'Choose Avatar' : 'Escolha o Avatar'}
               </label>
               <div className="grid grid-cols-5 gap-2 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900">
@@ -302,10 +299,10 @@ export default function BootSetupScreen({
                       playTone(550);
                     }}
                     className={`h-10 rounded-lg text-lg flex items-center justify-center transition-all cursor-pointer ${
-                      localAvatar === emoji 
-                        ? 'bg-zinc-800 text-white border border-zinc-600 scale-105' 
-                        : 'bg-zinc-900/30 hover:bg-zinc-900 text-zinc-400'
-                    }`}
+ localAvatar === emoji 
+ ? 'bg-zinc-800 text-white border border-zinc-600 scale-105' 
+ : 'bg-zinc-900/30 hover:bg-zinc-900 text-zinc-400'
+ }`}
                   >
                     {emoji}
                   </button>
@@ -315,7 +312,7 @@ export default function BootSetupScreen({
 
             {/* Username Input */}
             <div className="mb-6">
-              <label className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider mb-2 block">
+              <label className="text-[11px] font-mono text-zinc-500 mb-2 block">
                 {language === 'en' ? 'Your Name' : 'Seu Nome'}
               </label>
               <div className="relative">
@@ -335,7 +332,7 @@ export default function BootSetupScreen({
 
             {/* Security Pin Input */}
             <div className="mb-8">
-              <label className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider mb-2 block">
+              <label className="text-[11px] font-mono text-zinc-500 mb-2 block">
                 {language === 'en' ? '4-Digit PIN (Optional)' : 'PIN de 4 dígitos (Opcional)'}
               </label>
               <form onSubmit={(e) => { e.preventDefault(); if (localName.trim()) handleNext(); }} className="relative">
@@ -351,7 +348,7 @@ export default function BootSetupScreen({
                     if (val.length > 0) playTone(650);
                   }}
                   placeholder="••••"
-                  className="w-full py-2.5 px-4 bg-zinc-950 border border-zinc-900 rounded-xl text-xs font-mono text-zinc-100 tracking-widest focus:outline-none focus:border-zinc-700 placeholder-zinc-800 transition-all"
+                  className="w-full py-2.5 px-4 bg-zinc-950 border border-zinc-900 rounded-xl text-xs font-mono text-zinc-100 focus:outline-none focus:border-zinc-700 placeholder-zinc-800 transition-all"
                 />
                 <button
                   type="button"
@@ -367,10 +364,10 @@ export default function BootSetupScreen({
               onClick={handleNext}
               disabled={!localName.trim()}
               className={`w-full py-3 px-6 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                localName.trim() 
-                  ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-950' 
-                  : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-900'
-              }`}
+ localName.trim() 
+ ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-950' 
+ : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-900'
+ }`}
             >
               {language === 'en' ? 'Next step' : 'Próximo passo'}
               <ChevronRight size={14} />
@@ -398,13 +395,13 @@ export default function BootSetupScreen({
                 <h2 className="text-sm font-medium text-zinc-200">
                   {language === 'en' ? 'Personalize OS' : 'Personalizar Aparelho'}
                 </h2>
-                <p className="text-[10px] text-zinc-500 font-mono tracking-wider uppercase">03 / 03</p>
+                <p className="text-[11px] text-zinc-500 font-mono">03 / 03</p>
               </div>
             </div>
 
             {/* Theme selection */}
             <div className="mb-6">
-              <label className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider mb-2.5 block">
+              <label className="text-[11px] font-mono text-zinc-500 mb-2.5 block">
                 {language === 'en' ? 'System Theme' : 'Tema do Sistema'}
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -415,12 +412,12 @@ export default function BootSetupScreen({
                     playTone(440);
                   }}
                   className={`py-3 px-4 rounded-xl flex flex-col items-center gap-1 border transition-all cursor-pointer ${
-                    !darkMode 
-                      ? 'bg-zinc-900 border-zinc-700 text-zinc-100 font-medium' 
-                      : 'bg-zinc-950/40 border-zinc-900 text-zinc-500'
-                  }`}
+ !darkMode 
+ ? 'bg-zinc-900 border-zinc-700 text-zinc-100 font-medium' 
+ : 'bg-zinc-950/40 border-zinc-900 text-zinc-500'
+ }`}
                 >
-                  <span className="text-sm">☀️</span>
+                  <Sun size={18} />
                   <span className="text-xs font-mono">{language === 'en' ? 'Light' : 'Claro'}</span>
                 </button>
 
@@ -431,12 +428,12 @@ export default function BootSetupScreen({
                     playTone(440);
                   }}
                   className={`py-3 px-4 rounded-xl flex flex-col items-center gap-1 border transition-all cursor-pointer ${
-                    darkMode 
-                      ? 'bg-zinc-900 border-zinc-700 text-zinc-100 font-medium' 
-                      : 'bg-zinc-950/40 border-zinc-900 text-zinc-500'
-                  }`}
+ darkMode 
+ ? 'bg-zinc-900 border-zinc-700 text-zinc-100 font-medium' 
+ : 'bg-zinc-950/40 border-zinc-900 text-zinc-500'
+ }`}
                 >
-                  <span className="text-sm">🌙</span>
+                  <Moon size={18} />
                   <span className="text-xs font-mono">{language === 'en' ? 'Dark' : 'Escuro'}</span>
                 </button>
               </div>
@@ -444,7 +441,7 @@ export default function BootSetupScreen({
 
             {/* Quick Wallpaper */}
             <div className="mb-8">
-              <label className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider mb-2.5 block">
+              <label className="text-[11px] font-mono text-zinc-500 mb-2.5 block">
                 {language === 'en' ? 'Default Wallpaper' : 'Papel de Parede'}
               </label>
               <div className="grid grid-cols-4 gap-2 bg-zinc-950 p-2 rounded-xl border border-zinc-900">
@@ -457,10 +454,10 @@ export default function BootSetupScreen({
                       playTone(500);
                     }}
                     className={`h-11 rounded-lg border relative overflow-hidden transition-all cursor-pointer active:scale-95 ${
-                      wallpaperIndex === idx 
-                        ? 'border-zinc-400' 
-                        : 'border-transparent hover:border-zinc-800'
-                    }`}
+ wallpaperIndex === idx 
+ ? 'border-zinc-400' 
+ : 'border-transparent hover:border-zinc-800'
+ }`}
                     style={{ background: wp.gradient }}
                   >
                     {wallpaperIndex === idx && (
@@ -498,7 +495,7 @@ export default function BootSetupScreen({
             <h2 className="text-lg font-medium tracking-tight text-zinc-200 mb-1">
               {language === 'en' ? 'All Configured' : 'Tudo Pronto'}
             </h2>
-            <p className="text-xs text-zinc-500 font-mono tracking-wider uppercase mb-8">
+            <p className="text-xs text-zinc-500 font-mono mb-8">
               FlatOS / Active
             </p>
 

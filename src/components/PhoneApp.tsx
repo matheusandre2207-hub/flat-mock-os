@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, PhoneOff, Delete, Voicemail, Play, Volume2, Mic, Grid, HelpCircle, History, Video, Star } from 'lucide-react';
+import { Phone, PhoneOff, Delete, Voicemail, Play, Volume2, Mic, Grid, HelpCircle, History, Video, Star, PhoneMissed, PhoneIncoming, PhoneOutgoing, User } from 'lucide-react';
 
 interface PhoneAppProps {
   darkMode: boolean;
@@ -152,10 +152,10 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
     <div className={`w-full h-full flex flex-col ${darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} font-sans select-none`}>
       {/* Active Call UI overlay */}
       {callState !== 'idle' && (
-        <div className="absolute inset-0 z-50 bg-slate-900/98 backdrop-blur-xl flex flex-col justify-between py-16 px-6 text-white text-center">
+        <div className="absolute inset-0 z-50 bg-slate-900/98 flex flex-col justify-between py-16 px-6 text-white text-center">
           <div className="space-y-4">
-            <div className="w-24 h-24 rounded-full bg-slate-800/80 mx-auto flex items-center justify-center text-4xl shadow-lg border border-white/10">
-              👤
+            <div className="w-24 h-24 rounded-full bg-slate-800/80 mx-auto flex items-center justify-center text-4xl border border-white/10">
+              <User size={40} />
             </div>
             <div className="space-y-1">
               <h2 className="text-2xl font-bold tracking-tight">{activeCallName}</h2>
@@ -176,7 +176,7 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
               <div className={`w-14 h-14 rounded-full flex items-center justify-center ${isMuted ? 'bg-white text-slate-950' : 'bg-white/10 hover:bg-white/15'}`}>
                 <Mic size={20} />
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider">Mudo</span>
+              <span className="text-[11px] font-bold">Mudo</span>
             </button>
 
             <button 
@@ -186,7 +186,7 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
               <div className="w-14 h-14 rounded-full flex items-center justify-center bg-white/10">
                 <Grid size={20} />
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider">Teclado</span>
+              <span className="text-[11px] font-bold">Teclado</span>
             </button>
 
             <button 
@@ -196,7 +196,7 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
               <div className={`w-14 h-14 rounded-full flex items-center justify-center ${isSpeaker ? 'bg-white text-slate-950' : 'bg-white/10 hover:bg-white/15'}`}>
                 <Volume2 size={20} />
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider">Alto-falante</span>
+              <span className="text-[11px] font-bold">Alto-falante</span>
             </button>
           </div>
 
@@ -204,7 +204,7 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
           <div className="flex justify-center">
             <button 
               onClick={endCall}
-              className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 active:scale-95 transition-transform flex items-center justify-center border-none cursor-pointer text-white shadow-lg"
+              className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 active:scale-95 transition-transform flex items-center justify-center border-none cursor-pointer text-white"
             >
               <PhoneOff size={28} />
             </button>
@@ -218,7 +218,7 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
           <div className="flex-1 flex flex-col justify-between max-w-sm mx-auto w-full">
             {/* Number Display */}
             <div className="h-16 flex flex-col items-center justify-center px-4 relative">
-              <span className="text-2xl font-semibold tracking-wide font-mono truncate max-w-full">
+              <span className="text-2xl font-semibold font-mono truncate max-w-full">
                 {dialNumber || <span className="text-slate-400 font-sans text-sm">Discar número</span>}
               </span>
               {dialNumber && (
@@ -243,13 +243,13 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
                   key={item.n}
                   onClick={() => handleKeyPress(item.n)}
                   className={`h-12 rounded-full flex flex-col items-center justify-center transition-all duration-150 active:scale-95 border-none cursor-pointer ${
-                    darkMode 
-                      ? 'bg-slate-900/60 hover:bg-slate-800 text-white border border-white/5' 
-                      : 'bg-white hover:bg-slate-100 text-slate-900 shadow-sm border border-slate-200'
-                  }`}
+ darkMode 
+ ? 'bg-slate-900/60 hover:bg-slate-800 text-white border border-white/5' 
+ : 'bg-white hover:bg-slate-100 text-slate-900 border border-slate-200'
+ }`}
                 >
                   <span className="text-xl font-semibold leading-none">{item.n}</span>
-                  <span className={`text-[8px] font-bold tracking-wider uppercase mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.l}</span>
+                  <span className={`text-[11px] font-bold mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.l}</span>
                 </button>
               ))}
             </div>
@@ -259,11 +259,11 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
               <button
                 onClick={() => startCall(dialNumber)}
                 disabled={!dialNumber}
-                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all border-none ${
-                  dialNumber 
-                    ? 'bg-green-500 hover:bg-green-600 active:scale-95 text-white cursor-pointer' 
-                    : 'bg-slate-300 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
-                }`}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all border-none ${
+ dialNumber 
+ ? 'bg-green-500 hover:bg-green-600 active:scale-95 text-white cursor-pointer' 
+ : 'bg-slate-300 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
+ }`}
               >
                 <Phone size={20} />
               </button>
@@ -292,18 +292,18 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
                     key={call.id} 
                     onClick={() => startCall(call.name)}
                     className={`p-3.5 rounded-2xl flex items-center justify-between transition-colors cursor-pointer ${
-                      darkMode ? 'bg-slate-900/40 hover:bg-slate-900/70 border border-white/5' : 'bg-white hover:bg-slate-100 border border-slate-200 shadow-sm'
-                    }`}
+ darkMode ? 'bg-slate-900/40 hover:bg-slate-900/70 border border-white/5' : 'bg-white hover:bg-slate-100 border border-slate-200'
+ }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-base ${
-                        call.type === 'missed' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'
-                      }`}>
-                        {call.type === 'missed' ? '✖' : call.type === 'incoming' ? '↙' : '↗'}
+ call.type === 'missed' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'
+ }`}>
+                        {call.type === 'missed' ? <PhoneMissed size={18} /> : call.type === 'incoming' ? <PhoneIncoming size={18} /> : <PhoneOutgoing size={18} />}
                       </div>
                       <div>
                         <h4 className={`font-bold text-xs ${call.type === 'missed' ? 'text-red-500' : ''}`}>{call.name}</h4>
-                        <p className="text-[10px] opacity-60 mt-0.5">{call.time} • {call.number}</p>
+                        <p className="text-[11px] opacity-60 mt-0.5">{call.time} • {call.number}</p>
                       </div>
                     </div>
                     <button className="w-8 h-8 rounded-full bg-green-500/10 hover:bg-green-500/20 text-green-500 flex items-center justify-center border-none cursor-pointer">
@@ -324,14 +324,14 @@ export default function PhoneApp({ darkMode, onOpenApp }: PhoneAppProps) {
           className={`flex flex-col items-center gap-1 focus:outline-none bg-transparent border-none cursor-pointer ${activeTab === 'keypad' ? 'text-green-500' : 'text-slate-400'}`}
         >
           <Grid size={18} />
-          <span className="text-[9px] font-bold">Teclado</span>
+          <span className="text-[11px] font-bold">Teclado</span>
         </button>
         <button 
           onClick={() => setActiveTab('recents')}
           className={`flex flex-col items-center gap-1 focus:outline-none bg-transparent border-none cursor-pointer ${activeTab === 'recents' ? 'text-green-500' : 'text-slate-400'}`}
         >
           <History size={18} />
-          <span className="text-[9px] font-bold">Recentes</span>
+          <span className="text-[11px] font-bold">Recentes</span>
         </button>
       </footer>
     </div>

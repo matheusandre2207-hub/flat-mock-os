@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Search, FileText } from 'lucide-react';
+import { Plus, Trash2, Search, FileText, ChevronLeft, NotebookPen } from 'lucide-react';
 
 interface Note {
   id: string;
@@ -42,14 +42,14 @@ export default function NotesApp({ darkMode }: NotesAppProps) {
       const initialNotes = [
         {
           id: '1',
-          title: 'Lista de Compras 🛒',
+          title: 'Lista de Compras',
           content: '- Café\n- Leite\n- Pão integral\n- Frutas frescas',
           color: COLORS[0].bg,
           date: 'Ontem',
         },
         {
           id: '2',
-          title: 'Ideias de Projetos 💡',
+          title: 'Ideias de Projetos',
           content: '1. Criar um simulador de smartphone em React (Mock OS!)\n2. Adicionar uma loja de aplicativos\n3. Implementar um jogo de Flappy Bird interativo',
           color: COLORS[1].bg,
           date: 'Hoje',
@@ -129,15 +129,15 @@ export default function NotesApp({ darkMode }: NotesAppProps) {
     <div className="flex flex-col h-full select-none">
       {/* App Header */}
       <div className={`p-4 border-b flex justify-between items-center shrink-0 ${
-        darkMode ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-800'
-      }`}>
+ darkMode ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-800'
+ }`}>
         <div className="flex items-center gap-2">
-          <span className="text-xl">📝</span>
+          <NotebookPen size={22} />
           <h2 className="text-sm font-bold">Bloco de Notas</h2>
         </div>
         <button 
           onClick={handleCreateNote}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-xs text-white font-bold rounded-xl border-none cursor-pointer shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-xs text-white font-bold rounded-xl border-none cursor-pointer"
         >
           <Plus size={14} />
           <span>Criar</span>
@@ -158,8 +158,8 @@ export default function NotesApp({ darkMode }: NotesAppProps) {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className={`w-full pl-9 pr-3 py-2 text-xs rounded-xl border-none focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                    darkMode ? 'bg-slate-900 text-white placeholder-slate-500' : 'bg-white text-slate-800 placeholder-slate-400'
-                  }`}
+ darkMode ? 'bg-slate-900 text-white placeholder-slate-500' : 'bg-white text-slate-800 placeholder-slate-400'
+ }`}
                 />
               </div>
             </div>
@@ -180,9 +180,9 @@ export default function NotesApp({ darkMode }: NotesAppProps) {
                   >
                     <div className="pr-6">
                       <h3 className="font-bold text-xs truncate mb-1">{note.title}</h3>
-                      <p className="text-[10.5px] opacity-75 line-clamp-2 leading-relaxed">{note.content || 'Sem conteúdo'}</p>
+                      <p className="text-[11px] opacity-75 line-clamp-2 leading-relaxed">{note.content || 'Sem conteúdo'}</p>
                     </div>
-                    <span className="text-[9px] opacity-40 absolute bottom-1.5 right-3 font-mono">{note.date}</span>
+                    <span className="text-[11px] opacity-40 absolute bottom-1.5 right-3 font-mono">{note.date}</span>
                     <button 
                       onClick={(e) => handleDeleteNote(note.id, e)}
                       className="absolute top-2.5 right-2.5 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-black/10 transition-all text-red-600 border-none bg-transparent cursor-pointer"
@@ -200,15 +200,15 @@ export default function NotesApp({ darkMode }: NotesAppProps) {
           <div className={`flex-1 flex flex-col h-full ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
             {/* Editor Action Bar */}
             <div className={`px-4 py-2 flex justify-between items-center shrink-0 border-b ${
-              darkMode ? 'border-white/5 bg-slate-900/50' : 'border-slate-100 bg-slate-50/50'
-            }`}>
+ darkMode ? 'border-white/5 bg-slate-900/50' : 'border-slate-100 bg-slate-50/50'
+ }`}>
               <button 
                 onClick={() => setActiveNoteId(null)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold border-none cursor-pointer ${
-                  darkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
-                }`}
+ darkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+ }`}
               >
-                ← Voltar
+                <span className="inline-flex items-center gap-1"><ChevronLeft size={14} />Voltar</span>
               </button>
 
               {/* Color Picker */}
@@ -218,8 +218,8 @@ export default function NotesApp({ darkMode }: NotesAppProps) {
                     key={c.name}
                     onClick={() => setSelectedColor(c.bg)}
                     className={`w-5 h-5 rounded-full border cursor-pointer relative ${c.bg.split(' ')[0]} ${
-                      selectedColor === c.bg ? 'ring-2 ring-blue-500' : 'border-white/20'
-                    }`}
+ selectedColor === c.bg ? 'ring-2 ring-blue-500' : 'border-white/20'
+ }`}
                     title={c.name}
                   />
                 ))}
@@ -234,16 +234,16 @@ export default function NotesApp({ darkMode }: NotesAppProps) {
                 value={titleInput}
                 onChange={(e) => setTitleInput(e.target.value)}
                 className={`w-full text-sm font-bold bg-transparent border-none focus:outline-none focus:ring-0 px-1 py-1.5 ${
-                  darkMode ? 'text-white placeholder-white/30' : 'text-slate-800 placeholder-slate-400'
-                }`}
+ darkMode ? 'text-white placeholder-white/30' : 'text-slate-800 placeholder-slate-400'
+ }`}
               />
               <textarea 
                 placeholder="Comece a escrever..."
                 value={contentInput}
                 onChange={(e) => setContentInput(e.target.value)}
                 className={`w-full flex-1 text-xs bg-transparent border-none focus:outline-none focus:ring-0 resize-none leading-relaxed p-1 ${
-                  darkMode ? 'text-slate-300 placeholder-white/20' : 'text-slate-600 placeholder-slate-400'
-                }`}
+ darkMode ? 'text-slate-300 placeholder-white/20' : 'text-slate-600 placeholder-slate-400'
+ }`}
               />
             </div>
           </div>

@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Wifi, Bluetooth, Sun, Moon, Volume2, 
-  Smartphone, RefreshCw, User, Info, BatteryCharging, Check,
-  ChevronRight, ChevronLeft, Search, Bell, Lock, Grid,
-  Accessibility, Play, Shield, Activity, Smartphone as PhoneIcon,
-  Volume1, VolumeX, Eye, Sparkles, CheckCircle2, ChevronDown, Trash2,
-  Maximize, Plus
-} from 'lucide-react';
+import { Wifi, Bluetooth, Sun, Moon, Volume2, Smartphone, RefreshCw, User, Info, BatteryCharging, Check, ChevronRight, ChevronLeft, Search, Bell, Lock, Grid, Accessibility, Play, Shield, Activity, Smartphone as PhoneIcon, Volume1, VolumeX, Eye, Sparkles, CheckCircle2, ChevronDown, Trash2, Maximize, Plus, X, Plane } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Wallpaper } from '../types';
 
@@ -52,6 +45,8 @@ interface SettingsAppProps {
   // Fullscreen controls
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
+  autoFullscreen?: boolean;
+  setAutoFullscreen?: (b: boolean) => void;
 
   // System Setup & Boot Preferences
   language: 'pt' | 'en';
@@ -155,6 +150,8 @@ export default function SettingsApp({
   onUninstall,
   isFullscreen = false,
   onToggleFullscreen,
+  autoFullscreen = false,
+  setAutoFullscreen,
   language,
   setLanguage,
   pincode,
@@ -321,8 +318,8 @@ export default function SettingsApp({
 
   return (
     <div className={`h-full flex flex-col relative overflow-hidden ${
-      darkMode ? 'text-white bg-black' : 'text-slate-950 bg-[#f2f2f7]'
-    } ${grayscaleMode ? 'grayscale' : ''}`}>
+ darkMode ? 'text-white bg-black' : 'text-slate-950 bg-slate-100'
+ } ${grayscaleMode ? 'grayscale' : ''}`}>
       
       {/* HEADER BAR (Customizable transition sliding pages) */}
       <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
@@ -333,7 +330,7 @@ export default function SettingsApp({
             
             {/* Title */}
             <div className="text-left py-1 relative">
-              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">Configurações</h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Configurações</h1>
             </div>
 
             {/* Search Bar */}
@@ -345,17 +342,17 @@ export default function SettingsApp({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={`w-full pl-9 pr-10 py-2.5 ${
-                  darkMode 
-                    ? 'bg-[#1c1c1e] text-white border border-white/5' 
-                    : 'bg-white text-slate-900 border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.05)]'
-                } placeholder-slate-400 dark:placeholder-slate-500 text-sm font-medium rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all`}
+ darkMode 
+ ? 'bg-slate-900 text-white border border-white/5' 
+ : 'bg-white text-slate-900 border border-slate-200'
+ } placeholder-slate-400 dark:placeholder-slate-500 text-sm font-medium rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all`}
               />
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
                   className="absolute right-3 p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors flex items-center justify-center"
                 >
-                  <span className="text-[10px] leading-none text-slate-500">✕</span>
+                  <X size={12} className="text-slate-500" />
                 </button>
               )}
             </div>
@@ -363,13 +360,13 @@ export default function SettingsApp({
             {/* SEARCH RESULTS VIEW */}
             {searchQuery.trim() !== '' ? (
               <div className="space-y-2">
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">
+                <h3 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 px-1">
                   Resultados da busca
                 </h3>
                 {filteredSearch.length > 0 ? (
-                  <div className={`rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)] border ${
-                    darkMode ? 'bg-[#1c1c1e] border-white/5 divide-y divide-white/5' : 'bg-white border-slate-200/60 divide-y divide-slate-100'
-                  }`}>
+                  <div className={`rounded-2xl overflow-hidden border ${
+ darkMode ? 'bg-slate-900 border-white/5 divide-y divide-white/5' : 'bg-white border-slate-200/60 divide-y divide-slate-100'
+ }`}>
                     {filteredSearch.map(item => (
                       <button 
                         key={item.id}
@@ -378,8 +375,8 @@ export default function SettingsApp({
                           setSearchQuery('');
                         }}
                         className={`w-full flex items-center justify-between p-4 transition-all text-left ${
-                          darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                        }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                       >
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-bold text-slate-900 dark:text-white">{item.label}</div>
@@ -401,7 +398,7 @@ export default function SettingsApp({
                 
                 {/* 1. Profile / ID Apple Section */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase px-1">
+                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 px-1">
                     Conta e Perfil
                   </span>
                   <button 
@@ -409,18 +406,18 @@ export default function SettingsApp({
                       setCurrentPanel('perfil');
                       playTone(440, 'sine', 0.08, 0.03);
                     }}
-                    className={`w-full flex items-center justify-between py-5.5 px-4.5 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] active:scale-[0.98] transition-all text-left border ${
-                      darkMode 
-                        ? 'bg-[#1c1c1e] border-white/5 hover:bg-[#2c2c2e]' 
-                        : 'bg-white border-slate-200/60 hover:bg-slate-50'
-                    }`}
+                    className={`w-full flex items-center justify-between py-5.5 px-4.5 rounded-2xl active:scale-[0.98] transition-all text-left border ${
+ darkMode 
+ ? 'bg-slate-900 border-white/5 hover:bg-slate-800' 
+ : 'bg-white border-slate-200/60 hover:bg-slate-50'
+ }`}
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-13 h-13 rounded-full bg-blue-500 flex items-center justify-center text-white shrink-0 shadow-md">
+                      <div className="w-13 h-13 rounded-full bg-blue-500 flex items-center justify-center text-white shrink-0">
                         <User size={26} fill="white" className="opacity-95" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-extrabold text-slate-900 dark:text-white text-[16.5px] leading-tight truncate">{userName}</h3>
+                        <h3 className="font-semibold text-slate-900 dark:text-white text-[16.5px] leading-tight truncate">{userName}</h3>
                         <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-1 font-medium truncate">Apple ID, iCloud, Mídia e Compras</p>
                       </div>
                     </div>
@@ -430,12 +427,12 @@ export default function SettingsApp({
 
                 {/* 2. Connectivity List Container */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase px-1">
+                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 px-1">
                     Rede e Conexões
                   </span>
-                  <div className={`rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border divide-y ${
-                    darkMode ? 'bg-[#1c1c1e] border-white/5 divide-white/5' : 'bg-white border-slate-200/60 divide-slate-100'
-                  }`}>
+                  <div className={`rounded-2xl border divide-y ${
+ darkMode ? 'bg-slate-900 border-white/5 divide-white/5' : 'bg-white border-slate-200/60 divide-slate-100'
+ }`}>
                     {/* Wi-Fi option */}
                     <button 
                       onClick={() => {
@@ -443,13 +440,13 @@ export default function SettingsApp({
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
                       className={`flex items-center justify-between p-4 w-full rounded-t-2xl active:scale-[0.99] transition-all text-left ${
-                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                      }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors ${
-                          wifi ? 'bg-blue-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
-                        }`}>
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+ wifi ? 'bg-blue-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
+ }`}>
                           <Wifi size={18} />
                         </div>
                         <div>
@@ -472,13 +469,13 @@ export default function SettingsApp({
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
                       className={`flex items-center justify-between p-4 w-full active:scale-[0.99] transition-all text-left ${
-                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                      }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors ${
-                          cellular ? 'bg-green-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
-                        }`}>
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+ cellular ? 'bg-green-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
+ }`}>
                           <Activity size={18} />
                         </div>
                         <div>
@@ -501,13 +498,13 @@ export default function SettingsApp({
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
                       className={`flex items-center justify-between p-4 w-full active:scale-[0.99] transition-all text-left ${
-                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                      }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors ${
-                          bluetooth ? 'bg-[#007aff] text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
-                        }`}>
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+ bluetooth ? 'bg-blue-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
+ }`}>
                           <Bluetooth size={18} />
                         </div>
                         <div>
@@ -530,14 +527,14 @@ export default function SettingsApp({
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
                       className={`flex items-center justify-between p-4 w-full rounded-b-2xl active:scale-[0.99] transition-all text-left ${
-                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                      }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors ${
-                          airplaneMode ? 'bg-amber-500 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
-                        }`}>
-                          <span className="text-[14px] leading-none">✈️</span>
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+ airplaneMode ? 'bg-amber-500 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
+ }`}>
+                          <Plane size={15} />
                         </div>
                         <div>
                           <h4 className="text-[14px] font-bold leading-tight text-slate-900 dark:text-white">Modo avião</h4>
@@ -556,12 +553,12 @@ export default function SettingsApp({
 
                 {/* 3. Main System Options List - Stacked Group 1 (Display, Sounds, Accessibility) */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase px-1">
+                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 px-1">
                     Geral e Aparência
                   </span>
-                  <div className={`rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border divide-y ${
-                    darkMode ? 'bg-[#1c1c1e] border-white/5 divide-white/5' : 'bg-white border-slate-200/60 divide-slate-100'
-                  }`}>
+                  <div className={`rounded-2xl border divide-y ${
+ darkMode ? 'bg-slate-900 border-white/5 divide-white/5' : 'bg-white border-slate-200/60 divide-slate-100'
+ }`}>
                     {/* Notifications option */}
                     <button 
                       onClick={() => {
@@ -569,13 +566,13 @@ export default function SettingsApp({
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
                       className={`w-full flex items-center justify-between p-4 rounded-t-2xl active:scale-[0.99] transition-all text-left ${
-                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                      }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-red-500 text-white flex items-center justify-center relative shadow-sm shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-red-500 text-white flex items-center justify-center relative shrink-0">
                           <Bell size={17} />
-                          <div className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-[#1c1c1e]" />
+                          <div className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900" />
                         </div>
                         <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Notificações</span>
                       </div>
@@ -592,11 +589,11 @@ export default function SettingsApp({
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
                       className={`w-full flex items-center justify-between p-4 active:scale-[0.99] transition-all text-left ${
-                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                      }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-amber-400 text-white flex items-center justify-center shadow-sm shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-amber-400 text-white flex items-center justify-center shrink-0">
                           <Sun size={17} />
                         </div>
                         <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Configurações da tela</span>
@@ -614,11 +611,11 @@ export default function SettingsApp({
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
                       className={`w-full flex items-center justify-between p-4 active:scale-[0.99] transition-all text-left ${
-                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                      }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0">
                           <Volume2 size={17} />
                         </div>
                         <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Som e vibração</span>
@@ -636,11 +633,11 @@ export default function SettingsApp({
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
                       className={`w-full flex items-center justify-between p-4 rounded-b-2xl active:scale-[0.99] transition-all text-left ${
-                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                      }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-cyan-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-cyan-500 text-white flex items-center justify-center shrink-0">
                           <Accessibility size={17} />
                         </div>
                         <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Acessibilidade</span>
@@ -655,12 +652,12 @@ export default function SettingsApp({
 
                 {/* 4. Main System Options List - Stacked Group 2 (Battery, Apps, Privacy, About) */}
                 <div className="flex flex-col gap-1.5 pb-6">
-                  <span className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase px-1">
+                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 px-1">
                     Sistema e Outros
                   </span>
-                  <div className={`rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.03)] border divide-y ${
-                    darkMode ? 'bg-[#1c1c1e] border-white/5 divide-white/5' : 'bg-white border-slate-200/60 divide-slate-100'
-                  }`}>
+                  <div className={`rounded-2xl border divide-y ${
+ darkMode ? 'bg-slate-900 border-white/5 divide-white/5' : 'bg-white border-slate-200/60 divide-slate-100'
+ }`}>
                     {/* Battery option */}
                     <button 
                       onClick={() => {
@@ -668,11 +665,11 @@ export default function SettingsApp({
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
                       className={`w-full flex items-center justify-between p-4 rounded-t-2xl active:scale-[0.99] transition-all text-left ${
-                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                      }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-green-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-green-500 text-white flex items-center justify-center shrink-0">
                           <BatteryCharging size={17} />
                         </div>
                         <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Bateria</span>
@@ -690,11 +687,11 @@ export default function SettingsApp({
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
                       className={`w-full flex items-center justify-between p-4 active:scale-[0.99] transition-all text-left ${
-                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                      }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 text-white flex items-center justify-center shadow-sm shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 text-white flex items-center justify-center shrink-0">
                           <Lock size={17} />
                         </div>
                         <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Privacidade e segurança</span>
@@ -711,11 +708,11 @@ export default function SettingsApp({
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
                       className={`w-full flex items-center justify-between p-4 active:scale-[0.99] transition-all text-left ${
-                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                      }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-500 text-white flex items-center justify-center shrink-0">
                           <Grid size={17} />
                         </div>
                         <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Aplicativos</span>
@@ -733,11 +730,11 @@ export default function SettingsApp({
                         playTone(440, 'sine', 0.08, 0.03);
                       }}
                       className={`w-full flex items-center justify-between p-4 rounded-b-2xl active:scale-[0.99] transition-all text-left ${
-                        darkMode ? 'hover:bg-[#2c2c2e]' : 'hover:bg-slate-50'
-                      }`}
+ darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
+ }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-purple-500 text-white flex items-center justify-center shadow-sm shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-purple-500 text-white flex items-center justify-center shrink-0">
                           <Info size={17} />
                         </div>
                         <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Sobre o Aparelho</span>
@@ -800,10 +797,10 @@ export default function SettingsApp({
               {/* PANEL 1: PROFILE / EDIT NAME */}
               {currentPanel === 'perfil' && (
                 <div className="space-y-4">
-                  <div className={`p-5 rounded-2.5xl text-center space-y-3 shadow-sm ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
-                    <div className="w-20 h-20 rounded-full bg-slate-400 dark:bg-slate-600 flex items-center justify-center text-white border-2 border-slate-300 dark:border-slate-500 mx-auto shadow-sm">
+                  <div className={`p-5 rounded-2xl text-center space-y-3 ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
+                    <div className="w-20 h-20 rounded-full bg-slate-400 dark:bg-slate-600 flex items-center justify-center text-white border-2 border-slate-300 dark:border-slate-500 mx-auto">
                       <User size={40} fill="white" className="opacity-95" />
                     </div>
                     
@@ -815,20 +812,20 @@ export default function SettingsApp({
                           onChange={(e) => setNameInput(e.target.value)}
                           maxLength={18}
                           className={`w-full px-4 py-2 text-sm rounded-xl text-center font-bold outline-none border focus:ring-2 focus:ring-blue-500/50 ${
-                            darkMode ? 'bg-black text-white border-white/10' : 'bg-slate-100 text-slate-900 border-slate-200'
-                          }`}
+ darkMode ? 'bg-black text-white border-white/10' : 'bg-slate-100 text-slate-900 border-slate-200'
+ }`}
                           autoFocus
                         />
                         <div className="flex justify-center gap-2">
                           <button 
                             onClick={saveName} 
-                            className="px-5 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 shadow-sm"
+                            className="px-5 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700"
                           >
                             Salvar
                           </button>
                           <button 
                             onClick={() => setEditingName(false)} 
-                            className="px-5 py-1.5 bg-slate-400 text-white text-xs font-bold rounded-lg hover:bg-slate-500 shadow-sm"
+                            className="px-5 py-1.5 bg-slate-400 text-white text-xs font-bold rounded-lg hover:bg-slate-500"
                           >
                             Cancelar
                           </button>
@@ -848,9 +845,9 @@ export default function SettingsApp({
                     )}
                   </div>
 
-                  <div className={`p-4 rounded-2.5xl shadow-sm space-y-3 text-xs leading-normal ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl space-y-3 text-xs leading-normal ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <h4 className="font-bold text-sm">Armazenamento iCloud</h4>
                     <div className="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div className="h-full bg-blue-600 rounded-full" style={{ width: '0.5%' }} />
@@ -868,9 +865,9 @@ export default function SettingsApp({
                 <div className="space-y-4">
                   
                   {/* Wi-Fi Switch Card */}
-                  <div className={`p-4 rounded-2.5xl flex items-center justify-between shadow-sm ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl flex items-center justify-between ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <div>
                       <h3 className="text-sm font-semibold">Wi-Fi</h3>
                       <p className="text-[11px] opacity-50 mt-0.5">Permite conectar a redes sem fio locais</p>
@@ -880,25 +877,25 @@ export default function SettingsApp({
                       disabled={airplaneMode}
                       checked={wifi}
                       onChange={(e) => toggleWifi(e.target.checked)}
-                      className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-blue-600 disabled:opacity-30 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
+                      className="os-switch"
                     />
                   </div>
 
                   {airplaneMode && (
                     <p className="text-xs text-amber-500 font-medium px-1">
-                      ⚠️ Desative o Modo Avião para usar o Wi-Fi.
+                      Desative o Modo Avião para usar o Wi-Fi.
                     </p>
                   )}
 
                   {/* Available Networks */}
                   {wifi && !airplaneMode ? (
                     <div className="space-y-2">
-                      <h3 className="text-xs font-bold uppercase tracking-wider opacity-50 px-1">
+                      <h3 className="text-xs font-bold opacity-50 px-1">
                         Redes Disponíveis
                       </h3>
-                      <div className={`rounded-2.5xl overflow-hidden divide-y shadow-sm ${
-                        darkMode ? 'bg-[#1c1c1e] divide-white/5' : 'bg-white divide-slate-100'
-                      }`}>
+                      <div className={`rounded-2xl overflow-hidden divide-y ${
+ darkMode ? 'bg-slate-900 divide-white/5' : 'bg-white divide-slate-100'
+ }`}>
                         {[
                           { name: 'MockOS-Guest_5G', speed: 'Rápida' },
                           { name: 'Starlink-SpaceX', speed: 'Ultra Rápida' },
@@ -921,7 +918,7 @@ export default function SettingsApp({
                                   <span className={`text-sm ${isConnected ? "font-bold text-blue-500" : "font-semibold"}`}>
                                     {net.name}
                                   </span>
-                                  <p className="text-[10px] opacity-50 mt-0.5">{net.speed} • Segurança WPA3</p>
+                                  <p className="text-[11px] opacity-50 mt-0.5">{net.speed} • Segurança WPA3</p>
                                 </div>
                               </div>
                               <div className="flex items-center">
@@ -950,9 +947,9 @@ export default function SettingsApp({
               {/* PANEL 3: REDE MOVEL (CELLULAR) */}
               {currentPanel === 'celular' && (
                 <div className="space-y-4">
-                  <div className={`p-4 rounded-2.5xl flex items-center justify-between shadow-sm ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl flex items-center justify-between ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <div>
                       <h3 className="text-sm font-semibold">Dados Móveis (Rede)</h3>
                       <p className="text-[11px] opacity-50 mt-0.5">Usa conexão chip móvel para internet</p>
@@ -962,28 +959,28 @@ export default function SettingsApp({
                       disabled={airplaneMode}
                       checked={cellular}
                       onChange={(e) => toggleCellular(e.target.checked)}
-                      className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-green-600 disabled:opacity-30 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
+                      className="os-switch"
                     />
                   </div>
 
                   {cellular && !airplaneMode && (
                     <div className="space-y-3">
-                      <div className={`p-4 rounded-2.5xl shadow-sm space-y-3 text-xs ${
-                        darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                      }`}>
+                      <div className={`p-4 rounded-2xl space-y-3 text-xs ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                         <h4 className="font-bold text-sm">Uso do Pacote de Dados</h4>
                         <div className="h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden relative">
                           <div className="h-full bg-green-500 rounded-full" style={{ width: '42%' }} />
                         </div>
-                        <div className="flex justify-between opacity-70 font-mono text-[10px]">
+                        <div className="flex justify-between opacity-70 font-mono text-[11px]">
                           <span>4.2 GB de 10 GB usados</span>
                           <span>5.8 GB Restantes</span>
                         </div>
                       </div>
 
-                      <div className={`p-4 rounded-2.5xl shadow-sm flex items-center justify-between text-xs ${
-                        darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                      }`}>
+                      <div className={`p-4 rounded-2xl flex items-center justify-between text-xs ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                         <span className="font-semibold">Economia de Dados</span>
                         <input
                           type="checkbox"
@@ -992,7 +989,7 @@ export default function SettingsApp({
                             setDataLimitEnabled(e.target.checked);
                             playTone(440, 'triangle', 0.05);
                           }}
-                          className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-green-600 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
+                          className="os-switch"
                         />
                       </div>
                     </div>
@@ -1003,9 +1000,9 @@ export default function SettingsApp({
               {/* PANEL 4: BLUETOOTH */}
               {currentPanel === 'bluetooth' && (
                 <div className="space-y-4">
-                  <div className={`p-4 rounded-2.5xl flex items-center justify-between shadow-sm ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl flex items-center justify-between ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <div>
                       <h3 className="text-sm font-semibold">Bluetooth</h3>
                       <p className="text-[11px] opacity-50 mt-0.5">Parear fones de ouvido e acessórios</p>
@@ -1015,19 +1012,19 @@ export default function SettingsApp({
                       disabled={airplaneMode}
                       checked={bluetooth}
                       onChange={(e) => toggleBluetooth(e.target.checked)}
-                      className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-indigo-600 disabled:opacity-30 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
+                      className="os-switch"
                     />
                   </div>
 
                   {bluetooth && !airplaneMode ? (
                     <div className="space-y-2">
-                      <h3 className="text-xs font-bold uppercase tracking-wider opacity-50 px-1 flex items-center gap-2">
+                      <h3 className="text-xs font-bold opacity-50 px-1 flex items-center gap-2">
                         <span>Dispositivos Pareados</span>
                         <RefreshCw size={10} className="animate-spin opacity-60" />
                       </h3>
-                      <div className={`rounded-2.5xl overflow-hidden divide-y shadow-sm ${
-                        darkMode ? 'bg-[#1c1c1e] divide-white/5' : 'bg-white divide-slate-100'
-                      }`}>
+                      <div className={`rounded-2xl overflow-hidden divide-y ${
+ darkMode ? 'bg-slate-900 divide-white/5' : 'bg-white divide-slate-100'
+ }`}>
                         {bluetoothDevices.map((d) => {
                           const isConnecting = connectingBtId === d.id;
                           return (
@@ -1043,7 +1040,7 @@ export default function SettingsApp({
                                   <span className={`text-sm ${d.connected ? "font-bold text-indigo-500" : "font-semibold"}`}>
                                     {d.name}
                                   </span>
-                                  <p className="text-[10px] opacity-50">{d.type === 'headphones' ? 'Fones' : d.type === 'watch' ? 'Relógio Smart' : 'Som do Carro'}</p>
+                                  <p className="text-[11px] opacity-50">{d.type === 'headphones' ? 'Fones' : d.type === 'watch' ? 'Relógio Smart' : 'Som do Carro'}</p>
                                 </div>
                               </div>
                               <div className="text-xs font-semibold flex items-center gap-1 opacity-70">
@@ -1073,9 +1070,9 @@ export default function SettingsApp({
               {/* PANEL 5: AIRPLANE MODE DETAILS */}
               {currentPanel === 'aviao' && (
                 <div className="space-y-4">
-                  <div className={`p-4 rounded-2.5xl flex items-center justify-between shadow-sm ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl flex items-center justify-between ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <div>
                       <h3 className="text-sm font-semibold">Modo de Voo</h3>
                       <p className="text-[11px] opacity-50 mt-0.5">Suspende conexões para voos</p>
@@ -1084,13 +1081,13 @@ export default function SettingsApp({
                       type="checkbox"
                       checked={airplaneMode}
                       onChange={(e) => toggleAirplaneMode(e.target.checked)}
-                      className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-amber-500 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
+                      className="os-switch"
                     />
                   </div>
 
-                  <div className={`p-4 rounded-2.5xl shadow-sm text-xs opacity-75 leading-relaxed space-y-2 ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl text-xs opacity-75 leading-relaxed space-y-2 ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <p>O Modo de Voo desativa:</p>
                     <ul className="list-disc pl-4 space-y-1 font-medium">
                       <li>Sinal de Rede Móvel (Dados e chamadas)</li>
@@ -1104,9 +1101,9 @@ export default function SettingsApp({
               {/* PANEL 6: NOTIFICATIONS */}
               {currentPanel === 'notificacoes' && (
                 <div className="space-y-4">
-                  <div className={`p-4 rounded-2.5xl flex items-center justify-between shadow-sm ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl flex items-center justify-between ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <div>
                       <h3 className="text-sm font-semibold">Permitir Notificações</h3>
                       <p className="text-[11px] opacity-50 mt-0.5">Exibe alertas no topo da tela</p>
@@ -1118,13 +1115,13 @@ export default function SettingsApp({
                         setAllowedNotifications(e.target.checked);
                         playTone(500, 'sine', 0.1, 0.05);
                       }}
-                      className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-blue-600 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
+                      className="os-switch"
                     />
                   </div>
 
                   {allowedNotifications && (
                     <div className="space-y-3">
-                      <h4 className="text-xs font-bold uppercase tracking-wider opacity-50 px-1">Formato de Exibição</h4>
+                      <h4 className="text-xs font-bold opacity-50 px-1">Formato de Exibição</h4>
                       <div className="grid grid-cols-3 gap-2">
                         {[
                           { id: 'stack', label: 'Pilha', desc: 'Agrupadas' },
@@ -1138,13 +1135,13 @@ export default function SettingsApp({
                               playTone(600, 'sine', 0.05);
                             }}
                             className={`p-3 rounded-xl border-2 text-center text-xs transition-all ${
-                              notificationStyle === style.id 
-                                ? 'border-blue-600 bg-blue-500/10 font-bold' 
-                                : 'border-transparent bg-[#e3e3e9] dark:bg-[#1c1c1e] opacity-70'
-                            }`}
+ notificationStyle === style.id 
+ ? 'border-blue-600 bg-blue-500/10 font-bold' 
+ : 'border-transparent bg-slate-200 dark:bg-slate-900 opacity-70'
+ }`}
                           >
                             <div>{style.label}</div>
-                            <span className="text-[10px] opacity-60 mt-1 block">{style.desc}</span>
+                            <span className="text-[11px] opacity-60 mt-1 block">{style.desc}</span>
                           </button>
                         ))}
                       </div>
@@ -1159,7 +1156,7 @@ export default function SettingsApp({
                   
                   {/* Visual Theme Previews Selection (iOS Style Cards) */}
                   <div className="space-y-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider opacity-50 px-1">Aparência do Sistema</h3>
+                    <h3 className="text-xs font-bold opacity-50 px-1">Aparência do Sistema</h3>
                     <div className="grid grid-cols-2 gap-3.5">
                       {/* Claro Card */}
                       <button
@@ -1167,13 +1164,13 @@ export default function SettingsApp({
                           setDarkMode(false);
                           playTone(700, 'sine', 0.1, 0.05);
                         }}
-                        className={`p-3 rounded-2.5xl text-center space-y-2 border-3 transition-all cursor-pointer ${
-                          !darkMode
-                            ? 'border-blue-600 bg-white shadow-md text-slate-900' 
-                            : 'border-transparent bg-white/5 opacity-65 hover:opacity-100 text-current'
-                        }`}
+                        className={`p-3 rounded-2xl text-center space-y-2 border-3 transition-all cursor-pointer ${
+ !darkMode
+ ? 'border-blue-600 bg-white text-slate-900' 
+ : 'border-transparent bg-white/5 opacity-65 hover:opacity-100 text-current'
+ }`}
                       >
-                        <div className="h-12 w-full rounded-lg bg-slate-100 flex items-center justify-center shadow-xs">
+                        <div className="h-12 w-full rounded-lg bg-slate-100 flex items-center justify-center">
                           <Sun size={20} className="text-amber-500" />
                         </div>
                         <span className="text-[11px] font-bold block text-slate-800 dark:text-slate-200">Claro</span>
@@ -1185,13 +1182,13 @@ export default function SettingsApp({
                           setDarkMode(true);
                           playTone(300, 'sine', 0.1, 0.05);
                         }}
-                        className={`p-3 rounded-2.5xl text-center space-y-2 border-3 transition-all cursor-pointer ${
-                          darkMode
-                            ? 'border-blue-600 bg-slate-900 shadow-md text-white' 
-                            : 'border-transparent bg-white/5 opacity-65 hover:opacity-100 text-current'
-                        }`}
+                        className={`p-3 rounded-2xl text-center space-y-2 border-3 transition-all cursor-pointer ${
+ darkMode
+ ? 'border-blue-600 bg-slate-900 text-white' 
+ : 'border-transparent bg-white/5 opacity-65 hover:opacity-100 text-current'
+ }`}
                       >
-                        <div className="h-12 w-full rounded-lg bg-slate-950 flex items-center justify-center shadow-xs">
+                        <div className="h-12 w-full rounded-lg bg-slate-950 flex items-center justify-center">
                           <Moon size={20} className="text-blue-500" />
                         </div>
                         <span className="text-[11px] font-bold block text-slate-800 dark:text-slate-200">Escuro</span>
@@ -1200,9 +1197,9 @@ export default function SettingsApp({
                   </div>
 
                   {/* Brightness slider */}
-                  <div className={`p-4 rounded-2.5xl shadow-sm space-y-3 ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl space-y-3 ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <div className="flex justify-between items-center text-xs">
                       <span className="flex items-center gap-1.5 font-bold">
                         <Sun size={15} className="text-amber-500" /> Brilho da Tela
@@ -1220,9 +1217,9 @@ export default function SettingsApp({
                   </div>
 
                   {/* Proteção Ocular */}
-                  <div className={`p-4 rounded-2.5xl flex items-center justify-between shadow-sm ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl flex items-center justify-between ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <div>
                       <h3 className="text-sm font-semibold">Proteção Ocular (Night Comfort)</h3>
                       <p className="text-[11px] opacity-50 mt-0.5">Filtra luz azul (tons quentes)</p>
@@ -1234,36 +1231,54 @@ export default function SettingsApp({
                         setNightMode(e.target.checked);
                         playTone(e.target.checked ? 600 : 400, 'sine', 0.05);
                       }}
-                      className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-amber-500 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
+                      className="os-switch"
                     />
                   </div>
 
-                  {/* Modo Tela Cheia / Esconder Barra de Status (Android) */}
-                  <div className={`p-4 rounded-2.5xl flex items-center justify-between shadow-sm ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
-                    <div>
-                      <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                        <Maximize size={15} className="text-blue-500" /> Esconder Barra de Status (Android)
-                      </h3>
-                      <p className="text-[11px] opacity-50 mt-0.5">Força o app a ocupar toda a tela (Modo Nativo)</p>
+                  {/* Tela cheia */}
+                  <div className={`rounded-2xl overflow-hidden ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
+                    <div className="p-4 flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold flex items-center gap-2">
+                          <Maximize size={15} className="text-blue-500" /> Tela cheia
+                        </h3>
+                        <p className="text-xs opacity-55 mt-0.5">Oculta as barras do sistema e usa a tela inteira.</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isFullscreen}
+                        aria-label="Tela cheia"
+                        onChange={() => {
+                          if (onToggleFullscreen) {
+                            onToggleFullscreen();
+                          }
+                          playTone(isFullscreen ? 400 : 600, 'sine', 0.05);
+                        }}
+                        className="os-switch"
+                      />
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={isFullscreen}
-                      onChange={() => {
-                        if (onToggleFullscreen) {
-                          onToggleFullscreen();
-                        }
-                        playTone(isFullscreen ? 400 : 600, 'sine', 0.05);
-                      }}
-                      className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-blue-600 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
-                    />
+                    <div className="h-px mx-4 bg-slate-200 dark:bg-white/10" />
+                    <div className="p-4 flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold">Tela cheia automática</h3>
+                        <p className="text-xs opacity-55 mt-0.5">Entra em tela cheia no primeiro toque ao abrir o sistema. No iPhone, use Compartilhar &gt; Adicionar à Tela de Início.</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={autoFullscreen}
+                        aria-label="Tela cheia automática"
+                        onChange={(e) => {
+                          setAutoFullscreen?.(e.target.checked);
+                          playTone(e.target.checked ? 600 : 400, 'sine', 0.05);
+                        }}
+                        className="os-switch"
+                      />
+                    </div>
                   </div>
 
                    {/* Wallpapers Selection */}
                   <div className="space-y-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider opacity-50 px-1">Papéis de Parede do Sistema</h4>
+                    <h4 className="text-xs font-bold opacity-50 px-1">Papéis de Parede do Sistema</h4>
                     <div className="grid grid-cols-4 gap-2">
                       {onOpenGallery && (
                         <button
@@ -1271,10 +1286,10 @@ export default function SettingsApp({
                             onOpenGallery();
                             playTone(750, 'sine', 0.05);
                           }}
-                          className="relative aspect-[9/15] rounded-xl overflow-hidden border-2 border-dashed border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-slate-800/50 flex flex-col items-center justify-center text-center transition-transform active:scale-95 shadow-sm text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 hover:border-blue-500 cursor-pointer"
+                          className="relative aspect-[9/15] rounded-xl overflow-hidden border-2 border-dashed border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-slate-800/50 flex flex-col items-center justify-center text-center transition-transform active:scale-95 text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 hover:border-blue-500 cursor-pointer"
                         >
                           <Plus size={18} />
-                          <span className="text-[8px] font-extrabold mt-1 uppercase tracking-wider">Galeria</span>
+                          <span className="text-[11px] font-semibold mt-1">Galeria</span>
                         </button>
                       )}
                       {wallpapers.map((wp, idx) => (
@@ -1284,12 +1299,12 @@ export default function SettingsApp({
                             setWallpaperIndex(idx);
                             playTone(750, 'sine', 0.05);
                           }}
-                          className={`relative aspect-[9/15] rounded-xl overflow-hidden border-2 transition-transform active:scale-95 shadow-sm ${
-                            currentWallpaperIndex === idx ? 'border-blue-600 scale-[0.97]' : 'border-transparent opacity-85 hover:opacity-100'
-                          }`}
+                          className={`relative aspect-[9/15] rounded-xl overflow-hidden border-2 transition-transform active:scale-95 ${
+ currentWallpaperIndex === idx ? 'border-blue-600 scale-[0.97]' : 'border-transparent opacity-85 hover:opacity-100'
+ }`}
                           style={{ background: wp.gradient }}
                         >
-                          <div className="absolute inset-0 flex items-end justify-center pb-1 text-[8px] font-bold text-white bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+                          <div className="absolute inset-0 flex items-end justify-center pb-1 text-[11px] font-bold text-white bg-gradient-to-t from-black/80 via-black/20 to-transparent">
                             <span className="truncate max-w-[90%] px-1">{wp.name}</span>
                           </div>
                           {currentWallpaperIndex === idx && (
@@ -1309,21 +1324,21 @@ export default function SettingsApp({
                 <div className="space-y-4">
                   
                   {/* Status Card */}
-                  <div className={`p-5 rounded-2.5xl shadow-sm text-center space-y-3.5 ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-5 rounded-2xl text-center space-y-3.5 ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <div className="flex justify-between items-center text-xs">
                       <span className="font-semibold text-slate-400">Energia Atual</span>
-                      <span className={`px-2 py-0.5 text-[10px] rounded-full font-bold ${
-                        useManualBattery ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'
-                      }`}>
+                      <span className={`px-2 py-0.5 text-[11px] rounded-full font-bold ${
+ useManualBattery ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'
+ }`}>
                         {useManualBattery ? 'Simulação' : 'Bateria Real'}
                       </span>
                     </div>
 
                     {/* Massive Graphic Charge Battery Meter */}
                     <div className="relative inline-flex flex-col items-center justify-center p-3">
-                      <div className="text-4xl font-black font-mono tracking-tight text-blue-600">
+                      <div className="text-4xl font-semibold font-mono tracking-tight text-blue-600">
                         {simulatedLevel}%
                       </div>
                       <p className="text-[11px] opacity-55 font-semibold mt-1">
@@ -1335,12 +1350,12 @@ export default function SettingsApp({
                     <div className="w-40 h-8 border border-slate-300 dark:border-slate-700 rounded-lg p-0.5 mx-auto relative flex items-center overflow-hidden">
                       <div 
                         className={`h-full rounded-md transition-all duration-300 ${
-                          simulatedLevel <= 20 
-                            ? 'bg-red-500 animate-pulse' 
-                            : simulatedCharging 
-                              ? 'bg-green-500' 
-                              : 'bg-blue-500'
-                        }`}
+ simulatedLevel <= 20 
+ ? 'bg-red-500 animate-pulse' 
+ : simulatedCharging 
+ ? 'bg-green-500' 
+ : 'bg-blue-500'
+ }`}
                         style={{ width: `${simulatedLevel}%` }}
                       />
                       {simulatedCharging && (
@@ -1352,14 +1367,14 @@ export default function SettingsApp({
                   </div>
 
                   {/* Manual Simulator Toggles */}
-                  <div className={`rounded-2.5xl overflow-hidden divide-y shadow-sm ${
-                    darkMode ? 'bg-[#1c1c1e] divide-white/5' : 'bg-white divide-slate-100'
-                  }`}>
+                  <div className={`rounded-2xl overflow-hidden divide-y ${
+ darkMode ? 'bg-slate-900 divide-white/5' : 'bg-white divide-slate-100'
+ }`}>
                     {/* Simulator Switch */}
                     <div className="flex items-center justify-between p-4">
                       <div>
                         <span className="text-sm font-semibold block">Usar Simulador Manual</span>
-                        <span className="text-[10px] opacity-50">Controlar energia para testes</span>
+                        <span className="text-[11px] opacity-50">Controlar energia para testes</span>
                       </div>
                       <input
                         type="checkbox"
@@ -1368,7 +1383,7 @@ export default function SettingsApp({
                           setUseManualBattery(e.target.checked);
                           playTone(440, 'triangle', 0.05);
                         }}
-                        className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-blue-600 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
+                        className="os-switch"
                       />
                     </div>
 
@@ -1377,7 +1392,7 @@ export default function SettingsApp({
                       <div className="flex items-center justify-between p-4">
                         <div>
                           <span className="text-sm font-semibold block">Simular Cabo Conectado</span>
-                          <span className="text-[10px] opacity-50">Ativa recarga automática gradual</span>
+                          <span className="text-[11px] opacity-50">Ativa recarga automática gradual</span>
                         </div>
                         <input
                           type="checkbox"
@@ -1386,7 +1401,7 @@ export default function SettingsApp({
                             setSimulatedCharging(e.target.checked);
                             playTone(e.target.checked ? 880 : 330, 'sine', 0.1);
                           }}
-                          className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-green-500 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
+                          className="os-switch"
                         />
                       </div>
                     )}
@@ -1394,9 +1409,9 @@ export default function SettingsApp({
 
                   {/* Level Slider slider */}
                   {useManualBattery && (
-                    <div className={`p-4 rounded-2.5xl shadow-sm space-y-3 ${
-                      darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                    }`}>
+                    <div className={`p-4 rounded-2xl space-y-3 ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                       <div className="flex justify-between items-center text-xs">
                         <span className="font-semibold text-amber-500">Definir Nível da Carga</span>
                         <span className="font-bold font-mono text-[11px]">{simulatedLevel}%</span>
@@ -1413,10 +1428,10 @@ export default function SettingsApp({
                   )}
 
                   {/* Simulated usage chart */}
-                  <div className={`p-4 rounded-2.5xl shadow-sm space-y-3 ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
-                    <h4 className="text-xs font-bold uppercase tracking-wider opacity-60">Uso nas últimas 24 Horas</h4>
+                  <div className={`p-4 rounded-2xl space-y-3 ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
+                    <h4 className="text-xs font-bold opacity-60">Uso nas últimas 24 Horas</h4>
                     <div className="h-20 flex items-end justify-between gap-1 pt-4">
                       {[70, 65, 60, 52, 45, 38, 55, 68, 75, 71, 62, 50, 41, 35, 29, 21, 60, 85, 95, 90, 84, 75, 66, 58].map((h, i) => (
                         <div key={i} className="flex-1 bg-blue-500/10 hover:bg-blue-500 rounded-t-sm h-full flex items-end">
@@ -1424,7 +1439,7 @@ export default function SettingsApp({
                         </div>
                       ))}
                     </div>
-                    <div className="flex justify-between text-[9px] opacity-50 font-mono">
+                    <div className="flex justify-between text-[11px] opacity-50 font-mono">
                       <span>00:00</span>
                       <span>12:00</span>
                       <span>24:00</span>
@@ -1436,9 +1451,9 @@ export default function SettingsApp({
               {/* PANEL 9: PRIVACY & PERMISSIONS */}
               {currentPanel === 'privacidade' && (
                 <div className="space-y-4">
-                  <div className={`p-4 rounded-2.5xl flex items-center justify-between shadow-sm ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl flex items-center justify-between ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <div>
                       <h3 className="text-sm font-semibold">Serviço de Localização (GPS)</h3>
                       <p className="text-[11px] opacity-50 mt-0.5">Permite apps determinarem as coordenadas</p>
@@ -1450,17 +1465,17 @@ export default function SettingsApp({
                         setLocationServices(e.target.checked);
                         playTone(500, 'sine', 0.05);
                       }}
-                      className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-blue-600 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
+                      className="os-switch"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider opacity-50 px-1">
+                    <h3 className="text-xs font-bold opacity-50 px-1">
                       Acesso de Permissões
                     </h3>
-                    <div className={`rounded-2.5xl overflow-hidden divide-y shadow-sm text-xs font-medium ${
-                      darkMode ? 'bg-[#1c1c1e] divide-white/5' : 'bg-white divide-slate-100'
-                    }`}>
+                    <div className={`rounded-2xl overflow-hidden divide-y text-xs font-medium ${
+ darkMode ? 'bg-slate-900 divide-white/5' : 'bg-white divide-slate-100'
+ }`}>
                       {[
                         { name: 'Câmera do Dispositivo', status: 'Sempre Permitir' },
                         { name: 'Microfone e Gravador', status: 'Perguntar ao usar' },
@@ -1477,20 +1492,20 @@ export default function SettingsApp({
 
                   {/* System Setup Configuration */}
                   <div className="space-y-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider opacity-50 px-1">
+                    <h3 className="text-xs font-bold opacity-50 px-1">
                       {language === 'en' ? 'System & Setup Preferences' : 'Preferências do Sistema'}
                     </h3>
                     
-                    <div className={`rounded-2.5xl overflow-hidden divide-y shadow-sm ${
-                      darkMode ? 'bg-[#1c1c1e] divide-white/5' : 'bg-white divide-slate-100'
-                    }`}>
+                    <div className={`rounded-2xl overflow-hidden divide-y ${
+ darkMode ? 'bg-slate-900 divide-white/5' : 'bg-white divide-slate-100'
+ }`}>
                       {/* Language Selection */}
                       <div className="p-4 flex items-center justify-between">
                         <div>
                           <span className="text-sm font-semibold block">
                             {language === 'en' ? 'System Language' : 'Idioma do Sistema'}
                           </span>
-                          <span className="text-[10px] opacity-50">
+                          <span className="text-[11px] opacity-50">
                             {language === 'en' ? 'Changes home labels and notifications' : 'Altera textos de notificações e aplicativos'}
                           </span>
                         </div>
@@ -1498,16 +1513,16 @@ export default function SettingsApp({
                           <button
                             onClick={() => { setLanguage('pt'); playTone(600, 'sine', 0.05); }}
                             className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                              language === 'pt' ? 'bg-blue-600 text-white shadow' : 'opacity-60'
-                            }`}
+ language === 'pt' ? 'bg-blue-600 text-white' : 'opacity-60'
+ }`}
                           >
                             PT
                           </button>
                           <button
                             onClick={() => { setLanguage('en'); playTone(600, 'sine', 0.05); }}
                             className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                              language === 'en' ? 'bg-blue-600 text-white shadow' : 'opacity-60'
-                            }`}
+ language === 'en' ? 'bg-blue-600 text-white' : 'opacity-60'
+ }`}
                           >
                             EN
                           </button>
@@ -1520,7 +1535,7 @@ export default function SettingsApp({
                           <span className="text-sm font-semibold block">
                             {language === 'en' ? 'Lock Screen PIN' : 'Senha de Bloqueio (PIN)'}
                           </span>
-                          <span className="text-[10px] opacity-50">
+                          <span className="text-[11px] opacity-50">
                             {pincode 
                               ? (language === 'en' ? 'Active security code' : 'Código de segurança ativo') 
                               : (language === 'en' ? 'Slide to unlock (Insecure)' : 'Deslizar para desbloquear')}
@@ -1543,7 +1558,7 @@ export default function SettingsApp({
                                 }
                               }
                             }}
-                            className="px-3 py-1 text-xs font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm transition-all"
+                            className="px-3 py-1 text-xs font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all"
                           >
                             {language === 'en' ? 'Configure' : 'Configurar'}
                           </button>
@@ -1554,7 +1569,7 @@ export default function SettingsApp({
                                 setPincode('');
                                 alert(language === 'en' ? 'PIN lock removed.' : 'Senha de bloqueio removida.');
                               }}
-                              className="px-3 py-1 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm transition-all"
+                              className="px-3 py-1 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all"
                             >
                               {language === 'en' ? 'Remove' : 'Remover'}
                             </button>
@@ -1568,7 +1583,7 @@ export default function SettingsApp({
                           <span className="text-sm font-semibold text-red-500 block">
                             {language === 'en' ? 'Factory Reset OS' : 'Restaurar Padrão de Fábrica'}
                           </span>
-                          <span className="text-[10px] opacity-50">
+                          <span className="text-[11px] opacity-50">
                             {language === 'en' ? 'Format system and run setup again' : 'Formata o sistema e inicia a tela de boot'}
                           </span>
                         </div>
@@ -1584,7 +1599,7 @@ export default function SettingsApp({
                               onResetOS();
                             }
                           }}
-                          className="px-3.5 py-1.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm transition-all"
+                          className="px-3.5 py-1.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all"
                         >
                           {language === 'en' ? 'Reset OS' : 'Resetar'}
                         </button>
@@ -1599,9 +1614,9 @@ export default function SettingsApp({
                 <div className="space-y-4">
                   
                   {/* Volume System Slider */}
-                  <div className={`p-4 rounded-2.5xl shadow-sm space-y-3 ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl space-y-3 ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <div className="flex justify-between items-center text-xs">
                       <span className="flex items-center gap-1.5 font-bold">
                         <Volume2 size={15} className="text-blue-500" /> Volume do Sistema
@@ -1620,13 +1635,13 @@ export default function SettingsApp({
 
                   {/* Ringtone selection playing custom synthesizers */}
                   <div className="space-y-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider opacity-50 px-1">
+                    <h3 className="text-xs font-bold opacity-50 px-1">
                       Sons & Toques (Toque para ouvir)
                     </h3>
                     
-                    <div className={`rounded-2.5xl overflow-hidden divide-y shadow-sm ${
-                      darkMode ? 'bg-[#1c1c1e] divide-white/5' : 'bg-white divide-slate-100'
-                    }`}>
+                    <div className={`rounded-2xl overflow-hidden divide-y ${
+ darkMode ? 'bg-slate-900 divide-white/5' : 'bg-white divide-slate-100'
+ }`}>
                       {[
                         { id: 'marimba', label: 'Marimba OS (Futurista)', desc: 'Sequência alegre senoidal' },
                         { id: 'cyberpunk', label: 'Cyberpunk Neon (VIP Ostentação)', desc: 'Arpejo futurista synthwave' },
@@ -1649,7 +1664,7 @@ export default function SettingsApp({
                             <span className={`text-sm ${selectedRingtone === tone.id ? "font-bold text-blue-500" : "font-semibold"}`}>
                               {tone.label}
                             </span>
-                            <p className="text-[10px] opacity-50 mt-0.5">{tone.desc}</p>
+                            <p className="text-[11px] opacity-50 mt-0.5">{tone.desc}</p>
                           </div>
                           {selectedRingtone === tone.id && (
                             <Play size={14} className="text-blue-500 fill-blue-500" />
@@ -1665,13 +1680,13 @@ export default function SettingsApp({
               {currentPanel === 'apps' && (
                 <div className="space-y-4">
                   <div className="space-y-2.5">
-                    <h3 className="text-xs font-bold uppercase tracking-wider opacity-50 px-1">
+                    <h3 className="text-xs font-bold opacity-50 px-1">
                       Armazenamento de Aplicativos
                     </h3>
                     
-                    <div className={`rounded-2.5xl overflow-hidden divide-y shadow-sm ${
-                      darkMode ? 'bg-[#1c1c1e] divide-white/5' : 'bg-white divide-slate-100'
-                    }`}>
+                    <div className={`rounded-2xl overflow-hidden divide-y ${
+ darkMode ? 'bg-slate-900 divide-white/5' : 'bg-white divide-slate-100'
+ }`}>
                       {[
                         { id: 'navegador', name: 'Navegador Web', version: 'v1.4.2', size: '22 MB', isCore: true },
                         { id: 'mensagens', name: 'Mensagens Chat', version: 'v2.1.0', size: '12 MB', isCore: true },
@@ -1689,7 +1704,7 @@ export default function SettingsApp({
                         <div key={app.id} className="p-3.5 flex justify-between items-center text-xs font-medium">
                           <div>
                             <span className="font-bold block">{app.name}</span>
-                            <span className="opacity-50 text-[10px]">{app.version}</span>
+                            <span className="opacity-50 text-[11px]">{app.version}</span>
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="font-mono text-slate-500">{app.size}</span>
@@ -1723,9 +1738,9 @@ export default function SettingsApp({
               {/* PANEL 12: ACCESSIBILITY */}
               {currentPanel === 'acessibilidade' && (
                 <div className="space-y-4">
-                  <div className={`p-4 rounded-2.5xl flex items-center justify-between shadow-sm ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl flex items-center justify-between ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <div>
                       <h3 className="text-sm font-semibold">Filtro de Escala de Cinza</h3>
                       <p className="text-[11px] opacity-50 mt-0.5">Torna a tela preta e branca</p>
@@ -1737,13 +1752,13 @@ export default function SettingsApp({
                         setGrayscaleMode(e.target.checked);
                         playTone(550, 'sine', 0.05);
                       }}
-                      className="w-11 h-6 bg-slate-300 dark:bg-slate-800 rounded-full appearance-none checked:bg-blue-600 cursor-pointer relative transition-all duration-200 focus:outline-none before:content-[''] before:absolute before:h-5 before:w-5 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-5 before:transition-all before:shadow-sm before:duration-200"
+                      className="os-switch"
                     />
                   </div>
 
-                  <div className={`p-4 rounded-2.5xl shadow-sm text-xs opacity-75 space-y-2.5 leading-relaxed ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4 rounded-2xl text-xs opacity-75 space-y-2.5 leading-relaxed ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <h4 className="font-bold text-sm">Acessibilidade Ativa</h4>
                     <p>O filtro de escala de cinza reduz a distração visual e ajuda usuários sensíveis ao contraste visual a usar o Mock OS com conforto.</p>
                   </div>
@@ -1753,53 +1768,53 @@ export default function SettingsApp({
               {/* PANEL 13: SOBRE (ABOUT DEVICE) */}
               {currentPanel === 'sobre' && (
                 <div className="space-y-4">
-                  <div className={`p-4.5 rounded-2.5xl shadow-sm space-y-3.5 ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
+                  <div className={`p-4.5 rounded-2xl space-y-3.5 ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
                     <div className="flex items-center gap-3">
                       <Smartphone size={24} className="text-purple-500" />
                       <div>
                         <h3 className="text-sm font-bold">Mock Phone 16 Pro</h3>
-                        <p className="text-[10px] opacity-50">Projetado com React 19 & Tailwind v4</p>
+                        <p className="text-[11px] opacity-50">Projetado com React 19 & Tailwind v4</p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-200/40 dark:border-white/5 pt-3 font-mono">
                       <div className="bg-black/10 dark:bg-black/35 p-2 rounded-lg">
-                        <span className="opacity-50 block text-[9px] uppercase tracking-wide">Processador</span>
+                        <span className="opacity-50 block text-[11px]">Processador</span>
                         <span className="font-bold truncate block">Antigravity i5</span>
                       </div>
                       <div className="bg-black/10 dark:bg-black/35 p-2 rounded-lg">
-                        <span className="opacity-50 block text-[9px] uppercase tracking-wide">Memória RAM</span>
+                        <span className="opacity-50 block text-[11px]">Memória RAM</span>
                         <span className="font-bold truncate block">8 GB LPDDR5X</span>
                       </div>
                       <div className="bg-black/10 dark:bg-black/35 p-2 rounded-lg">
-                        <span className="opacity-50 block text-[9px] uppercase tracking-wide">Armazenamento</span>
+                        <span className="opacity-50 block text-[11px]">Armazenamento</span>
                         <span className="font-bold truncate block">128 GB UFS 4.0</span>
                       </div>
                       <div className="bg-black/10 dark:bg-black/35 p-2 rounded-lg">
-                        <span className="opacity-50 block text-[9px] uppercase tracking-wide">S.O. Versão</span>
+                        <span className="opacity-50 block text-[11px]">S.O. Versão</span>
                         <span className="font-bold truncate block">v1.0.4 stable</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Software update check */}
-                  <div className={`p-4.5 rounded-2.5xl shadow-sm text-center space-y-3.5 ${
-                    darkMode ? 'bg-[#1c1c1e]' : 'bg-white'
-                  }`}>
-                    <h4 className="text-xs font-bold uppercase tracking-wider opacity-60">Atualizações de Software</h4>
+                  <div className={`p-4.5 rounded-2xl text-center space-y-3.5 ${
+ darkMode ? 'bg-slate-900' : 'bg-white'
+ }`}>
+                    <h4 className="text-xs font-bold opacity-60">Atualizações de Software</h4>
                     <button
                       onClick={runUpdateCheck}
                       disabled={checkingUpdate}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-xs font-bold rounded-xl transition-all cursor-pointer active:scale-95"
                     >
                       <RefreshCw size={12} className={checkingUpdate ? "animate-spin" : ""} />
                       {checkingUpdate ? "Buscando atualizações..." : "Verificar Software"}
                     </button>
                     {updateMessage && (
-                      <p className="text-[10px] text-green-500 font-bold mt-1 animate-pulse">
-                        ✓ {updateMessage}
+                      <p className="text-[11px] text-green-500 font-bold mt-1 animate-pulse">
+                        <Check size={14} className="inline mr-1 -mt-0.5" />{updateMessage}
                       </p>
                     )}
                   </div>

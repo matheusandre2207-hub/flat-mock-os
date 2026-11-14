@@ -137,13 +137,13 @@ export default function FilesApp({
 
   return (
     <div className={`h-full flex flex-col rounded-none overflow-hidden ${
-      darkMode ? 'text-white bg-slate-950' : 'text-slate-900 bg-white'
-    }`}>
+ darkMode ? 'text-white bg-slate-950' : 'text-slate-900 bg-white'
+ }`}>
       
       {/* 1. DISK USAGE BAR HEADER */}
       <div className={`pt-3 pb-3 px-5 border-b flex flex-col gap-2 ${
-        darkMode ? 'bg-slate-900/40 border-white/10' : 'bg-slate-100/50 border-slate-200'
-      }`}>
+ darkMode ? 'bg-slate-900/40 border-white/10' : 'bg-slate-100/50 border-slate-200'
+ }`}>
         <div className="flex justify-between items-center text-xs">
           <span className="font-bold">Armazenamento Interno</span>
           <span className="font-mono opacity-65 font-bold">45.2 GB usados de 128 GB</span>
@@ -163,15 +163,15 @@ export default function FilesApp({
                 key={idx}
                 onClick={() => setActiveFolderIdx(idx)}
                 className={`p-4 rounded-2xl border text-left flex flex-col items-start gap-2.5 transition-all active:scale-95 cursor-pointer ${
-                  darkMode 
-                    ? 'bg-white/5 border-white/5 hover:bg-white/10' 
-                    : 'bg-slate-50 border-slate-100 hover:bg-slate-100/80 shadow-sm'
-                }`}
+ darkMode 
+ ? 'bg-white/5 border-white/5 hover:bg-white/10' 
+ : 'bg-slate-50 border-slate-100 hover:bg-slate-100/80'
+ }`}
               >
                 <span className="text-3xl">{renderFolderIcon(folder.icon)}</span>
                 <div>
                   <h4 className="font-bold text-xs">{folder.name}</h4>
-                  <p className="text-[10px] opacity-50 font-medium">{folder.files.length} itens</p>
+                  <p className="text-[11px] opacity-50 font-medium">{folder.files.length} itens</p>
                 </div>
               </button>
             ))}
@@ -190,7 +190,7 @@ export default function FilesApp({
               
               <button
                 onClick={() => setCreatingFileInFolderIdx(activeFolderIdx)}
-                className="inline-flex items-center gap-1 text-[10px] bg-blue-600 text-white font-bold px-2.5 py-1 rounded-lg hover:bg-blue-700 cursor-pointer shadow-sm"
+                className="inline-flex items-center gap-1 text-[11px] bg-blue-600 text-white font-bold px-2.5 py-1 rounded-lg hover:bg-blue-700 cursor-pointer"
               >
                 <FilePlus size={10} /> Criar Arquivo
               </button>
@@ -208,10 +208,10 @@ export default function FilesApp({
                   key={fItemIdx}
                   onClick={() => handleFileClick(file, fItemIdx)}
                   className={`p-3 rounded-xl border flex justify-between items-center transition-colors cursor-pointer text-xs ${
-                    darkMode 
-                      ? 'bg-white/5 border-white/5 hover:bg-white/10 text-white' 
-                      : 'bg-slate-50 border-slate-100 hover:bg-slate-100 text-slate-800'
-                  }`}
+ darkMode 
+ ? 'bg-white/5 border-white/5 hover:bg-white/10 text-white' 
+ : 'bg-slate-50 border-slate-100 hover:bg-slate-100 text-slate-800'
+ }`}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <span className="text-lg">
@@ -221,7 +221,7 @@ export default function FilesApp({
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="font-bold truncate">{file.name}</p>
-                      <p className="text-[9px] opacity-50 font-medium font-mono">{file.size} • Clique para {
+                      <p className="text-[11px] opacity-50 font-medium font-mono">{file.size} • Clique para {
                         file.type === 'text' ? 'editar' : (file.type === 'image' ? 'usar papel de parede' : 'tocar música')
                       }</p>
                     </div>
@@ -246,8 +246,8 @@ export default function FilesApp({
       {editingFile && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center p-4 z-40">
           <div className={`w-full max-w-sm h-[80%] rounded-2xl flex flex-col overflow-hidden ${
-            darkMode ? 'bg-slate-900 text-white border border-white/10' : 'bg-white text-slate-950 shadow-2xl'
-          }`}>
+ darkMode ? 'bg-slate-900 text-white border border-white/10' : 'bg-white text-slate-950'
+ }`}>
             <div className="p-3 border-b border-white/10 flex justify-between items-center bg-black/20">
               <span className="font-bold text-xs truncate max-w-[70%] flex items-center gap-1.5">
                 <FileText size={14} className="text-yellow-500" /> Notepad - {editingFile.file.name}
@@ -287,8 +287,8 @@ export default function FilesApp({
       {creatingFileInFolderIdx !== null && (
         <div className="absolute inset-0 bg-black/75 flex items-center justify-center p-4 z-40">
           <div className={`w-full max-w-xs rounded-2xl p-4 space-y-4 ${
-            darkMode ? 'bg-slate-900 text-white border border-white/10' : 'bg-white text-slate-950 shadow-2xl'
-          }`}>
+ darkMode ? 'bg-slate-900 text-white border border-white/10' : 'bg-white text-slate-950'
+ }`}>
             <h3 className="font-bold text-xs">Criar Novo Arquivo (.txt)</h3>
             <input
               type="text"
@@ -296,8 +296,8 @@ export default function FilesApp({
               value={newFileName}
               onChange={e => setNewFileName(e.target.value)}
               className={`w-full px-3 py-2 text-xs rounded-xl border outline-none ${
-                darkMode ? 'bg-black/30 border-white/10 text-white' : 'bg-slate-100 border-slate-200 text-slate-900'
-              }`}
+ darkMode ? 'bg-black/30 border-white/10 text-white' : 'bg-slate-100 border-slate-200 text-slate-900'
+ }`}
             />
             <div className="flex justify-end gap-2 text-xs">
               <button 

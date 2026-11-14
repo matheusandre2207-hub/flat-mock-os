@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { Play, RotateCcw, Volume2, VolumeX, Bird, Trophy, Zap } from 'lucide-react';
 
 interface FlappyAppProps {
   darkMode: boolean;
@@ -340,13 +340,13 @@ export default function FlappyApp({ darkMode, isActive = false }: FlappyAppProps
     <div className="flex flex-col h-full pb-24 bg-slate-950 select-none overflow-hidden text-white relative">
       {/* Mini App Header */}
       <div className={`px-4 py-3 shrink-0 flex justify-between items-center ${
-        darkMode ? 'bg-slate-900/90 border-b border-white/5' : 'bg-slate-800 text-white'
-      }`}>
+ darkMode ? 'bg-slate-900/90 border-b border-white/5' : 'bg-slate-800 text-white'
+ }`}>
         <div className="flex items-center gap-1.5">
-          <span className="text-lg">🐦</span>
+          <Bird size={18} />
           <div>
             <h2 className="text-xs font-bold leading-none">Flappy Bird</h2>
-            <p className="text-[9px] opacity-40 mt-0.5 font-mono">Recorde: {highScore}</p>
+            <p className="text-[11px] opacity-40 mt-0.5 font-mono">Recorde: {highScore}</p>
           </div>
         </div>
 
@@ -373,22 +373,22 @@ export default function FlappyApp({ darkMode, isActive = false }: FlappyAppProps
           width={280}
           height={380}
           onClick={handleCanvasClick}
-          className="rounded-2xl shadow-2xl border border-white/10 cursor-pointer w-full max-w-[280px] aspect-[28/38]"
+          className="rounded-2xl border border-white/10 cursor-pointer w-full max-w-[280px] aspect-[28/38]"
         />
 
         {/* Start Game overlay */}
         {!isPlaying && !isGameOver && (
           <div 
             onClick={resetGame}
-            className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col justify-center items-center text-center p-6 space-y-4 cursor-pointer"
+            className="absolute inset-0 bg-black/60 flex flex-col justify-center items-center text-center p-6 space-y-4 cursor-pointer"
           >
-            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center animate-bounce shadow-lg">
-              <span className="text-3xl">🐦</span>
+            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center">
+              <Bird size={32} />
             </div>
             
             <div className="space-y-1">
-              <h3 className="font-bold text-sm tracking-wide">Iniciar Flappy Bird</h3>
-              <p className="text-[10px] text-slate-400">Toque em qualquer lugar da tela para bater asas e desviar dos canos.</p>
+              <h3 className="font-bold text-sm">Iniciar Flappy Bird</h3>
+              <p className="text-[11px] text-slate-400">Toque em qualquer lugar da tela para bater asas e desviar dos canos.</p>
             </div>
 
             <button className="flex items-center gap-1.5 px-4.5 py-2 bg-green-600 hover:bg-green-700 font-bold text-xs rounded-xl border-none cursor-pointer text-white">
@@ -400,20 +400,20 @@ export default function FlappyApp({ darkMode, isActive = false }: FlappyAppProps
 
         {/* Game Over overlay */}
         {isGameOver && (
-          <div className="absolute inset-0 bg-red-950/80 backdrop-blur-xs flex flex-col justify-center items-center text-center p-6 space-y-4">
-            <div className="text-4xl">💥</div>
+          <div className="absolute inset-0 bg-red-950/80 flex flex-col justify-center items-center text-center p-6 space-y-4">
+            <Zap size={36} className="mx-auto" />
             
             <div className="space-y-1">
-              <h3 className="font-extrabold text-sm tracking-wider text-red-400">FIM DE JOGO</h3>
+              <h3 className="font-semibold text-sm text-red-400">FIM DE JOGO</h3>
               <p className="text-xs text-white/80">Você fez <span className="font-bold font-mono text-amber-400">{score}</span> pontos!</p>
               {score >= highScore && score > 0 && (
-                <p className="text-[10px] text-yellow-300 font-semibold animate-pulse">👑 Novo Recorde!</p>
+                <p className="text-[11px] text-yellow-300 font-semibold flex items-center justify-center gap-1.5"><Trophy size={13} /> Novo recorde!</p>
               )}
             </div>
 
             <button 
               onClick={resetGame}
-              className="flex items-center gap-1.5 px-4.5 py-2.5 bg-amber-500 hover:bg-amber-600 font-bold text-xs rounded-xl border-none cursor-pointer text-white shadow-md active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-4.5 py-2.5 bg-amber-500 hover:bg-amber-600 font-bold text-xs rounded-xl border-none cursor-pointer text-white active:scale-95 transition-all"
             >
               <RotateCcw size={13} />
               <span>Tentar Novamente</span>
@@ -423,7 +423,7 @@ export default function FlappyApp({ darkMode, isActive = false }: FlappyAppProps
       </div>
 
       {/* Swipe up hint */}
-      <div className="absolute bottom-1 w-full text-center opacity-30 text-[8px] font-mono select-none pointer-events-none">
+      <div className="absolute bottom-1 w-full text-center opacity-30 text-[11px] font-mono select-none pointer-events-none">
         TAP SCREEN TO JUMP
       </div>
     </div>

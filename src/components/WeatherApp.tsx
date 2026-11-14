@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { Search, Sun, Cloud, CloudRain, CloudLightning, Wind, Droplets, Thermometer, ArrowDown, ArrowUp } from 'lucide-react';
+import { Search, Sun, Cloud, CloudRain, CloudLightning, Wind, Droplets, Thermometer, ArrowDown, ArrowUp, CloudSun } from 'lucide-react';
+
+// Glifos do tempo como ícones de linha (sem emojis)
+const renderGlyph = (g: string) => {
+  const p = { size: 20, strokeWidth: 1.8 };
+  if (g.includes('⛈')) return <CloudLightning {...p} />;
+  if (g.includes('🌧')) return <CloudRain {...p} />;
+  if (g.includes('🌤')) return <CloudSun {...p} />;
+  if (g.includes('☁')) return <Cloud {...p} />;
+  return <Sun {...p} />;
+};
 
 interface WeatherData {
   city: string;
@@ -201,7 +211,7 @@ export default function WeatherApp({ darkMode }: WeatherAppProps) {
 
       {/* Main Temp Widget */}
       <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-4 text-white">
-        <h2 className="text-xl font-bold tracking-tight drop-shadow-sm">{currentWeather.city}</h2>
+        <h2 className="text-xl font-bold tracking-tight">{currentWeather.city}</h2>
         <p className="text-[11px] opacity-75 mt-0.5">{currentWeather.desc}</p>
         
         <div className="my-5 flex items-center justify-center gap-4.5">
@@ -212,7 +222,7 @@ export default function WeatherApp({ darkMode }: WeatherAppProps) {
         </div>
 
         {/* Min & Max Row */}
-        <div className="flex gap-4 text-xs font-medium opacity-90 drop-shadow-sm">
+        <div className="flex gap-4 text-xs font-medium opacity-90">
           <span className="flex items-center gap-0.5 text-blue-200">
             <ArrowDown size={14} /> Min {currentWeather.min}°
           </span>
@@ -226,34 +236,34 @@ export default function WeatherApp({ darkMode }: WeatherAppProps) {
       <div className="px-5 py-4 shrink-0">
         <div className="grid grid-cols-2 gap-3">
           
-          <div className="p-3.5 rounded-2xl bg-white/10 dark:bg-black/20 backdrop-blur-md text-white flex items-center gap-3">
+          <div className="p-3.5 rounded-2xl bg-white/10 dark:bg-black/20 text-white flex items-center gap-3">
             <Droplets className="w-5 h-5 text-blue-300" />
             <div>
-              <span className="text-[10px] opacity-60 block leading-tight">Umidade</span>
+              <span className="text-[11px] opacity-60 block leading-tight">Umidade</span>
               <span className="font-bold text-xs font-mono">{currentWeather.humidity}%</span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white/10 dark:bg-black/20 backdrop-blur-md text-white flex items-center gap-3">
+          <div className="p-3.5 rounded-2xl bg-white/10 dark:bg-black/20 text-white flex items-center gap-3">
             <Wind className="w-5 h-5 text-emerald-300" />
             <div>
-              <span className="text-[10px] opacity-60 block leading-tight">Vento</span>
+              <span className="text-[11px] opacity-60 block leading-tight">Vento</span>
               <span className="font-bold text-xs font-mono">{currentWeather.wind}</span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white/10 dark:bg-black/20 backdrop-blur-md text-white flex items-center gap-3">
+          <div className="p-3.5 rounded-2xl bg-white/10 dark:bg-black/20 text-white flex items-center gap-3">
             <Thermometer className="w-5 h-5 text-amber-300" />
             <div>
-              <span className="text-[10px] opacity-60 block leading-tight">Precipitação</span>
+              <span className="text-[11px] opacity-60 block leading-tight">Precipitação</span>
               <span className="font-bold text-xs font-mono">{currentWeather.precip}</span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white/10 dark:bg-black/20 backdrop-blur-md text-white flex items-center gap-3">
+          <div className="p-3.5 rounded-2xl bg-white/10 dark:bg-black/20 text-white flex items-center gap-3">
             <Sun className="w-5 h-5 text-yellow-300" />
             <div>
-              <span className="text-[10px] opacity-60 block leading-tight">Índice UV</span>
+              <span className="text-[11px] opacity-60 block leading-tight">Índice UV</span>
               <span className="font-bold text-xs font-mono">{currentWeather.uv}</span>
             </div>
           </div>
@@ -263,14 +273,14 @@ export default function WeatherApp({ darkMode }: WeatherAppProps) {
 
       {/* Hourly list */}
       <div className="px-5 py-3 shrink-0">
-        <div className="p-4 rounded-2.5xl bg-white/10 dark:bg-black/25 backdrop-blur-md text-white space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider opacity-60 text-left">Previsão de hoje</h3>
+        <div className="p-4 rounded-2xl bg-white/10 dark:bg-black/25 text-white space-y-3">
+          <h3 className="text-xs font-bold opacity-60 text-left">Previsão de hoje</h3>
           
           <div className="flex justify-between items-center overflow-x-auto gap-4 py-1 no-scrollbar">
             {currentWeather.hourly.map((h, index) => (
               <div key={index} className="flex flex-col items-center gap-1.5 shrink-0 px-2 text-center">
-                <span className="text-[9px] opacity-50 font-mono">{h.time}</span>
-                <span className="text-lg filter drop-shadow-sm select-none">{h.icon}</span>
+                <span className="text-[11px] opacity-50 font-mono">{h.time}</span>
+                <span className="select-none">{renderGlyph(h.icon)}</span>
                 <span className="font-bold text-[11px] font-mono">{h.temp}°</span>
               </div>
             ))}

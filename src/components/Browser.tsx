@@ -128,13 +128,13 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
 
   return (
     <div className={`h-full flex flex-col rounded-none overflow-hidden ${
-      darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
-    }`}>
+ darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
+ }`}>
       
       {/* Browser address bar / navigation controls header */}
       <div className={`pt-3 pb-3 px-5 border-b flex items-center gap-2 ${
-        darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-slate-200/50 border-slate-200'
-      }`}>
+ darkMode ? 'bg-slate-900/60 border-white/10' : 'bg-slate-200/50 border-slate-200'
+ }`}>
         <button 
           onClick={handleGoBack}
           disabled={historyIndex === 0}
@@ -159,8 +159,8 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
         {/* Address text box */}
         <form onSubmit={handleAddressSubmit} className="flex-1">
           <div className={`flex items-center px-3 py-1 rounded-xl border ${
-            darkMode ? 'bg-black/30 border-white/10' : 'bg-white border-slate-200'
-          }`}>
+ darkMode ? 'bg-black/30 border-white/10' : 'bg-white border-slate-200'
+ }`}>
             <Globe size={12} className="opacity-40 mr-1.5" />
             <input
               type="text"
@@ -179,10 +179,10 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
         {currentPage.type === 'home' && (
           <div className="p-6 max-w-sm mx-auto text-center space-y-8 pt-10">
             <div className="space-y-1">
-              <h1 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-semibold bg-blue-600 bg-clip-text text-transparent">
                 MockSearch
               </h1>
-              <p className="text-[10px] text-slate-400 font-mono">Navegue na rede simulada do Mock OS</p>
+              <p className="text-[11px] text-slate-400 font-mono">Navegue na rede simulada do Mock OS</p>
             </div>
 
             {/* Quick shortcuts grid */}
@@ -220,7 +220,7 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
               </button>
             </div>
 
-            <div className="text-[10px] text-slate-400 font-mono">
+            <div className="text-[11px] text-slate-400 font-mono">
               Digite "google", "wiki" ou "github" acima para navegar!
             </div>
           </div>
@@ -229,7 +229,7 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
         {/* VIEW 2: MOCK GOOGLE SEARCH */}
         {currentPage.type === 'google' && (
           <div className="p-6 text-center space-y-6 pt-12">
-            <h1 className="text-3xl font-black">
+            <h1 className="text-3xl font-semibold">
               <span className="text-blue-600">G</span>
               <span className="text-red-500">o</span>
               <span className="text-yellow-500">o</span>
@@ -238,7 +238,7 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
               <span className="text-red-500">e</span>
             </h1>
 
-            <form onSubmit={handleSearchSubmit} className="max-w-xs mx-auto flex items-center bg-slate-100 border border-slate-200 rounded-full px-4 py-2 shadow-sm">
+            <form onSubmit={handleSearchSubmit} className="max-w-xs mx-auto flex items-center bg-slate-100 border border-slate-200 rounded-full px-4 py-2">
               <Search size={14} className="text-slate-400 mr-2" />
               <input
                 type="text"
@@ -263,7 +263,7 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
             <div className="space-y-4 max-w-md">
               {/* Result item 1 */}
               <div className="space-y-1">
-                <p className="text-[10px] text-slate-400 truncate">https://www.mockos.org/mateus-oliveira</p>
+                <p className="text-[11px] text-slate-400 truncate">https://www.mockos.org/mateus-oliveira</p>
                 <h3 className="text-blue-600 font-bold hover:underline text-sm cursor-pointer" onClick={() => navigateTo('wikipedia.org/wiki/MockOS', 'wiki')}>
                   Mock OS - O melhor simulador em React de Mateus Oliveira
                 </h3>
@@ -274,7 +274,7 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
 
               {/* Result item 2 */}
               <div className="space-y-1">
-                <p className="text-[10px] text-slate-400 truncate">https://github.com/mateus-oliveira/mock-os</p>
+                <p className="text-[11px] text-slate-400 truncate">https://github.com/mateus-oliveira/mock-os</p>
                 <h3 className="text-blue-600 font-bold hover:underline text-sm cursor-pointer" onClick={() => navigateTo('github.com/mateus-oliveira/mock-os', 'github')}>
                   GitHub - mateus-oliveira/mock-os: Full implementation
                 </h3>
@@ -285,7 +285,7 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
 
               {/* Result item 3 */}
               <div className="space-y-1">
-                <p className="text-[10px] text-slate-400 truncate">https://www.wikipedia.org/wiki/Sistemas</p>
+                <p className="text-[11px] text-slate-400 truncate">https://www.wikipedia.org/wiki/Sistemas</p>
                 <h3 className="text-blue-600 font-bold hover:underline text-sm cursor-pointer">
                   O que é um Sistema Operacional Simulado?
                 </h3>
@@ -301,10 +301,10 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
         {currentPage.type === 'wiki' && (
           <div className="p-4 space-y-3.5">
             <div className="border-b border-slate-200 pb-2.5 flex items-center gap-1.5">
-              <span className="text-xl">📖</span>
+              <BookOpen size={22} />
               <div>
-                <h2 className="font-extrabold text-sm tracking-tight leading-none">Wikipédia</h2>
-                <span className="text-[9px] text-slate-400 font-mono">A enciclopédia livre</span>
+                <h2 className="font-semibold text-sm tracking-tight leading-none">Wikipédia</h2>
+                <span className="text-[11px] text-slate-400 font-mono">A enciclopédia livre</span>
               </div>
             </div>
 
@@ -335,16 +335,16 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
                 <Github size={20} className="text-white" />
                 <span className="text-xs font-mono font-bold hover:underline cursor-pointer">mateus-oliveira / <b>mock-os</b></span>
               </div>
-              <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded-full font-bold">★ 412 stars</span>
+              <span className="text-[11px] bg-slate-800 px-2 py-0.5 rounded-full font-bold">412 stars</span>
             </div>
 
             <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-2 text-xs font-mono">
-              <p className="text-green-400 text-[10px] font-bold">README.md</p>
-              <h2 className="text-sm font-bold text-white">🚀 Mock OS v1.0.4</h2>
+              <p className="text-green-400 text-[11px] font-bold">README.md</p>
+              <h2 className="text-sm font-bold text-white">Mock OS v1.0.4</h2>
               <p className="text-slate-400 text-[11px] leading-relaxed">
                 Este repositório contém a versão completa e otimizada do simulador móvel de Mateus Oliveira. Desenvolvido para resolver bugs de brilho, persistência de estados e simulação de bateria.
               </p>
-              <div className="text-[10px] bg-slate-900 p-2 rounded-lg border border-slate-800 mt-2 space-y-1 text-slate-300">
+              <div className="text-[11px] bg-slate-900 p-2 rounded-lg border border-slate-800 mt-2 space-y-1 text-slate-300">
                 <p className="text-blue-400 font-bold">$ npm install</p>
                 <p className="text-blue-400 font-bold">$ npm run dev</p>
                 <p className="text-slate-500">// Servidor rodando em http://localhost:3000</p>
@@ -384,7 +384,7 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
                 </div>
                 <button 
                   onClick={handleTranslate}
-                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl cursor-pointer"
                 >
                   Traduzir
                 </button>
@@ -392,7 +392,7 @@ export default function Browser({ darkMode, isActive = false }: BrowserProps) {
 
               {translationOutput && (
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mt-2">
-                  <span className="text-[10px] text-blue-400 block font-bold uppercase font-mono">Tradução</span>
+                  <span className="text-[11px] text-blue-400 block font-bold font-mono">Tradução</span>
                   <p className="text-xs font-semibold text-blue-900 mt-1">{translationOutput}</p>
                 </div>
               )}

@@ -99,36 +99,36 @@ export default function MusicPlayer({
 
   return (
     <div className={`h-full flex flex-col md:flex-row rounded-none overflow-y-auto no-scrollbar pb-24 ${
-      darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
-    }`}>
+ darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
+ }`}>
       
       {/* Immersive Audio Visual Player Screen */}
       <div className={`flex-1 pt-3 pb-6 px-5 flex flex-col justify-center items-center relative ${
-        darkMode ? 'bg-gradient-to-b from-slate-900 to-black' : 'bg-gradient-to-b from-slate-100 to-white'
-      }`}>
+ darkMode ? 'bg-slate-900' : 'bg-slate-100'
+ }`}>
         <div className="text-center space-y-4 w-full max-w-sm">
           
           {/* SPINNING VINYL CD COVER ART */}
           <div className="relative mx-auto w-44 h-44 flex items-center justify-center">
             {/* Spinning Disc container */}
-            <div className={`absolute inset-0 rounded-full bg-black border-4 border-slate-700 shadow-2xl flex items-center justify-center spin-vinyl ${
-              isPlaying ? '' : 'spin-vinyl-paused'
-            }`}>
+            <div className={`absolute inset-0 rounded-full bg-black border-4 border-slate-700 flex items-center justify-center spin-vinyl ${
+ isPlaying ? '' : 'spin-vinyl-paused'
+ }`}>
               {/* Grooves */}
               <div className="absolute inset-2.5 rounded-full border border-slate-800" />
               <div className="absolute inset-5 rounded-full border border-slate-800/60" />
               <div className="absolute inset-8 rounded-full border border-slate-900" />
               
               {/* Dynamic Album Cover Center Artwork */}
-              <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${activeTrack.color} flex items-center justify-center text-white font-black shadow-lg border border-black`}>
-                🎵
+              <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${activeTrack.color} flex items-center justify-center text-white font-semibold border border-black`}>
+                <Music size={20} />
               </div>
             </div>
             
             {/* Tone arm needle simulator icon */}
             <div className={`absolute top-0 right-4 w-12 h-16 origin-top transition-transform duration-500 ${
-              isPlaying ? 'rotate-12' : 'rotate-0'
-            }`}>
+ isPlaying ? 'rotate-12' : 'rotate-0'
+ }`}>
               <div className="w-1 bg-slate-400 h-10 mx-auto rounded-full" />
               <div className="w-2 h-2 bg-slate-500 rounded-full mx-auto" />
             </div>
@@ -136,7 +136,7 @@ export default function MusicPlayer({
 
           {/* Song Details Title */}
           <div>
-            <h3 className="font-extrabold text-lg tracking-tight truncate">{activeTrack.title}</h3>
+            <h3 className="font-semibold text-lg tracking-tight truncate">{activeTrack.title}</h3>
             <p className="text-xs opacity-60 font-medium truncate mt-0.5">{activeTrack.artist}</p>
           </div>
 
@@ -162,7 +162,7 @@ export default function MusicPlayer({
               onChange={handleProgressChange}
               className="w-full h-1 bg-slate-300 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
             />
-            <div className="flex justify-between text-[10px] font-mono opacity-50">
+            <div className="flex justify-between text-[11px] font-mono opacity-50">
               <span>{formatTime(currentTimeSec)}</span>
               <span>{activeTrack.duration}</span>
             </div>
@@ -188,7 +188,7 @@ export default function MusicPlayer({
 
             <button 
               onClick={() => setIsPlaying(!isPlaying)}
-              className="w-12 h-12 bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white rounded-full flex items-center justify-center transition-all shadow-lg cursor-pointer"
+              className="w-12 h-12 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-full flex items-center justify-center transition-all cursor-pointer"
               title={isPlaying ? "Pausar" : "Tocar"}
             >
               {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
@@ -229,9 +229,9 @@ export default function MusicPlayer({
 
       {/* Track List Sidebar */}
       <div className={`w-full md:w-64 border-t md:border-t-0 md:border-l flex flex-col px-5 py-4 ${
-        darkMode ? 'bg-slate-950 border-white/10' : 'bg-slate-100 border-slate-200'
-      }`}>
-        <h4 className="text-xs font-extrabold uppercase tracking-widest opacity-60 mb-3 flex items-center gap-1.5">
+ darkMode ? 'bg-slate-950 border-white/10' : 'bg-slate-100 border-slate-200'
+ }`}>
+        <h4 className="text-xs font-semibold opacity-60 mb-3 flex items-center gap-1.5">
           <ListMusic size={14} className="text-blue-500" /> Playlist
         </h4>
         <div className="flex-1 overflow-y-auto space-y-1.5 no-scrollbar max-h-48 md:max-h-none">
@@ -243,19 +243,19 @@ export default function MusicPlayer({
                 setIsPlaying(true);
               }}
               className={`w-full p-2.5 rounded-xl flex items-center gap-2.5 text-left text-xs transition-colors ${
-                currentTrackIndex === idx
-                  ? 'bg-blue-600 text-white font-bold'
-                  : (darkMode ? 'hover:bg-white/5' : 'hover:bg-black/5')
-              }`}
+ currentTrackIndex === idx
+ ? 'bg-blue-600 text-white font-bold'
+ : (darkMode ? 'hover:bg-white/5' : 'hover:bg-black/5')
+ }`}
             >
-              <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${track.color} flex items-center justify-center text-[10px]`}>
-                {currentTrackIndex === idx && isPlaying ? "⚡" : "🎵"}
+              <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${track.color} flex items-center justify-center text-[11px]`}>
+                {currentTrackIndex === idx && isPlaying ? <Volume2 size={12} /> : <Music size={12} />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="truncate font-semibold">{track.title}</p>
-                <p className="truncate text-[10px] opacity-70">{track.artist}</p>
+                <p className="truncate text-[11px] opacity-70">{track.artist}</p>
               </div>
-              <span className="font-mono text-[10px] opacity-60">{track.duration}</span>
+              <span className="font-mono text-[11px] opacity-60">{track.duration}</span>
             </button>
           ))}
         </div>

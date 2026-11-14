@@ -156,11 +156,11 @@ export default function LockScreen({
           style={{ background: wallpaper.gradient }}
         />
       )}
-      <div className="absolute inset-0 z-[1] bg-black/45 backdrop-blur-[20px]" />
+      <div className="absolute inset-0 z-[1] bg-black/50" />
 
       {/* Top Lock Indicator */}
       <div className="w-full flex justify-center mt-4 z-10">
-        <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md py-1.5 px-3.5 rounded-full border border-white/15 text-[10px] font-medium uppercase tracking-widest text-white/80 shadow-sm">
+        <div className="flex items-center gap-1.5 bg-white/10 py-1.5 px-3.5 rounded-full border border-white/15 text-[11px] font-medium text-white/80">
           <Lock size={11} className="text-sky-300" />
           <span>{language === 'en' ? 'Locked' : 'Bloqueado'}</span>
         </div>
@@ -178,8 +178,8 @@ export default function LockScreen({
           >
             {/* Clock, Date & Notifications */}
             <div className="flex flex-col items-center mt-4 text-center">
-              <span className="text-7xl font-extralight tracking-tighter text-white font-mono drop-shadow-md">{timeStr}</span>
-              <span className="text-xs font-semibold tracking-widest text-white/70 mt-1 uppercase drop-shadow">{dateStr}</span>
+              <span className="text-7xl font-light text-white tabular-nums">{timeStr}</span>
+              <span className="text-xs font-semibold text-white/70 mt-1">{dateStr}</span>
 
               {/* Lock Screen Notifications */}
               {notifications && notifications.length > 0 && (
@@ -193,11 +193,11 @@ export default function LockScreen({
                         e.stopPropagation();
                         handleUnlockAttempt(notif.app);
                       }}
-                      className="w-full bg-white/15 hover:bg-white/20 active:scale-[0.98] transition-all backdrop-blur-2xl border border-white/20 rounded-2xl p-3.5 flex flex-col gap-1 cursor-pointer text-left shadow-lg group"
+                      className="w-full bg-white/15 hover:bg-white/20 active:scale-[0.98] transition-all border border-white/20 rounded-2xl p-3.5 flex flex-col gap-1 cursor-pointer text-left group"
                     >
                       <div className="flex items-center justify-between text-[11px] font-semibold text-white/80">
                         <span className="capitalize font-bold text-sky-300 group-hover:text-sky-200">{notif.app}</span>
-                        <span className="text-[10px] text-white/60 font-mono">{notif.time}</span>
+                        <span className="text-[11px] text-white/60 font-mono">{notif.time}</span>
                       </div>
                       <div className="font-bold text-xs text-white leading-tight">{notif.title}</div>
                       <div className="text-[11px] text-white/80 line-clamp-2 leading-snug font-normal">{notif.message}</div>
@@ -209,15 +209,15 @@ export default function LockScreen({
 
             <div className="flex flex-col items-center gap-6">
               {/* Profile badge */}
-              <div className="flex items-center gap-2.5 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/15 rounded-full max-w-max mx-auto shadow-md">
+              <div className="flex items-center gap-2.5 px-4 py-2 bg-white/10 border border-white/15 rounded-full max-w-max mx-auto">
                 <span className="text-base">{userAvatar}</span>
                 <span className="text-xs font-medium text-white/90 truncate max-w-[120px]">{userName}</span>
               </div>
 
               {/* Bottom Swipe hint */}
-              <div className="flex flex-col items-center gap-1.5 text-center animate-bounce cursor-pointer opacity-80">
+              <div className="flex flex-col items-center gap-1.5 text-center cursor-pointer opacity-80">
                 <ArrowUp size={16} className="text-white" />
-                <span className="text-[10px] font-semibold tracking-widest uppercase text-white drop-shadow">
+                <span className="text-[11px] font-semibold text-white">
                   {pincode 
                     ? (language === 'en' ? 'Swipe up or tap for PIN' : 'Deslize para cima ou toque') 
                     : (language === 'en' ? 'Swipe up to unlock' : 'Deslize para Desbloquear')}
@@ -237,9 +237,9 @@ export default function LockScreen({
           >
             {/* Profile */}
             <div className="flex flex-col items-center mb-6 text-center">
-              <span className="text-3xl mb-1.5 drop-shadow-md">{userAvatar}</span>
-              <p className="text-sm font-semibold text-white tracking-wide">{userName}</p>
-              <p className="text-[10px] font-mono text-white/70 uppercase tracking-wider mt-1">
+              <span className="text-3xl mb-1.5">{userAvatar}</span>
+              <p className="text-sm font-semibold text-white">{userName}</p>
+              <p className="text-[11px] font-mono text-white/70 mt-1">
                 {language === 'en' ? 'Enter Passcode' : 'Digite a Senha de 4 Dígitos'}
               </p>
             </div>
@@ -252,10 +252,10 @@ export default function LockScreen({
                   <div 
                     key={dotIdx} 
                     className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                      filled 
-                        ? 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)] scale-110' 
-                        : 'border border-white/40 bg-white/10'
-                    }`} 
+ filled 
+ ? 'bg-white scale-110' 
+ : 'border border-white/40 bg-white/10'
+ }`} 
                   />
                 );
               })}
@@ -267,7 +267,7 @@ export default function LockScreen({
                 <button
                   key={num}
                   onClick={() => handleKeyPress(num)}
-                  className="w-16 h-16 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/35 border border-white/20 text-white text-2xl font-light font-sans flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95 mx-auto backdrop-blur-md select-none"
+                  className="w-16 h-16 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/35 border border-white/20 text-white text-2xl font-light font-sans flex items-center justify-center transition-all cursor-pointer active:scale-95 mx-auto select-none"
                 >
                   {num}
                 </button>
@@ -280,14 +280,14 @@ export default function LockScreen({
                   setPendingApp(null);
                   playTone(350);
                 }}
-                className="w-16 h-16 rounded-full hover:bg-white/10 text-xs font-semibold text-white/70 hover:text-white transition-all flex items-center justify-center cursor-pointer mx-auto uppercase tracking-wider"
+                className="w-16 h-16 rounded-full hover:bg-white/10 text-xs font-semibold text-white/70 hover:text-white transition-all flex items-center justify-center cursor-pointer mx-auto"
               >
                 {language === 'en' ? 'Cancel' : 'Cancelar'}
               </button>
 
               <button
                 onClick={() => handleKeyPress('0')}
-                className="w-16 h-16 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/35 border border-white/20 text-white text-2xl font-light font-sans flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95 mx-auto backdrop-blur-md select-none"
+                className="w-16 h-16 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/35 border border-white/20 text-white text-2xl font-light font-sans flex items-center justify-center transition-all cursor-pointer active:scale-95 mx-auto select-none"
               >
                 0
               </button>
@@ -310,7 +310,7 @@ export default function LockScreen({
                   onReset();
                 }
               }}
-              className="text-[10px] font-mono text-white/50 hover:text-white/80 transition-colors flex items-center justify-center gap-1.5 cursor-pointer py-2 px-4 rounded-full hover:bg-white/5 max-w-max mx-auto uppercase tracking-wider mt-2"
+              className="text-[11px] font-mono text-white/50 hover:text-white/80 transition-colors flex items-center justify-center gap-1.5 cursor-pointer py-2 px-4 rounded-full hover:bg-white/5 max-w-max mx-auto mt-2"
             >
               <RefreshCw size={10} />
               <span>{language === 'en' ? 'Forgot PIN? Reset' : 'Esqueceu a Senha? Resetar'}</span>

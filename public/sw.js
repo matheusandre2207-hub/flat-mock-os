@@ -1,24 +1,48 @@
-const CACHE_NAME = 'mock-os-v3';
-const assets = [
-  '/',
-  '/index.html',
-  '/manifest.json'
-];
+// Service worker: rede primeiro para páginas (sempre pega a versão nova),
+// cache como reserva offline e stale-while-revalidate para o resto.
+const CACHE_NAME = 'mock-os-v4';
 
-self.addEventListener('install', e => {
+self.addEventListener('install', () => self.skipWaiting());
+
+self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(assets).catch(err => {
-        console.warn('Alguns assets não puderam ser cacheados na instalação:', err);
-      });
-    })
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', e => {
+  const req = e.request;
+  if (req.method !== 'GET' || !req.url.startsWith('http')) return;
+  const url = new URL(req.url);
+  if (url.pathname.startsWith('/api/')) return;
+
+  if (req.mode === 'navigate') {
+    e.respondWith(
+      fetch(req)
+        .then(res => {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
+    );
+    return;
+  }
+
   e.respondWith(
-    caches.match(e.request).then(res => {
-      return res || fetch(e.request);
+    caches.match(req).then(cached => {
+      const network = fetch(req)
+        .then(res => {
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then(c => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => cached);
+      return cached || network;
     })
   );
 });

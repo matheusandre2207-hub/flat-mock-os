@@ -1,17 +1,16 @@
 {
   "short_name": "MockOS",
   "name": "Mock Operating System",
+  "description": "Sistema operacional móvel simulado, em tela cheia.",
   "icons": [
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/5738/5738031.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any maskable"
-    }
+    { "src": "./icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
+    { "src": "./icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "maskable" }
   ],
   "start_url": "./index.html",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "scope": "./",
+  "background_color": "#0B0B0C",
+  "theme_color": "#0B0B0C",
   "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
   "orientation": "portrait"
 }
