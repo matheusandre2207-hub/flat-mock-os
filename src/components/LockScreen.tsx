@@ -4,6 +4,7 @@ import { Lock, RefreshCw, Delete } from 'lucide-react';
 import ClockFace from './ClockFace';
 import SwipeDismiss from './SwipeDismiss';
 import { usePrefs } from '../prefs';
+import { screenH } from '../screenMetrics';
 
 interface LockNotification {
   id: string;
@@ -107,7 +108,7 @@ export default function LockScreen({
     if (leavingRef.current) return;
     leavingRef.current = true;
     setHintVisible(false);
-    await controls.start({ y: -(window.innerHeight + 60) }, { duration: 0.55, ease: EASE }).catch(() => {});
+    await controls.start({ y: -(screenH() + 60) }, { duration: 0.55, ease: EASE }).catch(() => {});
     if (targetApp && onOpenApp) onOpenApp(targetApp);
     else onUnlock();
   };
@@ -162,7 +163,7 @@ export default function LockScreen({
       animate={controls}
       drag={showKeypad ? false : 'y'}
       dragMomentum={false}
-      dragConstraints={{ top: -window.innerHeight, bottom: 0 }}
+      dragConstraints={{ top: -screenH(), bottom: 0 }}
       dragElastic={{ top: 0.5, bottom: 0.08 }}
       onDragStart={() => {
         draggedRef.current = true;

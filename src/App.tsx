@@ -5,7 +5,7 @@ import {
   Volume2, VolumeX, Sliders, Search, User, Folder, FileText, 
   Image as ImageIcon, Music as MusicIcon, Globe, Settings, 
   ChevronRight, ChevronLeft, X, Play, Pause, SkipForward, SkipBack, 
-  Send, Trash2, Clock, Smartphone, Bell, MessageSquare, Plus, Minus,
+  Send, Trash2, Clock, Smartphone, RotateCw, Bell, MessageSquare, Plus, Minus,
   Grid, Compass, FolderClosed, PlayCircle, Eye, EyeOff, Maximize, Minimize, Check,
   Calculator as CalculatorIcon, MessageCircle, NotebookPen, Bird, CloudSun, Palette,
   Phone, Users, Camera, ShoppingBag, SunMedium, BellOff, ChevronDown
@@ -43,6 +43,7 @@ import { getAccount, isSignedIn, signOut, type PublicAccount } from './accountDb
 import { CustomApp, setCustomAppRegistry, getCustomApp, isCustomAppId, withThemeBridge } from './customApps';
 import { loadAllApps, putApp, deleteApp, deleteAppFiles } from './appStorage';
 import { folderUrl, registerFolderServer } from './folderApps';
+import { setScreenSize, screenW, screenH, stageFor } from './screenMetrics';
 import { useWallpaperTint, setIconTint, getIconTint, tintBackground, buildAccentPalette, buildAppTheme } from './wallpaperTint';
 
 // Animated Matrix Code wallpaper component
@@ -828,6 +829,19 @@ export default function App() {
     registerFolderServer().then(ok => setFolderServer(ok ? 'ready' : 'error'));
   }, []);
 
+  // Rotação: palco horizontal dentro da janela. Pode ser ligada em qualquer app (ajuste rápido)
+  // ou automaticamente, se o app importado foi marcado para abrir em paisagem.
+  const [landscape, setLandscape] = useState(false);
+  const [viewport, setViewport] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
+  useEffect(() => {
+    const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const stage = stageFor(landscape, viewport.w, viewport.h);
+  setScreenSize(stage.w, stage.h);
+
+
   const [wifiActive, setWifiActive] = useState(true);
   const [bluetoothActive, setBluetoothActive] = useState(true);
   const [cellularActive, setCellularActive] = useState(true);
@@ -1032,6 +1046,11 @@ export default function App() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [utilitiesOpen, setUtilitiesOpen] = useState(false);
   const [activeApp, setActiveApp] = useState<string | null>(null);
+  useEffect(() => {
+    if (!activeApp) return;
+    const pref = customApps.find(a => a.id === activeApp)?.orientation;
+    if (pref) setLandscape(pref === 'landscape');
+  }, [activeApp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Time-clock updates
   const [systemTime, setSystemTime] = useState('00:00');
@@ -1150,6 +1169,14 @@ export default function App() {
     if (!cur) return;
     const updated = { ...cur, followWallpaper: value };
     putApp(updated).catch(() => { /* mantém o valor da sessão */ });
+    setCustomApps(prev => prev.map(a => (a.id === appId ? updated : a)));
+  };
+
+  const handleSetCustomOrientation = (appId: string, o: 'portrait' | 'landscape') => {
+    const cur = customApps.find(a => a.id === appId);
+    if (!cur) return;
+    const updated = { ...cur, orientation: o };
+    putApp(updated).catch(() => { /* mantém na sessão */ });
     setCustomApps(prev => prev.map(a => (a.id === appId ? updated : a)));
   };
 
@@ -1980,8 +2007,8 @@ export default function App() {
     );
 
     // Se o toque iniciar muito próximo à borda inferior da tela, e na parte central (evitando conflitos com scrolls longos nos apps)
-    const isNearCenterBottom = Math.abs(x - window.innerWidth / 2) < 80;
-    if (y > window.innerHeight - 30 && isNearCenterBottom && !isDrawingOrGameCanvas && !isInteractiveApp && !isInteractiveElement && prefs.navStyle === 'gestures') {
+    const isNearCenterBottom = Math.abs(x - screenW() / 2) < 80;
+    if (y > screenH() - 30 && isNearCenterBottom && !isDrawingOrGameCanvas && !isInteractiveApp && !isInteractiveElement && prefs.navStyle === 'gestures') {
       setSwipeUpStartY(y);
       setSwipeUpCurrentY(y);
       
@@ -2000,7 +2027,7 @@ export default function App() {
           }
         }
       }, 350);
-    } else if (x > window.innerWidth - 25 && activeApp !== null && !isDrawingOrGameCanvas && !isInteractiveApp && !isInteractiveElement && prefs.navStyle === 'gestures') {
+    } else if (x > screenW() - 25 && activeApp !== null && !isDrawingOrGameCanvas && !isInteractiveApp && !isInteractiveElement && prefs.navStyle === 'gestures') {
       // Começou bem na borda direita (gesto de voltar do Android/iOS)
       setSwipeBackStartX(x);
       setSwipeBackCurrentX(x);
@@ -2042,7 +2069,7 @@ export default function App() {
     const dyTop = touchEndY - startYTop;
     const dxTop = touchEndX - startXTop;
     if (!noGesture && !isBooting && !isLocked && !screenOff && startYTop < 90 && dyTop > 60 && dyTop > Math.abs(dxTop) * 1.5 && !notificationsOpen && !utilitiesOpen && !appDrawerOpen) {
-      if (startXTop < window.innerWidth / 2) {
+      if (startXTop < screenW() / 2) {
         setNotificationsOpen(true);
         setUtilitiesOpen(false);
       } else {
@@ -2111,7 +2138,7 @@ export default function App() {
     const dragDistanceLeftToRight = touchEndX - touchStartX;
     const dragVerticalLeftToRight = Math.abs(touchEndY - (touchStartYRef.current || touchEndY));
     // Zona de abertura: a esquerda da tela, em qualquer altura
-    const leftZone = Math.max(70, window.innerWidth * 0.3);
+    const leftZone = Math.max(70, screenW() * 0.3);
     if (!noGesture && touchStartX !== null && touchStartX < leftZone && dragDistanceLeftToRight > 80 && dragVerticalLeftToRight < dragDistanceLeftToRight * 0.5) {
       setAppDrawerOpen(true);
       setNotificationsOpen(false);
@@ -2484,6 +2511,7 @@ export default function App() {
             onImportCustomApp={handleImportCustomApp}
             onDeleteCustomApp={handleDeleteCustomApp}
               onSetFollowWallpaper={handleSetCustomFollow}
+              onSetOrientation={handleSetCustomOrientation}
           />
         );
       case 'notas':
@@ -2524,13 +2552,14 @@ export default function App() {
 
   return (
     <div className="fixed inset-0 overflow-hidden select-none bg-black">
+      <div className="absolute overflow-hidden" style={{ left: stage.left, top: stage.top, width: stage.w, height: stage.h }}>
       <div
         id="screen-container"
         className={`${darkMode ? 'dark theme-dark' : 'theme-light'} ${activeApp !== null ? 'app-open' : ''} ${immersiveApp ? 'app-immersive' : ''} ${(anySheetOpen || recentAppsOpen) ? 'sheet-open' : ''} ${justUnlocked ? 'just-unlocked' : ''} ${edge ? 'edge' : ''} ${prefs.iconTint ? 'icons-tinted' : ''} ${prefs.navStyle === 'buttons' ? 'nav-buttons' : ''} ${(isLocked && !isBooting) ? 'is-locked' : ''}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ filter: `brightness(${brightness}%)`, '--tint': tint, '--tint-h': `${tintInfo.h}deg`, '--tint-s': `${tintInfo.s}%`, ...accentVars } as React.CSSProperties}
+        style={{ position: 'absolute', inset: 0, filter: `brightness(${brightness}%)`, '--tint': tint, '--tint-h': `${tintInfo.h}deg`, '--tint-s': `${tintInfo.s}%`, ...accentVars } as React.CSSProperties}
       >
 
         {/* Filtro de luz noturna */}
@@ -2664,6 +2693,12 @@ export default function App() {
         {/* Configurações rápidas */}
         <div id="panel-utilities" className={utilitiesOpen ? '' : 'closed'}>
           <div className="qs-tiles">
+            <QSTile
+              label={language === 'en' ? 'Rotate' : 'Girar'}
+              icon={<RotateCw size={22} />}
+              active={landscape}
+              onClick={() => setLandscape(v => !v)}
+            />
             <QSTile
               label="Wi-Fi"
               icon={<Wifi size={22} />}
@@ -3280,6 +3315,7 @@ export default function App() {
               onImportCustomApp={handleImportCustomApp}
               onDeleteCustomApp={handleDeleteCustomApp}
               onSetFollowWallpaper={handleSetCustomFollow}
+              onSetOrientation={handleSetCustomOrientation}
             />
           </div>
         </div>
@@ -3934,6 +3970,7 @@ export default function App() {
           )}
         </AnimatePresence>
 
+      </div>
       </div>
     </div>
   );

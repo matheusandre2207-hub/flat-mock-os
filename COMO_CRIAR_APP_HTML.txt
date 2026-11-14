@@ -230,3 +230,16 @@ Aviso importante:
 Pacotes de pasta precisam que o AeroOS esteja em HTTPS ou em localhost.
 Se um pacote foi instalado antes de uma atualização e não abre, exclua
 o jogo na loja e instale a pasta de novo.
+
+
+12. GIRAR A TELA (PAISAGEM)
+---------------------------
+Você pode deixar a tela na horizontal em qualquer momento:
+
+  - Ajustes rápidos: toque em "Girar". Vale para qualquer app, inclusive
+    os jogos instalados. Toque de novo para voltar ao retrato.
+  - Por app: na loja, abra um app importado e escolha "Paisagem" em
+    "Orientação ao abrir". Ao abrir esse app, a tela gira sozinha.
+
+Na paisagem, o aparelho vira um palco horizontal centralizado na janela,
+com a proporção de um celular deitado. Assim o jogo não fica esticado.

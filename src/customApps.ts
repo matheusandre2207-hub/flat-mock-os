@@ -12,6 +12,8 @@ export interface CustomApp {
   followWallpaper?: boolean;
   /** 'html' = arquivo único; 'folder' = pacote de pasta servido pelo Service Worker */
   kind?: 'html' | 'folder';
+  /** Orientação ao abrir o app (se não definida, mantém a atual) */
+  orientation?: 'portrait' | 'landscape';
   entry?: string;
   fileCount?: number;
   size: string;

@@ -276,6 +276,7 @@ interface StoreAppProps {
   onImportCustomApp: (app: CustomApp) => Promise<boolean>;
   onDeleteCustomApp: (id: string) => void;
   onSetFollowWallpaper: (id: string, value: boolean) => void;
+  onSetOrientation: (id: string, o: 'portrait' | 'landscape') => void;
 }
 
 // Ícone de um app da loja: imagem enviada pelo app importado, ou o desenho padrão
@@ -306,7 +307,7 @@ function customToItem(app: CustomApp): AppItem {
   };
 }
 
-export default function StoreApp({ darkMode, installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp, onSetFollowWallpaper }: StoreAppProps) {
+export default function StoreApp({ darkMode, installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp, onSetFollowWallpaper, onSetOrientation }: StoreAppProps) {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -673,6 +674,30 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                   checked={!!customApps.find(a => a.id === selectedApp.id)?.followWallpaper}
                   onChange={(e) => onSetFollowWallpaper(selectedApp.id, e.target.checked)}
                 />
+              </div>
+            )}
+
+            {selectedApp.id.startsWith('custom-') && (
+              <div className="p-4 rounded-[20px] bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 flex flex-col gap-3">
+                <div>
+                  <h4 className="text-xs font-semibold text-slate-900 dark:text-white">Orientação ao abrir</h4>
+                  <p className="text-[11px] opacity-60 mt-0.5 text-slate-500 dark:text-slate-400">Paisagem é ótimo para jogos. Você também pode girar em qualquer app pelos ajustes rápidos.</p>
+                </div>
+                <div className="flex p-1 rounded-2xl bg-slate-200/60 dark:bg-white/5 gap-1">
+                  {(['portrait', 'landscape'] as const).map(o => {
+                    const cur = customApps.find(a => a.id === selectedApp.id)?.orientation ?? 'portrait';
+                    return (
+                      <button
+                        key={o}
+                        type="button"
+                        onClick={() => onSetOrientation(selectedApp.id, o)}
+                        className={`flex-1 py-1.5 rounded-xl text-[11px] font-semibold transition-all ${cur === o ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
+                      >
+                        {o === 'portrait' ? 'Retrato' : 'Paisagem'}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
