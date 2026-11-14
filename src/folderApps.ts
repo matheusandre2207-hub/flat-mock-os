@@ -4,7 +4,8 @@ import { putFileBatch, deleteAppFiles, type FileRecord } from './appStorage';
 
 export const MAX_FOLDER_BYTES = 1_500_000_000;
 const BASE: string = (import.meta as any).env?.BASE_URL ?? '/';
-const SKIP = /\.(exe|dll|msi|bat|cmd|sh|dmg|app)$|\.zip(\.part\d+)?$/i;
+// Mantém zips e partes (o jogo costuma juntá-las sozinho); ignora só executáveis
+const SKIP = /\.(exe|dll|msi|bat|cmd|sh|dmg|app)$/i;
 
 const MIME: Record<string, string> = {
   html: 'text/html; charset=utf-8', htm: 'text/html; charset=utf-8',
@@ -33,9 +34,30 @@ export async function registerFolderServer(): Promise<boolean> {
   if (!('serviceWorker' in navigator)) return false;
   try {
     // Usa o mesmo sw.js do AeroOS (um Service Worker por escopo): ele também serve os pacotes
-    await navigator.serviceWorker.register(`${BASE}sw.js`, { scope: BASE });
+    const reg = await navigator.serviceWorker.register(`${BASE}sw.js`, { scope: BASE });
     await navigator.serviceWorker.ready;
-    return true;
+    if (await probeFolderServer()) {
+      sessionStorage.removeItem('aeroos-sw-reload');
+      return true;
+    }
+    // Um sw.js antigo (de uma versão anterior) ainda controla a página: atualiza e recarrega uma vez
+    await reg.update().catch(() => {});
+    if (!sessionStorage.getItem('aeroos-sw-reload')) {
+      sessionStorage.setItem('aeroos-sw-reload', '1');
+      location.reload();
+      return false;
+    }
+    return probeFolderServer();
+  } catch {
+    return false;
+  }
+}
+
+// Pergunta ao Service Worker por um caminho inexistente: só a versão nova responde com a nossa mensagem
+async function probeFolderServer(): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}aeroapps/__probe__/index.html`, { cache: 'no-store' });
+    return (await res.text()).includes('Arquivo não encontrado no pacote');
   } catch {
     return false;
   }

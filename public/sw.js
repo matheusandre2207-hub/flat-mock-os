@@ -14,16 +14,22 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET' || !req.url.startsWith('http')) return;
+  if (!req.url.startsWith('http')) return;
+
+  // Pacotes de pasta (jogos) guardados no IndexedDB. Jogos checam arquivos com HEAD,
+  // então GET e HEAD são atendidos aqui, antes de qualquer cache.
+  const folderPrefix = new URL('aeroapps/', self.registration.scope).pathname;
+  const reqUrl = new URL(req.url);
+  if ((req.method === 'GET' || req.method === 'HEAD') && reqUrl.pathname.startsWith(folderPrefix)) {
+    e.respondWith(serveFolderFile(reqUrl.pathname.slice(folderPrefix.length), req.method === 'HEAD'));
+    return;
+  }
+
+  if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.pathname.startsWith('/api/')) return;
 
   // Pacotes de pasta instalados (jogos): servidos do IndexedDB, nunca em cache
-  const folderPrefix = new URL('aeroapps/', self.registration.scope).pathname;
-  if (url.pathname.startsWith(folderPrefix)) {
-    e.respondWith(serveFolderFile(url.pathname.slice(folderPrefix.length)));
-    return;
-  }
 
   if (req.mode === 'navigate') {
     e.respondWith(
@@ -82,7 +88,7 @@ async function readFolderRecord(key) {
   });
 }
 
-async function serveFolderFile(rest) {
+async function serveFolderFile(rest, head) {
   const slash = rest.indexOf('/');
   if (slash < 0) return new Response('Pacote inválido', { status: 400 });
   const appId = decodeURIComponent(rest.slice(0, slash));
@@ -91,8 +97,12 @@ async function serveFolderFile(rest) {
   try {
     const rec = await readFolderRecord(appId + '|' + path);
     if (!rec) return new Response('Arquivo não encontrado no pacote', { status: 404 });
-    return new Response(rec.blob, {
-      headers: { 'Content-Type': rec.type || 'application/octet-stream', 'Cache-Control': 'no-cache' },
+    return new Response(head ? null : rec.blob, {
+      headers: {
+        'Content-Type': rec.type || 'application/octet-stream',
+        'Content-Length': String(rec.blob.size),
+        'Cache-Control': 'no-cache',
+      },
     });
   } catch (err) {
     return new Response('Erro ao ler o pacote', { status: 500 });

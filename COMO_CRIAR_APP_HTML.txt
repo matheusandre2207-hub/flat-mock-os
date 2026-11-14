@@ -215,16 +215,18 @@ Para jogos ou apps que são uma pasta inteira (index.html + src + resources...):
   c) Acompanhe o progresso. Quando terminar, o jogo aparece na loja.
   d) Obter, e ele vai para a gaveta de apps como os outros.
 
-O que é ignorado: arquivos .exe, .dll, .msi, .bat e .zip (inclusive
-as partes resources.zip.part1, part2...). Um Runtime.exe, por exemplo,
-não faz parte do jogo no navegador.
+O que é ignorado: arquivos .exe, .dll, .msi, .bat e similares. Um
+Runtime.exe, por exemplo, não faz parte do jogo no navegador.
 
-Dois avisos importantes:
-  - Zip dividido: junte e extraia antes de instalar. No Windows, abra o
-    prompt na pasta e rode:  copy /b resources.zip.part* resources.zip
-    Depois extraia resources.zip. Só a pasta extraída pode ser instalada.
+Zip dividido (resources.zip.part1, part2...): NÃO precisa juntar. Se o
+jogo já tem um carregador que junta as partes (como o FNaF), as partes
+são instaladas junto e o próprio jogo as junta.
+
+Aviso importante:
   - Acesso: pacotes de pasta rodam com o mesmo acesso do AeroOS (é
     preciso para o jogo salvar dados e carregar os próprios arquivos).
     Instale só pastas de fontes em que você confia.
 
 Pacotes de pasta precisam que o AeroOS esteja em HTTPS ou em localhost.
+Se um pacote foi instalado antes de uma atualização e não abre, exclua
+o jogo na loja e instale a pasta de novo.
