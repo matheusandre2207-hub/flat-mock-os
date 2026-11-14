@@ -39,6 +39,7 @@ import BootSetupScreen from './components/BootSetupScreen';
 import LockScreen from './components/LockScreen';
 import SwipeDismiss from './components/SwipeDismiss';
 import { CustomApp, CUSTOM_APPS_KEY, loadCustomApps, setCustomAppRegistry, getCustomApp, isCustomAppId } from './customApps';
+import { useWallpaperTint, setIconTint, getIconTint, tintBackground } from './wallpaperTint';
 
 // Animated Matrix Code wallpaper component
 function MatrixWallpaper() {
@@ -672,23 +673,28 @@ function hashId(s: string) {
 function AppIcon({ id, size = 52 }: { id: string; size?: number }) {
   const meta = baseAppMetadata[id];
   const custom = meta ? undefined : getCustomApp(id);
-  const h = hashId(id);
-  const variation = {
+  if (!meta && !custom) return null;
+  const tint = getIconTint();
+  const seed = hashId(id);
+  const style = {
     '--s': `${size}px`,
-    '--hue-shift': (h % 45) - 22,
-    '--sat-shift': ((h >> 5) % 21) - 10,
-    '--lum-shift': ((h >> 10) % 13) - 6,
+    ...(tint.enabled ? { background: tintBackground(tint.h, tint.s, seed) } : {}),
+    ...(custom ? { '--custom-color': custom.color } : {}),
   } as React.CSSProperties;
-  if (!meta) {
-    if (!custom) return null;
+  if (!meta && custom) {
+    const icon = custom.iconUrl;
     return (
-      <div className="app-tile tile-custom" style={{ ...variation, '--custom-color': custom.color } as React.CSSProperties}>
-        <span className="custom-app-initial">{custom.name.charAt(0).toUpperCase()}</span>
+      <div className="app-tile tile-custom" style={style}>
+        {icon && icon.startsWith('data:image') ? (
+          <img src={icon} alt="" className="w-full h-full object-cover" style={{ borderRadius: 'inherit' }} />
+        ) : (
+          <span className="custom-app-initial">{icon || custom.name.charAt(0).toUpperCase()}</span>
+        )}
       </div>
     );
   }
   return (
-    <div className={`app-tile ${meta.iconBgClass}`} style={variation}>
+    <div className={`app-tile ${meta.iconBgClass}`} style={style}>
       {meta.icon}
     </div>
   );
@@ -1072,6 +1078,14 @@ export default function App() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [activePopup, setActivePopup] = useState<PopupNotification | null>(null);
   const toastDraggedRef = useRef(false);
+  // Aviso só aceita toque depois de um instante: toque na tela logo que ele aparece não abre o chat
+  const [toastLive, setToastLive] = useState(false);
+  useEffect(() => {
+    if (!activePopup) return;
+    setToastLive(false);
+    const t = window.setTimeout(() => setToastLive(true), 900);
+    return () => window.clearTimeout(t);
+  }, [activePopup?.id]);
 
   // Installed Apps State
   const [installedApps, setInstalledApps] = useState<string[]>(() => {
@@ -2232,22 +2246,11 @@ export default function App() {
     setWidgetSheet(false);
   };
 
-  // Cor dos ícones a partir do papel de parede
-  const tintInfo = (() => {
-    let best: { hue: number; s: number } | null = null;
-    (currentWallpaper.gradient.match(/#[0-9a-fA-F]{6}/g) || []).forEach(h => {
-      const r = parseInt(h.slice(1, 3), 16) / 255, g = parseInt(h.slice(3, 5), 16) / 255, b = parseInt(h.slice(5, 7), 16) / 255;
-      const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
-      let hue = 0;
-      if (d) { hue = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; hue = Math.round(hue * 60); if (hue < 0) hue += 360; }
-      const sat = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
-      if (!best || sat > best.s) best = { hue, s: sat };
-    });
-    const h = best ? best.hue : 226;
-    const s = best ? Math.round(Math.min(60, Math.max(35, best.s * 100))) : 60;
-    return { css: `hsl(${h} ${s}% 44%)`, h, s };
-  })();
+  // Cor dos ícones a partir do papel de parede (fotos são lidas do próprio arquivo)
+  const wpTint = useWallpaperTint(currentWallpaper.gradient);
+  const tintInfo = { h: wpTint.h, s: wpTint.s, css: `hsl(${wpTint.h} ${wpTint.s}% 44%)` };
   const tint = tintInfo.css;
+  setIconTint({ enabled: prefs.iconTint, h: tintInfo.h, s: tintInfo.s });
 
   // Modo borda a borda: sobe a barra de status até a altura do notch
   const edge = isFullscreen || (typeof window !== 'undefined' && (
@@ -3477,6 +3480,7 @@ export default function App() {
             <motion.div
               key={activePopup.id}
               className="toast"
+              style={{ pointerEvents: toastLive ? 'auto' : 'none' }}
               initial={{ y: -90, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -90, opacity: 0 }}

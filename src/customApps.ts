@@ -6,6 +6,8 @@ export interface CustomApp {
   name: string;
   html: string;
   color: string;
+  /** data: URL de imagem, ou um emoji; vem de <meta name="aeroos-icon"> no HTML */
+  iconUrl?: string;
   size: string;
   createdAt: number;
 }
@@ -48,6 +50,15 @@ export function pickColor(seed: number) {
 
 export function makeCustomAppId() {
   return `custom-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
+// Ícone do app: <meta name="aeroos-icon" content="data:image/...;base64,..."> ou um emoji
+// (também aceita <link rel="icon" href="data:image/...">)
+export function extractIcon(html: string): string | undefined {
+  const meta = html.match(/<meta[^>]+name=["']aeroos-icon["'][^>]*content=["']([^"']{1,200000})["']/i);
+  if (meta) return meta[1].trim();
+  const link = html.match(/<link[^>]+rel=["'](?:shortcut )?icon["'][^>]*href=["'](data:image\/[^"']+)["']/i);
+  return link ? link[1] : undefined;
 }
 
 export function extractTitle(html: string, fallback: string) {

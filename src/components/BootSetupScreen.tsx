@@ -153,41 +153,38 @@ export default function BootSetupScreen({
             transition={{ duration: 0.6, ease: "easeInOut" }}
             className="w-full max-w-sm flex flex-col items-center justify-center relative min-h-[350px]"
           >
-            {/* Elegant Saturn Vector */}
-            <motion.div 
-              animate={{ 
-                rotate: 360 
-              }}
-              transition={{ repeat: Infinity, duration: 40, ease: "linear" }}
-              className="w-32 h-32 flex items-center justify-center mb-8"
-            >
-              <svg className="w-24 h-24 text-zinc-300" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.2">
-                {/* Back of ring */}
-                <path d="M 16 54 C 16 43, 84 43, 84 54" stroke="currentColor" strokeWidth="1" strokeDasharray="3 3" opacity="0.3" strokeLinecap="round" />
-                {/* Planet body */}
-                <circle cx="50" cy="50" r="18" fill="#09090b" stroke="currentColor" strokeWidth="1.5" />
-                {/* Front of ring */}
-                <path d="M 10 50 C 10 63, 90 63, 90 50" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                {/* Small star / satellite indicator */}
-                <circle cx="34" cy="32" r="1" fill="currentColor" opacity="0.7" />
-              </svg>
-            </motion.div>
-
-            <h1 className="text-sm font-light text-zinc-400 font-mono mb-2">
-              FlatOS
-            </h1>
-
-            <div className="flex items-center justify-center gap-1.5 h-6">
-              <span className="text-[11px] text-zinc-600 font-mono">
-                {language === 'en' ? 'Loading' : 'Carregando'}
-              </span>
-              <span className="text-[11px] text-zinc-400 font-mono font-bold w-8 text-left">
-                {ellipsis}
-              </span>
+            {/* Marca AeroOS: wordmark fino, linha que se abre e progresso discreto */}
+            <div className="flex-1 flex flex-col items-center justify-center gap-7">
+              <motion.h1
+                initial={{ opacity: 0, letterSpacing: '0.42em', filter: 'blur(6px)' }}
+                animate={{ opacity: 1, letterSpacing: '0.04em', filter: 'blur(0px)' }}
+                transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
+                className="text-[40px] font-extralight text-zinc-100 leading-none"
+              >
+                AeroOS
+              </motion.h1>
+              <motion.div
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                transition={{ duration: 1.2, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                className="w-14 h-px bg-zinc-500"
+              />
+              <div className="flex flex-col items-center gap-3 w-40">
+                <div className="w-full h-px bg-zinc-800 overflow-hidden rounded-full">
+                  <motion.div
+                    className="h-full bg-zinc-200"
+                    animate={{ width: `${Math.min(100, bootProgress)}%` }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                  />
+                </div>
+                <span className="text-[10px] tracking-[0.22em] uppercase text-zinc-500 font-light">
+                  {language === 'en' ? 'Loading' : 'Carregando'}{ellipsis}
+                </span>
+              </div>
             </div>
 
-            <div className="absolute bottom-4 text-[11px] text-zinc-600 font-mono">
-              Powered by FlatOS
+            <div className="absolute bottom-7 text-[10px] tracking-[0.26em] uppercase text-zinc-600 font-light">
+              Powered by UNiVERSE
             </div>
           </motion.div>
         )}

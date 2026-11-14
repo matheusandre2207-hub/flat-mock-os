@@ -5,7 +5,7 @@ import {
   Image as ImageIcon, Music as MusicIcon, Globe, Folder, Settings, MessageSquare, 
   ShoppingBag, Phone, Users, Camera, Upload, FileCode
 } from 'lucide-react';
-import { CustomApp, MAX_CUSTOM_APP_BYTES, extractTitle, makeCustomAppId, pickColor } from '../customApps';
+import { CustomApp, MAX_CUSTOM_APP_BYTES, extractIcon, extractTitle, makeCustomAppId, pickColor } from '../customApps';
 
 function renderAppStoreIcon(iconName: string, size: number = 24, className?: string) {
   switch (iconName) {
@@ -150,6 +150,7 @@ interface AppItem {
   downloads: string;
   desc: string;
   isCore?: boolean;
+  iconUrl?: string;
 }
 
 const STORE_APPS: AppItem[] = [
@@ -275,6 +276,15 @@ interface StoreAppProps {
   onDeleteCustomApp: (id: string) => void;
 }
 
+// Ícone de um app da loja: imagem enviada pelo app importado, ou o desenho padrão
+function appIconNode(app: AppItem, size: number) {
+  if (app.iconUrl && app.iconUrl.startsWith('data:image')) {
+    return <img src={app.iconUrl} alt="" className="w-full h-full object-cover rounded-[inherit]" />;
+  }
+  if (app.iconUrl) return <span className="text-2xl">{app.iconUrl}</span>;
+  return renderAppStoreIcon(app.icon, size);
+}
+
 // Transforma um app HTML importado no mesmo formato dos apps da loja
 function customToItem(app: CustomApp): AppItem {
   return {
@@ -287,6 +297,7 @@ function customToItem(app: CustomApp): AppItem {
     version: 'v1.0.0',
     rating: 0,
     downloads: 'Importado',
+    iconUrl: app.iconUrl,
     desc: 'App HTML importado por você. Roda isolado do sistema e não tem acesso aos seus dados.',
   };
 }
@@ -331,6 +342,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
         html,
         color: pickColor(customApps.length),
         size: `${Math.max(1, Math.round(file.size / 1024))} KB`,
+        iconUrl: extractIcon(html),
         createdAt: Date.now(),
       };
       const ok = onImportCustomApp(app);
@@ -520,7 +532,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
             {/* App Branding Info Card */}
             <div className="flex gap-4 items-center">
               <div className="w-20 h-20 rounded-[22px] bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 flex items-center justify-center shrink-0">
-                {renderAppStoreIcon(selectedApp.icon, 36)}
+                {appIconNode(selectedApp, 36)}
               </div>
               <div className="min-w-0 flex-1 text-left">
                 <h2 className="font-semibold text-lg leading-tight tracking-tight text-slate-900 dark:text-white">{selectedApp.name}</h2>
@@ -745,7 +757,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
                       <div className="flex items-center gap-3.5 min-w-0">
                         {/* Perfect Squared Icon Container with thin border */}
                         <div className="w-14 h-14 rounded-[16px] bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 flex items-center justify-center shrink-0">
-                          {renderAppStoreIcon(app.icon, 24)}
+                          {appIconNode(app, 24)}
                         </div>
                         <div className="min-w-0">
                           <h4 className="font-semibold text-sm text-slate-900 dark:text-white leading-tight truncate group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">{app.name}</h4>

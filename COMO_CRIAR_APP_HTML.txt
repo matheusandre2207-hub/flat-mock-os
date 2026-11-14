@@ -1,0 +1,170 @@
+COMO CRIAR UM APP HTML (E UMA LOGO) PARA O AEROOS
+=================================================
+
+Um app HTML é um único arquivo .html que você importa na App Store.
+Depois de importado, ele aparece na loja, pode ser baixado e vai para a
+gaveta de apps, a tela inicial e o Dock, como qualquer outro app.
+
+Um exemplo pronto está no arquivo exemplo-logo-aeroos.html, na mesma
+pasta deste texto. Você pode importá-lo direto para testar.
+
+
+1. IMPORTAR O ARQUIVO
+---------------------
+  a) Abra a App Store.
+  b) Toque na sua foto no canto superior direito.
+  c) Toque em "Importar app HTML" e escolha o arquivo .html.
+  d) O app aparece na lista da loja. Toque nele e depois em
+     "Obter Aplicativo". Pronto: ele vai para a gaveta de apps.
+
+Para remover: abra o app na loja e toque em "Excluir app importado da loja".
+
+
+2. O QUE O ARQUIVO PRECISA TER
+------------------------------
+  - Um único arquivo .html, com CSS e JavaScript dentro dele (sem arquivos
+    separados ao lado).
+  - No máximo 1,5 MB.
+  - A tag <title> define o nome do app na loja e na tela inicial.
+      <title>Logo AeroOS</title>
+  - Um ícone (opcional, mas recomendado). Veja a seção 3.
+
+
+3. O ÍCONE, OU SUA LOGO
+-----------------------
+Por padrão, o ícone é um quadrado colorido com a primeira letra do nome.
+Para usar a sua logo, coloque uma das duas tags no <head>:
+
+  a) Emoji (o jeito mais simples):
+       <meta name="aeroos-icon" content="✈️">
+
+  b) Imagem (PNG, JPG, SVG ou WebP), em base64 dentro de um data: URL:
+       <meta name="aeroos-icon" content="data:image/svg+xml;base64,AAAA...">
+
+     Como gerar o base64:
+       - Online: procure "image to base64" e cole o resultado depois de
+         "data:image/png;base64," (ou svg+xml, jpeg, webp, conforme o tipo).
+       - Terminal (Linux/macOS): base64 -w0 logo.png
+       - Dica: use logos quadradas, com fundo transparente, e de até 200 KB.
+         Quanto menor o arquivo, mais rápido o app abre.
+
+  Também funciona com <link rel="icon" href="data:image/...;base64,...">.
+  A imagem é recortada no formato de ícone do sistema automaticamente.
+
+
+4. ESCREVENDO A LOGO (MODELO)
+-----------------------------
+Use este modelo como base. Ele já é um app completo e funciona no AeroOS:
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Minha Logo</title>
+<meta name="aeroos-icon" content="✨">
+<style>
+  :root { --bg: #0a0a0c; --fg: #f4f4f5; color-scheme: dark; }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #fafafa; --fg: #18181b; color-scheme: light; }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--fg); }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+  }
+  h1 {
+    font-weight: 300; font-size: 44px; letter-spacing: 0.06em;
+    animation: entrar 1.2s cubic-bezier(.22, 1, .36, 1) both;
+  }
+  @keyframes entrar {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+  <h1>Minha Marca</h1>
+</body>
+</html>
+
+
+5. REGRAS DE OURO (O QUE FUNCIONA E O QUE NÃO FUNCIONA)
+-------------------------------------------------------
+O app roda dentro de uma área isolada (iframe com "sandbox"). Por isso:
+
+  FUNCIONA
+  - HTML, CSS e JavaScript no próprio arquivo.
+  - Animações (CSS @keyframes, transitions) e Canvas.
+  - Formulários e botões dentro do próprio app.
+  - Estado em variáveis do JavaScript, enquanto o app estiver aberto.
+
+  NÃO FUNCIONA (ou dá erro)
+  - localStorage e sessionStorage: o app roda isolado e esses recursos
+    são bloqueados. Use variáveis em memória.
+  - Abrir outras páginas com window.open ou links que pedem nova aba.
+  - Acessar a loja, os outros apps, o seu celular ou seus dados.
+  - Imagens e fontes da internet: se o aparelho estiver sem conexão,
+    elas não carregam. Prefira tudo embutido no arquivo (data: URLs).
+
+  COMPORTAMENTO
+  - Cada vez que você fecha e abre o app, ele começa do zero (é recarregado).
+  - Por isso não guarde dados importantes só no app.
+
+
+6. DICAS DE DESIGN PARA A TELA DO AEROOS
+----------------------------------------
+  - A tela é de celular, em retrato. Teste com largura de 360 a 430 px.
+  - A barra de status fica por cima da parte de cima do app: deixe
+    cerca de 36 px de respiro no topo (padding-top: 36px no body).
+  - Use "100%" de altura (ou 100dvh), não 100vh, para caber na tela.
+  - Modo claro e escuro: use @media (prefers-color-scheme: light) para
+    trocar as cores. O app não recebe o tema do sistema sozinho.
+  - Animações curtas e suaves (entre 0,4 s e 1,5 s) ficam mais elegantes.
+  - Evite texto muito pequeno (menos de 12 px).
+
+
+7. PEDINDO PARA UMA IA CRIAR O APP
+----------------------------------
+Você pode pedir a qualquer IA. Cole este pedido e troque os trechos entre
+colchetes:
+
+  "Crie um único arquivo HTML para um app de celular chamado [NOME].
+  Requisitos:
+  - Tudo em um arquivo: CSS e JavaScript dentro do HTML.
+  - Sem localStorage, sessionStorage, cookies, fontes ou imagens externas.
+  - Sem window.open e sem links para outras páginas.
+  - Feito para tela de celular em retrato (360 a 430 px de largura), com
+    36 px de respiro no topo e altura 100dvh.
+  - Estilo: [minimalista / elegante / moderno], cores [...].
+  - Uma animação suave de entrada da logo: [descreva].
+  - Inclua <title>[NOME]</title> e a tag
+    <meta name="aeroos-icon" content="[emoji ou data:image/...]">.
+  - Devolva apenas o código completo do arquivo."
+
+
+8. TROCAR A LOGO DO BOOT (AEROOS INTEIRO)
+-----------------------------------------
+A tela de inicialização (boot) é uma parte do sistema, não um app HTML.
+Para trocar a marca, edite o arquivo src/components/BootSetupScreen.tsx
+e procure o trecho "Marca AeroOS". Ali estão o nome grande ("AeroOS") e o
+rodapé ("Powered by UNiVERSE"). Troque o texto, ou substitua o <h1> por
+uma imagem (<img src="data:image/...;base64,..." />). Depois rode
+npm run build de novo.
+
+
+9. PROBLEMAS COMUNS
+-------------------
+  - "Não foi possível ler o arquivo" ou "Escolha um arquivo .html":
+    confirme que a extensão é .html (ou .htm) e não .txt ou .docx.
+  - "Arquivo muito grande": reduza o tamanho, principalmente da imagem
+    do ícone (use SVG ou PNG pequeno).
+  - Tela branca ou nada aparece: abra o arquivo em um navegador de
+    computador para ver se há erro. Erros de JavaScript costumam ser
+    a causa. Verifique também se há um </html> no final.
+  - Ícone não aparece: a tag precisa estar dentro do <head> e o conteúdo
+    entre aspas. Para base64, confirme que começa com "data:image/".
+  - "Sem espaço para salvar": os apps importados são guardados no
+    navegador (cerca de 5 MB no total). Exclua apps antigos da loja.

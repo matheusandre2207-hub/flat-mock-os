@@ -1082,13 +1082,6 @@
 #screen-container.edge #status-bar { padding-top: 0; }
 #screen-container.edge .app-window-header { display: none; }
 
-/* Ícones da cor do papel de parede: cada app tem uma variação própria (matiz, saturação e brilho),
-   e um leve degradê, para o conjunto parecer orgânico em vez de tudo igual */
-#screen-container.icons-tinted .app-tile {
-  background: linear-gradient(155deg,
-    hsl(calc(var(--tint-h, 226deg) + var(--hue-shift, 0) * 1deg) calc(var(--tint-s, 60%) + var(--sat-shift, 0) * 1%) calc(45% + var(--lum-shift, 0) * 1%)) 0%,
-    hsl(calc(var(--tint-h, 226deg) + var(--hue-shift, 0) * 1deg + 26deg) calc(var(--tint-s, 60%) + var(--sat-shift, 0) * 1%) calc(35% + var(--lum-shift, 0) * 1%)) 100%);
-}
 
 /* Apps importados da App Store */
 .tile-custom { background: var(--custom-color, #6F737B); }
@@ -1134,6 +1127,8 @@
 .nav-btn:active { background: rgba(127, 127, 127, 0.22); transform: scale(0.92); }
 #screen-container.nav-buttons { --nav-h: 44px; --dock-b: calc(var(--sab) + var(--nav-h) + 10px); }
 #screen-container.nav-buttons .app-content { padding-bottom: calc(var(--sab) + var(--nav-h) + 14px); }
+/* No modo botões a barra de navegação substitui o indicador de gesto (evita sobreposição) */
+#screen-container.nav-buttons .home-indicator { display: none; }
 
 .home-grid {
   display: grid;

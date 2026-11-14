@@ -46,6 +46,12 @@ export default function LockScreen({
   const [dateStr, setDateStr] = useState('');
   const [pendingApp, setPendingApp] = useState<string | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  // Indicativo de deslizar: aparece ao bloquear e some sozinho (ou ao primeiro toque)
+  const [showHint, setShowHint] = useState(true);
+  useEffect(() => {
+    const t = window.setTimeout(() => setShowHint(false), 5200);
+    return () => window.clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     const updateTime = () => {
@@ -103,6 +109,7 @@ export default function LockScreen({
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    setShowHint(false);
     setTouchStartY(e.touches[0].clientY);
   };
 
@@ -216,15 +223,33 @@ export default function LockScreen({
             </div>
 
             <div className="flex flex-col items-center gap-6">
-              {/* Bottom Swipe hint */}
-              <div className="flex flex-col items-center gap-1.5 text-center cursor-pointer opacity-80">
-                <ArrowUp size={16} className="text-white" />
-                <span className="text-[11px] font-semibold text-white">
-                  {pincode 
-                    ? (language === 'en' ? 'Swipe up or tap for PIN' : 'Deslize para cima ou toque') 
-                    : (language === 'en' ? 'Swipe up to unlock' : 'Deslize para Desbloquear')}
-                </span>
-              </div>
+              {/* Indicativo de deslizar: pulso suave que some sozinho */}
+              <AnimatePresence>
+                {showHint && (
+                  <motion.div
+                    key="swipe-hint"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8, filter: 'blur(6px)' }}
+                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex flex-col items-center gap-3 pointer-events-none"
+                  >
+                    <div className="relative w-9 h-14 rounded-full border border-white/25 bg-white/5 overflow-hidden">
+                      <motion.span
+                        className="absolute bottom-2 left-[calc(50%-4px)] w-2 h-2 rounded-full bg-white"
+                        style={{ boxShadow: '0 0 12px rgba(255,255,255,0.9)' }}
+                        animate={{ y: [0, -34], opacity: [0, 1, 1, 0] }}
+                        transition={{ duration: 1.9, repeat: Infinity, ease: 'easeOut', times: [0, 0.15, 0.7, 1] }}
+                      />
+                    </div>
+                    <span className="text-[11px] font-medium tracking-wide text-white/80">
+                      {pincode
+                        ? (language === 'en' ? 'Swipe up or tap for PIN' : 'Deslize para cima ou toque')
+                        : (language === 'en' ? 'Swipe up to unlock' : 'Deslize para desbloquear')}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         ) : (
