@@ -6,9 +6,11 @@ export interface ClockPref {
   align: 'left' | 'center' | 'right';
 }
 export type NavStyle = 'gestures' | 'buttons';
+export type DrawerStyle = 'list' | 'grid';
 
 export interface Prefs {
   navStyle: NavStyle;
+  drawerStyle: DrawerStyle;
   iconTint: boolean;
   doubleTapSleep: boolean;
   home: ClockPref;
@@ -17,6 +19,7 @@ export interface Prefs {
 
 export const DEFAULTS: Prefs = {
   navStyle: 'gestures',
+  drawerStyle: 'list',
   iconTint: false,
   doubleTapSleep: true,
   home: { style: 'light', pos: 'top', align: 'left' },

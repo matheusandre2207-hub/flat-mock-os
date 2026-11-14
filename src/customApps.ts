@@ -15,7 +15,7 @@ export interface CustomApp {
 }
 
 export const CUSTOM_APPS_KEY = 'os_custom_apps';
-export const MAX_CUSTOM_APP_BYTES = 1_500_000;
+export const MAX_CUSTOM_APP_BYTES = 10_000_000;
 
 const PALETTE = [
   '#E5484D', '#F76B15', '#E5A100', '#30A46C', '#12A594',

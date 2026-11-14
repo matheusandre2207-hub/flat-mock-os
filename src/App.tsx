@@ -38,6 +38,8 @@ import CameraApp from './components/CameraApp';
 import BootSetupScreen from './components/BootSetupScreen';
 import LockScreen from './components/LockScreen';
 import SwipeDismiss from './components/SwipeDismiss';
+import SignInScreen from './components/SignInScreen';
+import { getAccount, isSignedIn, signOut, type PublicAccount } from './accountDb';
 import { CustomApp, setCustomAppRegistry, getCustomApp, isCustomAppId, withThemeBridge } from './customApps';
 import { loadAllApps, putApp, deleteApp } from './appStorage';
 import { useWallpaperTint, setIconTint, getIconTint, tintBackground, buildAccentPalette, buildAppTheme } from './wallpaperTint';
@@ -816,10 +818,16 @@ export default function App() {
     localStorage.setItem('os_setup_completed', String(isSetupCompleted));
   }, [isSetupCompleted]);
 
+  // Conta AeroOS: quem existe neste aparelho e se alguém está conectado
+  const [account, setAccount] = useState<PublicAccount | null>(() => getAccount());
+  const [signedIn, setSignedIn] = useState<boolean>(() => isSignedIn());
+
   const [wifiActive, setWifiActive] = useState(true);
   const [bluetoothActive, setBluetoothActive] = useState(true);
   const [cellularActive, setCellularActive] = useState(true);
   const [airplaneMode, setAirplaneMode] = useState(false);
+  // Sem Wi-Fi nem dados (e fora do modo avião), a internet simulada fica offline
+  const online = !airplaneMode && (wifiActive || cellularActive);
 
   // Apps HTML importados pela App Store (guardados no IndexedDB)
   const [customApps, setCustomApps] = useState<CustomApp[]>([]);
@@ -998,6 +1006,8 @@ export default function App() {
     setUserName('Mateus Oliveira');
     setUserAvatar('👤');
     setPincode('');
+    setAccount(null);
+    setSignedIn(false);
     setIsSetupCompleted(false);
     setIsBooting(true);
     setIsLocked(true);
@@ -2442,7 +2452,7 @@ export default function App() {
           />
         );
       case 'navegador':
-        return <Browser darkMode={darkMode} isActive={false} />;
+        return <Browser darkMode={darkMode} isActive={false} online={online} account={account} />;
       case 'arquivos':
         return (
           <FilesApp
@@ -2923,7 +2933,7 @@ export default function App() {
         </main>
 
         {/* Gaveta de apps */}
-        <aside id="app-drawer" className={appDrawerOpen ? '' : 'closed'}>
+        <aside id="app-drawer" className={`${appDrawerOpen ? '' : 'closed'} ${prefs.drawerStyle === 'grid' ? 'drawer-grid' : ''}`}>
           <div className="drawer-header">
             <span className="drawer-title">{language === 'en' ? 'Apps' : 'Aplicativos'}</span>
             <span className="drawer-time">{systemTime}</span>
@@ -3219,7 +3229,7 @@ export default function App() {
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
-            <Browser darkMode={darkMode} isActive={activeApp === 'navegador'} />
+            <Browser darkMode={darkMode} isActive={activeApp === 'navegador'} online={online} account={account} />
           </div>
         </div>
 
@@ -3837,15 +3847,18 @@ export default function App() {
             wallpaperIndex={wallpaperIndex}
             setWallpaperIndex={setWallpaperIndex}
             isSetupCompleted={isSetupCompleted}
-            onComplete={() => {
+            hasAccount={!!account}
+            onComplete={(acc) => {
+              if (acc) {
+                setAccount(acc);
+                setSignedIn(true);
+              }
               setIsBooting(false);
               setIsSetupCompleted(true);
-              // If no PIN is configured, unlock immediately. Otherwise, show LockScreen.
-              if (!pincode) {
-                setIsLocked(false);
-              } else {
-                setIsLocked(true);
-              }
+              // Sem PIN: desbloqueia direto. Com PIN: mostra a tela de bloqueio.
+              // (O PIN é lido do armazenamento porque a conta acabou de ser criada.)
+              const pin = acc ? (localStorage.getItem('os_pincode') || '') : pincode;
+              setIsLocked(!!pin);
             }}
           />
         )}
@@ -3868,8 +3881,31 @@ export default function App() {
             }}
             onUnlock={() => setIsLocked(false)}
             onReset={handleResetOS}
+            onSignOut={() => {
+              signOut();
+              setSignedIn(false);
+              setIsLocked(true);
+              setActiveApp(null);
+              setRecentAppsOpen(false);
+              closeSheets();
+            }}
           />
         )}
+
+        {/* Entrada na conta AeroOS: depois do boot, enquanto ninguém estiver conectado */}
+        <AnimatePresence>
+          {!isBooting && account && !signedIn && (
+            <SignInScreen
+              key="signin"
+              account={account}
+              language={language}
+              onSignedIn={() => {
+                setSignedIn(true);
+                if (!pincode) setIsLocked(false);
+              }}
+            />
+          )}
+        </AnimatePresence>
 
       </div>
     </div>

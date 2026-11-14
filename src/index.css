@@ -1232,14 +1232,14 @@
 /* ==========================================================================
    GAVETA DE APPS: grade de ícones com nome embaixo
    ========================================================================== */
-#app-drawer .drawer-list {
+#app-drawer.drawer-grid .drawer-list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 22px 6px;
   align-content: start;
   padding: 10px 16px 24px;
 }
-#app-drawer .drawer-item {
+#app-drawer.drawer-grid .drawer-item {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1250,8 +1250,8 @@
   color: inherit;
   transition: transform var(--t-fast) var(--ease);
 }
-#app-drawer .drawer-item:active { transform: scale(0.94); }
-#app-drawer .drawer-item .app-label {
+#app-drawer.drawer-grid .drawer-item:active { transform: scale(0.94); }
+#app-drawer.drawer-grid .drawer-item .app-label {
   max-width: 78px;
   font-size: 11px;
   text-align: center;

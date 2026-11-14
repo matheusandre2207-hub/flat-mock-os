@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePrefs, setPrefs, ClockPref, NavStyle } from '../prefs';
+import { usePrefs, setPrefs, ClockPref, NavStyle, DrawerStyle } from '../prefs';
 
 function Seg({ value, options, onChange }: { value: string; options: [string, string][]; onChange: (v: string) => void }) {
   return (
@@ -67,6 +67,17 @@ export default function DisplayPrefs() {
         </div>
         <Seg value={prefs.navStyle} onChange={v => setPrefs({ navStyle: v as NavStyle })}
           options={[['gestures', 'Gestos'], ['buttons', 'Botões']]} />
+      </div>
+      <div className="h-px bg-slate-200 dark:bg-white/10" />
+      <div className="space-y-2.5">
+        <div>
+          <h3 className="text-sm font-semibold">Gaveta de apps (barra lateral)</h3>
+          <p className="text-xs opacity-55 mt-0.5">
+            {prefs.drawerStyle === 'grid' ? 'Grade de ícones com o nome embaixo.' : 'Lista clássica, como antes.'}
+          </p>
+        </div>
+        <Seg value={prefs.drawerStyle} onChange={v => setPrefs({ drawerStyle: v as DrawerStyle })}
+          options={[['list', 'Lista'], ['grid', 'Grade']]} />
       </div>
     </div>
   );

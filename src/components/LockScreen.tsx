@@ -26,6 +26,7 @@ interface LockScreenProps {
   appLabel?: (appId: string) => string;
   onUnlock: () => void;
   onReset: () => void;
+  onSignOut?: () => void;
 }
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -47,6 +48,7 @@ export default function LockScreen({
   appLabel,
   onUnlock,
   onReset,
+  onSignOut,
 }: LockScreenProps) {
   const { prefs: lockPrefs } = usePrefs();
   const lockPos = lockPrefs.lock.pos;
@@ -260,6 +262,15 @@ export default function LockScreen({
                 )}
               </AnimatePresence>
             </div>
+            {onSignOut && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onSignOut(); }}
+                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] text-white/45 hover:text-white/80 py-1.5 px-3 rounded-full"
+              >
+                {language === 'en' ? 'Sign out of account' : 'Sair da conta'}
+              </button>
+            )}
           </motion.div>
         ) : (
           <motion.div

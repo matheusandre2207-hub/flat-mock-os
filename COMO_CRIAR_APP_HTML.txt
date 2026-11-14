@@ -24,7 +24,7 @@ Para remover: abra o app na loja e toque em "Excluir app importado da loja".
 ------------------------------
   - Um único arquivo .html, com CSS e JavaScript dentro dele (sem arquivos
     separados ao lado).
-  - No máximo 1,5 MB.
+  - No máximo 10 MB.
   - A tag <title> define o nome do app na loja e na tela inicial.
       <title>Logo AeroOS</title>
   - Um ícone (opcional, mas recomendado). Veja a seção 3.

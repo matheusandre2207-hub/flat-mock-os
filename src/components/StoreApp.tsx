@@ -326,7 +326,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
       return;
     }
     if (file.size > MAX_CUSTOM_APP_BYTES) {
-      notify(false, 'Arquivo muito grande (máximo 1,5 MB)');
+      notify(false, 'Arquivo muito grande (máximo 10 MB)');
       return;
     }
     const reader = new FileReader();

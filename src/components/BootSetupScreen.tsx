@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Globe, User, Check, ChevronRight, ChevronLeft, Lock, Unlock, Eye, EyeOff, Palette, Sun, Moon } from 'lucide-react';
 import { wallpapersList } from '../data';
+import { createAccount, validateUsername, passwordStrength, ACCOUNT_DOMAIN, type PublicAccount } from '../accountDb';
 
 interface BootSetupScreenProps {
   language: 'pt' | 'en';
@@ -17,7 +18,8 @@ interface BootSetupScreenProps {
   wallpaperIndex: number;
   setWallpaperIndex: (index: number) => void;
   isSetupCompleted: boolean;
-  onComplete: () => void;
+  hasAccount: boolean;
+  onComplete: (account?: PublicAccount) => void;
 }
 
 export default function BootSetupScreen({
@@ -28,6 +30,7 @@ export default function BootSetupScreen({
   darkMode, setDarkMode,
   wallpaperIndex, setWallpaperIndex,
   isSetupCompleted,
+  hasAccount,
   onComplete
 }: BootSetupScreenProps) {
   
@@ -39,6 +42,21 @@ export default function BootSetupScreen({
   const [localAvatar, setLocalAvatar] = useState(userAvatar || '👤');
   const [localPin, setLocalPin] = useState(pincode || '');
   const [showPin, setShowPin] = useState(false);
+  const [localUser, setLocalUser] = useState('');
+  const [localPass, setLocalPass] = useState('');
+  const [localConfirm, setLocalConfirm] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [accountError, setAccountError] = useState('');
+  const [finishing, setFinishing] = useState(false);
+
+  // Validação da conta (usada no botão e no Enter)
+  const pt = language === 'pt';
+  const userErr = localUser ? validateUsername(localUser, pt) : null;
+  const strength = passwordStrength(localPass);
+  const passOk = localPass.length >= 8;
+  const matchOk = localConfirm.length > 0 && localConfirm === localPass;
+  const pinOk = localPin.length === 0 || localPin.length === 4;
+  const canNext = localName.trim().length > 0 && !!localUser && !userErr && passOk && matchOk && pinOk;
 
   // Minimal set of sleek avatars
   const avatarList = ['👤', '🪐', '💻', '🎨', '🧠', '🌟', '☕', '🍿', '🦊', '🍀'];
@@ -66,7 +84,7 @@ export default function BootSetupScreen({
         if (next >= 100) {
           clearInterval(interval);
           setTimeout(() => {
-            if (isSetupCompleted) {
+            if (isSetupCompleted && hasAccount) {
               onComplete();
             } else {
               setStep('lang');
@@ -79,7 +97,7 @@ export default function BootSetupScreen({
     }, 150);
 
     return () => clearInterval(interval);
-  }, [step, isSetupCompleted]);
+  }, [step, isSetupCompleted, hasAccount]);
 
   // Audio tone generator
   const playTone = (freq: number, duration = 0.08) => {
@@ -105,9 +123,7 @@ export default function BootSetupScreen({
     if (step === 'lang') {
       setStep('account');
     } else if (step === 'account') {
-      setUserName(localName.trim() || 'User');
-      setUserAvatar(localAvatar);
-      setPincode(localPin);
+      if (!canNext) return;
       setStep('prefs');
     } else if (step === 'prefs') {
       setStep('complete');
@@ -125,19 +141,33 @@ export default function BootSetupScreen({
     }
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    if (finishing) return;
     playTone(700, 0.15);
-    setUserName(localName.trim() || 'User');
-    setUserAvatar(localAvatar);
-    setPincode(localPin);
-    
-    localStorage.setItem('os_setup_completed', 'true');
-    localStorage.setItem('os_language', language);
-    localStorage.setItem('os_user_name', localName.trim() || 'User');
-    localStorage.setItem('os_user_avatar', localAvatar);
-    localStorage.setItem('os_pincode', localPin);
-    
-    onComplete();
+    const name = localName.trim() || 'User';
+    setFinishing(true);
+    setAccountError('');
+    try {
+      const account = await createAccount({
+        name,
+        username: localUser,
+        password: localPass,
+        avatar: localAvatar,
+      });
+      setUserName(name);
+      setUserAvatar(localAvatar);
+      setPincode(localPin);
+      localStorage.setItem('os_setup_completed', 'true');
+      localStorage.setItem('os_language', language);
+      localStorage.setItem('os_user_name', name);
+      localStorage.setItem('os_user_avatar', localAvatar);
+      localStorage.setItem('os_pincode', localPin);
+      onComplete(account);
+    } catch (err) {
+      setFinishing(false);
+      setAccountError(err instanceof Error ? err.message : 'Não foi possível criar a conta.');
+      setStep('account');
+    }
   };
 
   return (
@@ -259,15 +289,15 @@ export default function BootSetupScreen({
 
         {/* ================= STEP 3: ACCOUNT CREATION ================= */}
         {step === 'account' && (
-          <motion.div 
+          <motion.div
             key="account"
             initial={{ opacity: 0, x: 15 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -15 }}
             className="w-full max-w-sm flex flex-col"
           >
-            <div className="flex items-center gap-3 mb-8">
-              <button 
+            <div className="flex items-center gap-3 mb-6">
+              <button
                 onClick={handleBack}
                 className="w-8 h-8 rounded-lg border border-zinc-900 flex items-center justify-center hover:bg-zinc-900 text-zinc-500 transition-colors cursor-pointer"
               >
@@ -275,100 +305,162 @@ export default function BootSetupScreen({
               </button>
               <div>
                 <h2 className="text-sm font-medium text-zinc-200">
-                  {language === 'en' ? 'Create Account' : 'Crie sua Conta'}
+                  {pt ? 'Crie sua conta AeroOS' : 'Create your AeroOS account'}
                 </h2>
                 <p className="text-[11px] text-zinc-500 font-mono">02 / 03</p>
               </div>
             </div>
 
-            {/* Choose Avatar */}
-            <div className="mb-6">
-              <label className="text-[11px] font-mono text-zinc-500 mb-2.5 block">
-                {language === 'en' ? 'Choose Avatar' : 'Escolha o Avatar'}
-              </label>
-              <div className="grid grid-cols-5 gap-2 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900">
-                {avatarList.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => {
-                      setLocalAvatar(emoji);
-                      playTone(550);
-                    }}
-                    className={`h-10 rounded-lg text-lg flex items-center justify-center transition-all cursor-pointer ${
- localAvatar === emoji 
- ? 'bg-zinc-800 text-white border border-zinc-600 scale-105' 
- : 'bg-zinc-900/30 hover:bg-zinc-900 text-zinc-400'
- }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Username Input */}
-            <div className="mb-6">
-              <label className="text-[11px] font-mono text-zinc-500 mb-2 block">
-                {language === 'en' ? 'Your Name' : 'Seu Nome'}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-600">
-                  <User size={14} />
+            <div className="flex flex-col gap-5 max-h-[58vh] overflow-y-auto no-scrollbar pr-1">
+              {/* Avatar */}
+              <div>
+                <label className="text-[11px] font-mono text-zinc-500 mb-2.5 block">{pt ? 'Avatar' : 'Avatar'}</label>
+                <div className="grid grid-cols-5 gap-2 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900">
+                  {avatarList.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => { setLocalAvatar(emoji); playTone(550); }}
+                      className={`h-10 rounded-lg text-lg flex items-center justify-center transition-all cursor-pointer ${
+                        localAvatar === emoji ? 'bg-zinc-800 text-white border border-zinc-600 scale-105' : 'bg-zinc-900/30 hover:bg-zinc-900 text-zinc-400'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
                 </div>
+              </div>
+
+              {/* Nome */}
+              <div>
+                <label className="text-[11px] font-mono text-zinc-500 mb-2 block">{pt ? 'Nome de exibição' : 'Display name'}</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-600">
+                    <User size={14} />
+                  </div>
+                  <input
+                    type="text"
+                    maxLength={24}
+                    value={localName}
+                    onChange={(e) => setLocalName(e.target.value)}
+                    placeholder={pt ? 'Como você quer ser chamado' : 'How you want to be called'}
+                    className="w-full py-2.5 pl-9 pr-4 bg-zinc-950 border border-zinc-900 rounded-xl text-xs text-zinc-100 focus:outline-none focus:border-zinc-700 placeholder-zinc-700 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Usuário @aeroaccount.id */}
+              <div>
+                <label className="text-[11px] font-mono text-zinc-500 mb-2 block">{pt ? 'Endereço da conta' : 'Account address'}</label>
+                <div className={`flex items-center rounded-xl border bg-zinc-950 pl-3 pr-3 transition-all ${userErr && localUser ? 'border-rose-900' : 'border-zinc-900 focus-within:border-zinc-700'}`}>
+                  <input
+                    type="text"
+                    value={localUser}
+                    onChange={(e) => setLocalUser(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, ''))}
+                    maxLength={20}
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder="seunome"
+                    className="flex-1 min-w-0 py-2.5 bg-transparent text-xs text-zinc-100 font-mono focus:outline-none placeholder-zinc-700"
+                  />
+                  <span className="text-[11px] font-mono text-zinc-500 shrink-0">@{ACCOUNT_DOMAIN}</span>
+                </div>
+                <p className={`text-[10px] mt-1.5 min-h-[14px] ${userErr && localUser ? 'text-rose-400' : 'text-zinc-600'}`}>
+                  {userErr && localUser ? userErr : (pt ? 'Letras minúsculas, números, ponto e underline.' : 'Lowercase letters, numbers, dot and underscore.')}
+                </p>
+              </div>
+
+              {/* Senha */}
+              <div>
+                <label className="text-[11px] font-mono text-zinc-500 mb-2 block">{pt ? 'Senha' : 'Password'}</label>
+                <div className="flex items-center rounded-xl border bg-zinc-950 border-zinc-900 focus-within:border-zinc-700 pl-4 pr-2 transition-all">
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    value={localPass}
+                    onChange={(e) => setLocalPass(e.target.value)}
+                    placeholder={pt ? 'Mínimo de 8 caracteres' : 'At least 8 characters'}
+                    className="flex-1 min-w-0 py-2.5 bg-transparent text-xs text-zinc-100 font-mono focus:outline-none placeholder-zinc-700"
+                  />
+                  <button type="button" onClick={() => setShowPass(v => !v)} className="w-8 h-8 flex items-center justify-center text-zinc-600 hover:text-zinc-400 border-none bg-transparent cursor-pointer" aria-label={showPass ? 'Ocultar senha' : 'Mostrar senha'}>
+                    {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5 mt-2">
+                  {[0, 1, 2].map(i => (
+                    <span
+                      key={i}
+                      className="h-1 flex-1 rounded-full transition-colors duration-300"
+                      style={{ background: localPass && i <= strength ? (strength === 0 ? '#f87171' : strength === 1 ? '#fbbf24' : '#34d399') : '#27272a' }}
+                    />
+                  ))}
+                  <span className="text-[10px] text-zinc-500 font-mono w-14 text-right">
+                    {!localPass ? '' : strength === 0 ? (pt ? 'fraca' : 'weak') : strength === 1 ? (pt ? 'média' : 'fair') : (pt ? 'forte' : 'strong')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Confirmar senha */}
+              <div>
                 <input
-                  type="text"
-                  maxLength={20}
-                  value={localName}
-                  onChange={(e) => setLocalName(e.target.value)}
-                  placeholder={language === 'en' ? 'Enter your name' : 'Digite seu nome'}
-                  className="w-full py-2.5 pl-9 pr-4 bg-zinc-950 border border-zinc-900 rounded-xl text-xs text-zinc-100 font-mono focus:outline-none focus:border-zinc-700 placeholder-zinc-700 transition-all"
+                  type={showPass ? 'text' : 'password'}
+                  value={localConfirm}
+                  onChange={(e) => setLocalConfirm(e.target.value)}
+                  placeholder={pt ? 'Repita a senha' : 'Repeat password'}
+                  className="w-full py-2.5 px-4 bg-zinc-950 border border-zinc-900 rounded-xl text-xs text-zinc-100 font-mono focus:outline-none focus:border-zinc-700 placeholder-zinc-700 transition-all"
                 />
+                {localConfirm && !matchOk && (
+                  <p className="text-[10px] text-rose-400 mt-1.5">{pt ? 'As senhas não coincidem.' : 'Passwords do not match.'}</p>
+                )}
+              </div>
+
+              {/* PIN opcional */}
+              <div>
+                <label className="text-[11px] font-mono text-zinc-500 mb-2 block">
+                  {pt ? 'PIN de 4 dígitos (opcional)' : '4-digit PIN (optional)'}
+                </label>
+                <form onSubmit={(e) => { e.preventDefault(); if (canNext) handleNext(); }} className="relative">
+                  <input
+                    type={showPin ? 'text' : 'password'}
+                    maxLength={4}
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    value={localPin}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setLocalPin(val);
+                      if (val.length > 0) playTone(650);
+                    }}
+                    placeholder="••••"
+                    className="w-full py-2.5 px-4 bg-zinc-950 border border-zinc-900 rounded-xl text-xs font-mono text-zinc-100 focus:outline-none focus:border-zinc-700 placeholder-zinc-800 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPin(!showPin)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer border-none bg-transparent"
+                  >
+                    {showPin ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </form>
               </div>
             </div>
 
-            {/* Security Pin Input */}
-            <div className="mb-8">
-              <label className="text-[11px] font-mono text-zinc-500 mb-2 block">
-                {language === 'en' ? '4-Digit PIN (Optional)' : 'PIN de 4 dígitos (Opcional)'}
-              </label>
-              <form onSubmit={(e) => { e.preventDefault(); if (localName.trim()) handleNext(); }} className="relative">
-                <input
-                  type={showPin ? 'text' : 'password'}
-                  maxLength={4}
-                  pattern="[0-9]*"
-                  inputMode="numeric"
-                  value={localPin}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9]/g, '');
-                    setLocalPin(val);
-                    if (val.length > 0) playTone(650);
-                  }}
-                  placeholder="••••"
-                  className="w-full py-2.5 px-4 bg-zinc-950 border border-zinc-900 rounded-xl text-xs font-mono text-zinc-100 focus:outline-none focus:border-zinc-700 placeholder-zinc-800 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPin(!showPin)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer border-none bg-transparent"
-                >
-                  {showPin ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </form>
-            </div>
+            {accountError && <p className="text-[11px] text-rose-400 mt-4">{accountError}</p>}
 
             <button
               onClick={handleNext}
-              disabled={!localName.trim()}
-              className={`w-full py-3 px-6 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
- localName.trim() 
- ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-950' 
- : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-900'
- }`}
+              disabled={!canNext}
+              className={`w-full mt-5 py-3 px-6 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                canNext ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-950' : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-900'
+              }`}
             >
-              {language === 'en' ? 'Next step' : 'Próximo passo'}
+              {pt ? 'Próximo passo' : 'Next step'}
               <ChevronRight size={14} />
             </button>
+            <p className="text-[10px] text-zinc-600 text-center mt-3 leading-relaxed">
+              {pt
+                ? 'Sua conta fica guardada neste aparelho. Lembre da senha: ela não pode ser recuperada.'
+                : 'Your account is stored on this device. Remember your password: it cannot be recovered.'}
+            </p>
           </motion.div>
         )}
 
