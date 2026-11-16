@@ -32,6 +32,8 @@ export interface Track {
   color: string;
   /** Música importada: id do arquivo na biblioteca de mídia */
   mediaId?: string;
+  /** Item de reserva exibido quando a biblioteca está vazia */
+  placeholder?: boolean;
 }
 
 export interface Message {

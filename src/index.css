@@ -1197,8 +1197,8 @@
    ========================================================================== */
 #screen-container { --sys-bottom: calc(var(--sab) + 26px); }
 #screen-container.nav-buttons { --sys-bottom: calc(var(--sab) + var(--nav-h, 44px)); }
-.app-window { inset: 0 0 calc(var(--sys-bottom) + var(--kb-h, 0px)) 0; }
-.app-window.immersive { inset: 0 0 calc(var(--sys-bottom) + var(--kb-h, 0px)) 0; }
+.app-window { inset: 0 0 var(--sys-bottom) 0; padding-bottom: var(--kb-h, 0px); }
+.app-window.immersive { inset: 0 0 var(--sys-bottom) 0; padding-bottom: var(--kb-h, 0px); }
 
 /* ==========================================================================
    TELA DE BLOQUEIO
@@ -1318,9 +1318,21 @@
   width: var(--rot-w);
   height: var(--rot-h);
   padding-top: 0;
+  padding-bottom: 0;
   transform: translate(-50%, -50%) rotate(90deg);
   transform-origin: center;
 }
 #screen-container.app-rotated .app-window:not(.closed) .app-window-header { display: none; }
 #screen-container.app-rotated #status-bar { opacity: 0; pointer-events: none; }
 .rot-frame { position: absolute; z-index: 26; pointer-events: none; }
+
+
+/* Câmera: o visor ocupa a janela toda; sem cabeçalho nem espaço extra no topo */
+.app-window.cam { padding-top: 0; }
+.app-window.cam .app-window-header { display: none; }
+
+/* Resposta ao toque mais rápida e rolagem sem "vazar" para o que está atrás */
+button, [role="button"], a, input, select, textarea, label, summary { touch-action: manipulation; }
+#screen-container { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+.no-scrollbar { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }

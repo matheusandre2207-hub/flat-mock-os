@@ -42,6 +42,8 @@ import SignInScreen from './components/SignInScreen';
 import GalleryApp from './components/GalleryApp';
 import SystemKeyboard from './components/SystemKeyboard';
 import StatusPills from './components/StatusPills';
+import LandscapePanel from './components/LandscapePanel';
+import { Wifi as WifiIcon, Bluetooth as BluetoothIcon, Plane as PlaneIcon, Moon as MoonIcon, Signal as SignalIcon } from 'lucide-react';
 import { BUNDLED_APPS, isBundledId } from './bundledApps';
 import { listMedia, putMedia, deleteMedia, audioFromFile, fmtDuration, TRACK_COLORS, type MediaItem } from './mediaStorage';
 import type { Track as MediaTrack } from './types';
@@ -835,9 +837,27 @@ export default function App() {
     registerFolderServer().then(ok => setFolderServer(ok ? 'ready' : 'error'));
   }, []);
 
+  // Um toque que termina um arrasto/rolagem não vira clique (evita abrir apps ao deslizar)
+  useEffect(() => {
+    let sx = 0, sy = 0, moved = false, until = 0;
+    const ts = (e: TouchEvent) => { const t = e.touches[0]; if (t) { sx = t.clientX; sy = t.clientY; moved = false; } };
+    const tm = (e: TouchEvent) => { const t = e.touches[0]; if (t && (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10)) moved = true; };
+    const te = () => { if (moved) until = Date.now() + 380; };
+    const ck = (e: MouseEvent) => { if (Date.now() < until) { e.stopPropagation(); e.preventDefault(); } };
+    document.addEventListener('touchstart', ts, { passive: true, capture: true });
+    document.addEventListener('touchmove', tm, { passive: true, capture: true });
+    document.addEventListener('touchend', te, { passive: true, capture: true });
+    document.addEventListener('click', ck, true);
+    return () => {
+      document.removeEventListener('touchstart', ts, true); document.removeEventListener('touchmove', tm, true);
+      document.removeEventListener('touchend', te, true); document.removeEventListener('click', ck, true);
+    };
+  }, []);
+
   // Rotação: palco horizontal dentro da janela. Pode ser ligada em qualquer app (ajuste rápido)
   // ou automaticamente, se o app importado foi marcado para abrir em paisagem.
   const [landscape, setLandscape] = useState(false);
+  const [landscapePanel, setLandscapePanel] = useState<null | 'notifications' | 'quick'>(null);
   const [viewport, setViewport] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
   useEffect(() => {
     const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
@@ -948,7 +968,14 @@ export default function App() {
     title: m.name, artist: m.artist || 'Importada', duration: fmtDuration(m.durationSec || 0), durationSec: m.durationSec || 0,
     genre: 'Importada', color: m.color || TRACK_COLORS[0], mediaId: m.id,
   })), [mediaTracks]);
-  const allTracks = useMemo<MediaTrack[]>(() => [...tracksList, ...importedTracks], [importedTracks]);
+  const [removedDefaults, setRemovedDefaults] = useState<string[]>(() => {
+    try { const v = JSON.parse(localStorage.getItem('os_removed_tracks') || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
+  });
+  useEffect(() => { try { localStorage.setItem('os_removed_tracks', JSON.stringify(removedDefaults)); } catch { /* ok */ } }, [removedDefaults]);
+  const allTracks = useMemo<MediaTrack[]>(() => {
+    const list = [...tracksList.filter(t => !removedDefaults.includes(t.title)), ...importedTracks];
+    return list.length ? list : [{ title: 'Nenhuma música', artist: 'Importe músicas para ouvir', duration: '00:00', durationSec: 1, genre: '', color: 'from-slate-500 to-slate-600', placeholder: true }];
+  }, [importedTracks, removedDefaults]);
   const activeMediaId = (allTracks[currentTrackIndex] ?? allTracks[0])?.mediaId;
   useEffect(() => {
     const a = audioRef.current;
@@ -984,15 +1011,19 @@ export default function App() {
     if (!list.length) window.setTimeout(() => setMusicBusy(''), 2500);
     return ok;
   };
-  const handleDeleteTrack = (mediaId: string) => {
-    const removed = allTracks.findIndex(t => t.mediaId === mediaId);
-    if (removed < 0) return;
+  const handleDeleteTrack = (track: MediaTrack) => {
+    const removed = allTracks.indexOf(track);
+    if (removed < 0 || track.placeholder) return;
     if (removed === currentTrackIndex) { setMusicPlaying(false); audioRef.current?.pause(); }
     setCurrentTrackIndex(i => (i === removed ? 0 : i > removed ? i - 1 : i));
-    const u = mediaUrls.current.get(mediaId);
-    if (u) { URL.revokeObjectURL(u); mediaUrls.current.delete(mediaId); }
-    deleteMedia(mediaId).catch(() => {});
-    setMediaTracks(prev => prev.filter(m => m.id !== mediaId));
+    if (track.mediaId) {
+      const u = mediaUrls.current.get(track.mediaId);
+      if (u) { URL.revokeObjectURL(u); mediaUrls.current.delete(track.mediaId); }
+      deleteMedia(track.mediaId).catch(() => {});
+      setMediaTracks(prev => prev.filter(m => m.id !== track.mediaId));
+    } else {
+      setRemovedDefaults(prev => [...prev, track.title]);
+    }
   };
 
   // Wallpaper manager
@@ -1117,6 +1148,7 @@ export default function App() {
   const [utilitiesOpen, setUtilitiesOpen] = useState(false);
   const [activeApp, setActiveApp] = useState<string | null>(null);
   useEffect(() => {
+    setLandscapePanel(null);
     if (!activeApp) {
       setLandscape(false); // ao sair do app, o sistema volta ao retrato
       return;
@@ -1705,6 +1737,8 @@ export default function App() {
   };
 
   // Trigger system-wide notification with a popup
+  const quietRef = useRef(false);
+  quietRef.current = isLocked || notificationsOpen || utilitiesOpen || landscapePanel !== null;
   const triggerNotification = (title: string, body: string, app: string, avatar?: string, chatId?: string) => {
     const newNotif: NotificationItem = {
       id: `${app}-${Date.now()}`,
@@ -1716,15 +1750,17 @@ export default function App() {
 
     setNotifications(prev => [newNotif, ...prev]);
 
-    // Show popup
-    setActivePopup({
-      id: newNotif.id,
-      title,
-      body,
-      app,
-      avatar,
-      chatId,
-    });
+    // Pop-up só com a tela livre; bloqueada ou com painel aberto, cai direto no histórico
+    if (!quietRef.current) {
+      setActivePopup({
+        id: newNotif.id,
+        title,
+        body,
+        app,
+        avatar,
+        chatId,
+      });
+    }
 
     // Play notification sound based on selected settings tone
     playNotificationSound(selectedRingtone);
@@ -2039,6 +2075,7 @@ export default function App() {
 
   // Navegação por botões (estilo Android): voltar, início e apps em segundo plano
   const goBack = () => {
+    if (landscapePanel) { setLandscapePanel(null); return; }
     if (document.documentElement.dataset.kb === '1') { (document.activeElement as HTMLElement | null)?.blur?.(); return; }
     if (recentAppsOpen) { setRecentAppsOpen(false); return; }
     if (anySheetOpen) { closeSheets(); return; }
@@ -2495,52 +2532,8 @@ export default function App() {
         return <Calculator />;
       case 'galeria':
         return (
-          <div className="no-scrollbar pt-4 pb-24 px-5 space-y-6 overflow-y-auto h-full bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
-            {capturedPhotos.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="font-semibold text-base">Fotos capturadas</h3>
-                <div className="grid grid-cols-2 gap-3.5 pt-1">
-                  {capturedPhotos.map((photo) => (
-                    <div
-                      key={photo.id}
-                      onClick={() => {
-                        setActiveApp('camera');
-                      }}
-                      className={`aspect-[3/4] rounded-2xl overflow-hidden relative border border-white/10 bg-gradient-to-tr ${photo.url} cursor-pointer transition-transform`}
-                    >
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <Camera size={28} />
-                      </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3 text-white">
-                        <p className="font-bold text-xs leading-tight">Foto Capturada</p>
-                        <p className="text-[11px] font-mono opacity-70">{photo.timestamp} • {photo.filter}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="space-y-1">
-              <h3 className="font-bold text-base">Papeis de Parede</h3>
-              <p className="text-xs opacity-65">Escolha um gradiente para ser seu papel de parede.</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3.5 pt-2">
-              {wallpapers.map((wp, idx) => (
-                <div
-                  key={idx}
-                  className="aspect-[9/16] rounded-2xl overflow-hidden relative border border-white/5 cursor-pointer"
-                  style={{ background: wp.gradient }}
-                  onClick={() => {
-                    setWallpaperIndex(idx);
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-3 text-white">
-                    <p className="font-bold text-xs leading-tight">{wp.name}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <GalleryApp darkMode={darkMode} language={language} isActive={false} wallpapers={wallpapers} wallpaperIndex={wallpaperIndex}
+            lockWallpaperIndex={lockWallpaperIndex} onApplyBuiltin={handleApplyBuiltinWallpaper} onUsePhoto={handleUseGalleryPhoto} />
         );
       case 'mensagens':
         return (
@@ -2616,16 +2609,7 @@ export default function App() {
           />
         );
       case 'camera':
-        return (
-          <CameraApp 
-            darkMode={darkMode} 
-            isActive={false} 
-            capturedPhotos={capturedPhotos}
-            onCapturePhoto={(photo) => {
-              setCapturedPhotos(prev => [photo, ...prev]);
-            }}
-          />
-        );
+        return <CameraApp darkMode={darkMode} isActive={false} />;
       default:
         return null;
     }
@@ -3241,6 +3225,8 @@ export default function App() {
               audio={audioRef.current}
               onImport={handleImportTracks}
               onDeleteTrack={handleDeleteTrack}
+              onRestoreDefaults={() => setRemovedDefaults([])}
+              hasRemoved={removedDefaults.length > 0}
               importing={musicBusy}
             />
           </div>
@@ -3389,7 +3375,7 @@ export default function App() {
         </div>
 
         {/* APP O: CÂMERA */}
-        <div className={`app-window immersive ${activeApp === 'camera' ? '' : 'closed'}`}>
+        <div className={`app-window immersive cam ${activeApp === 'camera' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3397,7 +3383,7 @@ export default function App() {
             </button>
           </div>
           <div className="app-content no-scrollbar p-0">
-            <CameraApp darkMode={darkMode} isActive={activeApp === 'camera'} />
+            <CameraApp darkMode={darkMode} isActive={activeApp === 'camera'} onOpenGallery={() => openApp('galeria')} />
           </div>
         </div>
 
@@ -3866,13 +3852,39 @@ export default function App() {
         {/* Fundo da área do sistema (botões ou gestos): desfoque pesado + escurecimento */}
         {!isBooting && !isLocked && !screenOff && <div id="bottom-scrim" />}
 
-        {/* Paisagem: barra de status em pílulas, girada junto com o app */}
+        {/* Paisagem: barra de status em pílulas (e os painéis que elas abrem), girada junto com o app */}
         {landscape && activeApp !== null && !isLocked && !isBooting && (() => {
           const tone = customApps.find(a => a.id === activeApp)?.statusTone ?? 'auto';
+          const pillDark = tone === 'dark' || (tone === 'auto' && darkMode);
           return (
-            <div className="rot-frame" aria-hidden="true">
-              <StatusPills time={systemTime} dark={tone === 'dark' || (tone === 'auto' && darkMode)} wifi={wifiActive} cellular={cellularActive}
-                bluetooth={bluetoothActive} airplane={airplaneMode} battery={batteryLevel} charging={isCharging} unread={notifications.length} />
+            <div className="rot-frame">
+              <StatusPills time={systemTime} dark={pillDark} wifi={wifiActive} cellular={cellularActive}
+                bluetooth={bluetoothActive} airplane={airplaneMode} battery={batteryLevel} charging={isCharging} unread={notifications.length}
+                onLeft={() => setLandscapePanel(p => (p === 'notifications' ? null : 'notifications'))}
+                onRight={() => setLandscapePanel(p => (p === 'quick' ? null : 'quick'))} />
+              {landscapePanel && (
+                <LandscapePanel
+                  kind={landscapePanel}
+                  dark={pillDark}
+                  notifications={notifications.map(n => ({ id: n.id, app: n.app, title: n.title, body: n.body, time: n.time }))}
+                  tiles={[
+                    { id: 'wifi', label: 'Wi-Fi', icon: <WifiIcon size={22} />, active: wifiActive, onToggle: () => setWifiActive(v => !v) },
+                    { id: 'bt', label: 'Bluetooth', icon: <BluetoothIcon size={22} />, active: bluetoothActive, onToggle: () => setBluetoothActive(v => !v) },
+                    { id: 'data', label: 'Dados', icon: <SignalIcon size={22} />, active: cellularActive, onToggle: () => setCellularActive(v => !v) },
+                    { id: 'air', label: 'Avião', icon: <PlaneIcon size={22} />, active: airplaneMode, onToggle: () => setAirplaneMode(v => !v) },
+                    { id: 'dark', label: 'Escuro', icon: <MoonIcon size={22} />, active: darkMode, onToggle: () => setDarkMode(!darkMode) },
+                    { id: 'rot', label: 'Girar', icon: <RotateCw size={22} />, active: true, onToggle: () => { setLandscapePanel(null); setLandscape(false); } },
+                  ]}
+                  brightness={brightness}
+                  onBrightness={setBrightness}
+                  renderIcon={(a) => <NotifAppIcon app={a} />}
+                  appLabel={(a) => appMetadata[a]?.label ?? a}
+                  onDismiss={removeNotification}
+                  onClear={() => setNotifications([])}
+                  onOpen={(a) => { setLandscapePanel(null); openApp(a); }}
+                  onClose={() => setLandscapePanel(null)}
+                />
+              )}
             </div>
           );
         })()}

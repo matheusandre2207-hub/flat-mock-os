@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { CustomApp, MAX_CUSTOM_APP_BYTES, extractIcon, extractTitle, makeCustomAppId, pickColor } from '../customApps';
 import { installFolderApp } from '../folderApps';
+import { Search as SearchIcon, X as ClearIcon } from 'lucide-react';
 
 function renderAppStoreIcon(iconName: string, size: number = 24, className?: string) {
   switch (iconName) {
@@ -889,8 +890,16 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
           /* MAIN STORE HOME SCREEN */
           <div className="p-4 space-y-5">
             
+            {/* Pesquisa */}
+            <div className="flex items-center gap-2.5 px-4 h-11 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5">
+              <SearchIcon size={16} className="opacity-50 shrink-0" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Pesquisar apps, jogos e mais" aria-label="Pesquisar na loja"
+                className="flex-1 min-w-0 bg-transparent outline-none text-sm" />
+              {search && <button type="button" onClick={() => setSearch('')} aria-label="Limpar" className="opacity-50 shrink-0"><ClearIcon size={15} /></button>}
+            </div>
+
             {/* DESTAQUE DINÂMICO: troca sozinho entre as novidades */}
-            {hero && (
+            {hero && !search && (
               <div
                 onClick={() => { setSelectedApp(hero); playTone(493.88, 'sine', 0.05); }}
                 className="relative rounded-[28px] aspect-[16/9.5] overflow-hidden text-white p-5 flex flex-col justify-between cursor-pointer border border-white/10"

@@ -36,7 +36,13 @@ export default function GalleryApp({ darkMode, language, isActive, wallpapers, w
   const thumbUrls = useRef<Map<string, string>>(new Map());
   const lastTap = useRef(0);
 
-  useEffect(() => { listMedia('photo').then(setPhotos).catch(() => {}); }, []);
+  useEffect(() => {
+    const load = () => { listMedia('photo').then(setPhotos).catch(() => {}); };
+    load();
+    // Fotos tiradas na Câmera aparecem aqui na hora
+    window.addEventListener('aeroos-media-changed', load);
+    return () => window.removeEventListener('aeroos-media-changed', load);
+  }, []);
   useEffect(() => () => { thumbUrls.current.forEach(u => URL.revokeObjectURL(u)); }, []);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 2200); return () => clearTimeout(t); }, [toast]);
 

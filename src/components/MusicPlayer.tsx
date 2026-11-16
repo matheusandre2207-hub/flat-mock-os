@@ -14,7 +14,9 @@ interface MusicPlayerProps {
   /** Player de áudio real (só na instância principal). Sem ele, a faixa importada fica parada. */
   audio?: HTMLAudioElement | null;
   onImport?: (files: FileList) => void;
-  onDeleteTrack?: (mediaId: string) => void;
+  onDeleteTrack?: (t: Track) => void;
+  onRestoreDefaults?: () => void;
+  hasRemoved?: boolean;
   importing?: string;
 }
 
@@ -22,7 +24,7 @@ const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${Str
 
 export default function MusicPlayer({
   tracks, isPlaying, setIsPlaying, currentTrackIndex, setCurrentTrackIndex, volume, setVolume, darkMode,
-  audio = null, onImport, onDeleteTrack, importing,
+  audio = null, onImport, onDeleteTrack, onRestoreDefaults, hasRemoved, importing,
 }: MusicPlayerProps) {
   const [cur, setCur] = useState(0);
   const [dur, setDur] = useState(0);
@@ -120,7 +122,7 @@ export default function MusicPlayer({
         <div className="w-full flex items-center justify-between px-2">
           <button onClick={() => setShuffle(!shuffle)} className={`p-2 ${shuffle ? 'text-blue-500' : 'opacity-40'}`} aria-label="Embaralhar"><Shuffle size={18} /></button>
           <button onClick={prev} className="p-2 active:scale-90 transition-transform" aria-label="Anterior"><SkipBack size={24} fill="currentColor" /></button>
-          <button onClick={() => setIsPlaying(!isPlaying)} className="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center active:scale-95 transition-transform shadow-lg" aria-label={isPlaying ? 'Pausar' : 'Tocar'}>
+          <button disabled={!!active.placeholder} onClick={() => setIsPlaying(!isPlaying)} className="disabled:opacity-40 w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center active:scale-95 transition-transform shadow-lg" aria-label={isPlaying ? 'Pausar' : 'Tocar'}>
             {isPlaying ? <Pause size={26} fill="currentColor" /> : <Play size={26} fill="currentColor" className="ml-1" />}
           </button>
           <button onClick={next} className="p-2 active:scale-90 transition-transform" aria-label="Próxima"><SkipForward size={24} fill="currentColor" /></button>
@@ -137,7 +139,7 @@ export default function MusicPlayer({
       {/* Biblioteca */}
       <div className="px-5 mt-7">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-xs font-semibold opacity-60 flex items-center gap-1.5"><ListMusic size={14} className="text-blue-500" /> Sua biblioteca · {tracks.length}</h4>
+          <h4 className="text-xs font-semibold opacity-60 flex items-center gap-1.5"><ListMusic size={14} className="text-blue-500" /> Sua biblioteca · {tracks.filter(t => !t.placeholder).length}</h4>
           {onImport && (
             <button onClick={() => fileRef.current?.click()} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-blue-600 text-white active:scale-95 transition-transform">
               <Plus size={13} /> Importar músicas
@@ -146,8 +148,10 @@ export default function MusicPlayer({
         </div>
         <input ref={fileRef} type="file" accept="audio/*" multiple className="hidden" onChange={e => { if (e.target.files?.length) onImport?.(e.target.files); e.target.value = ''; }} />
         {importing && <p className="text-xs text-blue-400 mb-2">{importing}</p>}
+        {tracks.every(t => t.placeholder) && <p className="text-xs opacity-60 mb-3 text-center">Sua biblioteca está vazia. Importe músicas ou restaure as padrão.</p>}
         <div className="space-y-1.5">
           {tracks.map((t, idx) => {
+            if (t.placeholder) return null;
             const on = currentTrackIndex === idx;
             return (
               <div key={`${t.mediaId ?? t.title}-${idx}`} className={`flex items-center gap-1 rounded-2xl ${on ? 'bg-blue-600 text-white' : card}`}>
@@ -161,13 +165,16 @@ export default function MusicPlayer({
                   </div>
                   <span className="font-mono text-[11px] opacity-60">{t.duration}</span>
                 </button>
-                {t.mediaId && onDeleteTrack && (
-                  <button onClick={() => onDeleteTrack(t.mediaId!)} className="p-2.5 opacity-60 hover:opacity-100" aria-label="Remover música"><Trash2 size={15} /></button>
+                {onDeleteTrack && (
+                  <button onClick={() => onDeleteTrack(t)} className="p-2.5 opacity-60 hover:opacity-100" aria-label="Remover música"><Trash2 size={15} /></button>
                 )}
               </div>
             );
           })}
         </div>
+        {hasRemoved && onRestoreDefaults && (
+          <button onClick={onRestoreDefaults} className="block mx-auto mt-4 text-xs font-semibold text-blue-500">Restaurar músicas padrão</button>
+        )}
         <p className="text-[11px] opacity-40 mt-4 text-center">Dica: nomeie os arquivos como "Artista - Música.mp3" para preencher o artista.</p>
       </div>
     </div>

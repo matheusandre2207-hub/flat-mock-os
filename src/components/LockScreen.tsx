@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'motion/react';
-import { Lock, RefreshCw, Delete } from 'lucide-react';
+import { RefreshCw, Delete, LogOut } from 'lucide-react';
 import ClockFace from './ClockFace';
 import SwipeDismiss from './SwipeDismiss';
 import { usePrefs } from '../prefs';
@@ -117,6 +117,14 @@ export default function LockScreen({
     controls.start({ y: 0 }, { type: 'spring', stiffness: 460, damping: 40 });
   };
 
+  // Com senha: a tela sobe um pouco, mostra o início desfocado por baixo e volta com o teclado de senha
+  const peekHome = async () => {
+    if (leavingRef.current) return;
+    await controls.start({ y: -screenH() * 0.34 }, { duration: 0.26, ease: EASE }).catch(() => {});
+    setShowKeypad(true);
+    await controls.start({ y: 0 }, { duration: 0.62, ease: EASE, delay: 0.1 }).catch(() => {});
+  };
+
   const openFromNotification = (app: string) => {
     if (pincode) {
       setPendingApp(app);
@@ -175,8 +183,7 @@ export default function LockScreen({
         if (!up) {
           snapBack();
         } else if (pincode) {
-          setShowKeypad(true);
-          snapBack();
+          peekHome();
         } else {
           leave();
         }
@@ -191,13 +198,6 @@ export default function LockScreen({
       )}
       <div className="absolute inset-0 z-[1] bg-black/45" />
 
-      {/* Indicador superior */}
-      <div className="w-full flex justify-center mt-4 z-10">
-        <div className="flex items-center gap-1.5 bg-white/10 py-1.5 px-3.5 rounded-full border border-white/15 text-[11px] font-medium text-white/80">
-          <Lock size={11} className="text-sky-300" />
-          <span>{language === 'en' ? 'Locked' : 'Bloqueado'}</span>
-        </div>
-      </div>
 
       <AnimatePresence mode="wait">
         {!showKeypad ? (
@@ -207,17 +207,17 @@ export default function LockScreen({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.3 }}
-            className="flex-1 flex flex-col justify-between w-full py-6 z-10"
+            className="flex-1 flex flex-col justify-between w-full py-6 pt-10 z-10"
           >
             <div
               className="flex flex-col flex-1 w-full text-center"
-              style={{ justifyContent: lockPos === 'top' ? 'flex-start' : lockPos === 'center' ? 'center' : 'flex-end' }}
+              style={{ justifyContent: notifications && notifications.length > 0 ? 'flex-start' : lockPos === 'top' ? 'flex-start' : lockPos === 'center' ? 'center' : 'flex-end' }}
             >
               <ClockFace scope="lock" time={timeStr} date={dateStr} />
 
               {notifications && notifications.length > 0 && (
-                <div className="w-full max-w-[320px] mx-auto mt-7 flex flex-col gap-2.5 max-h-[260px] overflow-y-auto no-scrollbar">
-                  {notifications.slice(0, 3).map((notif) => (
+                <div className="w-full max-w-[340px] mx-auto mt-6 flex flex-col gap-2.5 flex-1 min-h-0 overflow-y-auto no-scrollbar pb-2" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 90%, transparent)', maskImage: 'linear-gradient(to bottom, #000 90%, transparent)' }}>
+                  {notifications.slice(0, 5).map((notif) => (
                     <SwipeDismiss
                       key={notif.id}
                       className="w-full"
@@ -237,6 +237,7 @@ export default function LockScreen({
                       </div>
                     </SwipeDismiss>
                   ))}
+                  {notifications.length > 5 && <p className="text-center text-[11px] text-white/55 pt-1">+{notifications.length - 5} notificações</p>}
                 </div>
               )}
             </div>
@@ -267,9 +268,10 @@ export default function LockScreen({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onSignOut(); }}
-                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] text-white/45 hover:text-white/80 py-1.5 px-3 rounded-full"
+                aria-label={language === 'en' ? 'Sign out of account' : 'Sair da conta'}
+                className="absolute bottom-3 left-2 w-10 h-10 rounded-full flex items-center justify-center text-white/40 hover:text-white/80 active:scale-95 transition"
               >
-                {language === 'en' ? 'Sign out of account' : 'Sair da conta'}
+                <LogOut size={17} />
               </button>
             )}
           </motion.div>
@@ -283,13 +285,9 @@ export default function LockScreen({
             className="flex-1 flex flex-col items-center justify-center w-full max-w-[280px] mx-auto my-auto z-10 py-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex flex-col items-center mb-6 text-center">
-              <span className="text-3xl mb-1.5">{userAvatar}</span>
-              <p className="text-sm font-semibold text-white">{userName}</p>
-              <p className="text-[11px] font-mono text-white/70 mt-1">
-                {language === 'en' ? 'Enter Passcode' : 'Digite a senha de 4 dígitos'}
-              </p>
-            </div>
+            <p className="text-[13px] text-white/75 mb-7 text-center">
+              {language === 'en' ? 'Enter Passcode' : 'Digite a senha'}
+            </p>
 
             <div className={`flex justify-center gap-4 mb-8 ${isWiggling ? 'animate-[shake_0.4s_ease-in-out]' : ''}`}>
               {[0, 1, 2, 3].map((dotIdx) => {

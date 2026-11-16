@@ -297,3 +297,20 @@ O AeroOS tem teclado próprio: nenhum campo abre o teclado do celular.
 Na loja, abra o app e toque em "Editar nome e foto". Escolha uma foto para
 o ícone (ela é recortada em quadrado) e mude o nome. Vale para apps
 importados e para os que já vêm no sistema.
+
+
+17. CÂMERA, PÍLULAS E TELA DE BLOQUEIO (NOVIDADES)
+-------------------------------------------------
+  - Câmera: toque no botão redondo para fotografar. As fotos são salvas de
+    verdade, aparecem na Galeria (grupo "Hoje") e na prévia da Galeria nos
+    apps recentes. Tem flash, grade, temporizador (3 s e 10 s), zoom 1x/2x/3x
+    e filtros. Toque na miniatura para abrir a Galeria.
+  - Paisagem: na barra de status em pílulas, tocar na hora abre as
+    notificações e tocar nas conexões abre os ajustes rápidos, já na
+    horizontal. A bateria aparece em pontos, sem porcentagem.
+  - Notificações novas não aparecem como aviso quando a tela está bloqueada
+    ou quando o painel de notificações ou de ajustes está aberto: vão direto
+    para o histórico.
+  - Música: toque na lixeira de qualquer faixa para apagá-la, inclusive as
+    que vêm no sistema. "Restaurar músicas padrão" traz elas de volta.
+  - Loja: use o campo de pesquisa no topo para achar apps e jogos.

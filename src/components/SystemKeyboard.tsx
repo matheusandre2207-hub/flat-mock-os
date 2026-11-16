@@ -415,7 +415,6 @@ export default function SystemKeyboard({ darkMode, overlay }: { darkMode: boolea
         padding: '0 6px 12px', background: look.bg, color: look.fg,
         backdropFilter: `blur(${kb.blur}px) saturate(1.5)`, WebkitBackdropFilter: `blur(${kb.blur}px) saturate(1.5)`,
         borderTop: `1px solid ${look.dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
-        borderTopLeftRadius: 22, borderTopRightRadius: 22,
         transform: open ? 'translateY(0)' : 'translateY(105%)',
         visibility: open ? 'visible' : 'hidden',
         transition: `transform .28s cubic-bezier(.22,1,.36,1), visibility 0s linear ${open ? '0s' : '.28s'}`,

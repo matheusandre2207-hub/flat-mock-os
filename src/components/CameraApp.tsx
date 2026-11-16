@@ -1,384 +1,249 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Camera, RefreshCw, ZoomIn, ZoomOut, Sliders, Play, X, Zap, Maximize, Smile, Image } from 'lucide-react';
-import { CapturedPhoto } from '../types';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Zap, ZapOff, Grid3x3, Timer, RefreshCw, Check } from 'lucide-react';
+import { listMedia, putMedia, photoFromFile } from '../mediaStorage';
 
 interface CameraAppProps {
-  darkMode: boolean;
+  darkMode?: boolean;
   isActive?: boolean;
-  capturedPhotos?: CapturedPhoto[];
-  onCapturePhoto?: (photo: CapturedPhoto) => void;
+  /** Abre a Galeria (toque na miniatura da última foto) */
+  onOpenGallery?: () => void;
 }
 
-export default function CameraApp({ darkMode, isActive = true, capturedPhotos: propsPhotos, onCapturePhoto }: CameraAppProps) {
-  const [hasCamera, setHasCamera] = useState<boolean>(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [activeFilter, setActiveFilter] = useState<'none' | 'retro' | 'cyber' | 'mono' | 'warm'>('none');
-  const [zoomLevel, setZoomLevel] = useState<number>(1.0);
-  const [flashOn, setFlashOn] = useState<boolean>(false);
-  const [isCapturing, setIsCapturing] = useState<boolean>(false);
-  
-  const [localPhotos, setLocalPhotos] = useState<CapturedPhoto[]>(() => {
-    const saved = localStorage.getItem('mockos_captured_photos');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const capturedPhotos = propsPhotos || localPhotos;
-  
-  const [viewingPhoto, setViewingPhoto] = useState<CapturedPhoto | null>(null);
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+const FILTERS = [
+  { id: 'none', label: 'Original', css: '' },
+  { id: 'soft', label: 'Suave', css: 'brightness(1.08) contrast(0.93) saturate(1.1)' },
+  { id: 'warm', label: 'Quente', css: 'sepia(0.28) saturate(1.4) brightness(1.05)' },
+  { id: 'retro', label: 'Retrô', css: 'sepia(0.55) contrast(1.1) saturate(1.2)' },
+  { id: 'cyber', label: 'Neon', css: 'hue-rotate(160deg) saturate(1.8) contrast(1.15)' },
+  { id: 'mono', label: 'P&B', css: 'grayscale(1) contrast(1.2)' },
+] as const;
+type FilterId = (typeof FILTERS)[number]['id'];
 
+const ZOOMS = [1, 2, 3];
+
+/** Câmera: visor limpo, controles mínimos. As fotos são salvas de verdade e aparecem na Galeria. */
+export default function CameraApp({ isActive = true, onOpenGallery }: CameraAppProps) {
+  const [hasCamera, setHasCamera] = useState(false);
+  const [facing, setFacing] = useState<'user' | 'environment'>('environment');
+  const [filter, setFilter] = useState<FilterId>('none');
+  const [zoom, setZoom] = useState(1);
+  const [flash, setFlash] = useState(false);
+  const [grid, setGrid] = useState(false);
+  const [timer, setTimer] = useState<0 | 3 | 10>(0);
+  const [count, setCount] = useState<number | null>(null);
+  const [flashing, setFlashing] = useState(false);
+  const [thumb, setThumb] = useState('');
+  const [saved, setSaved] = useState(false);
+  const [focus, setFocus] = useState<{ x: number; y: number; k: number } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<AudioContext | null>(null);
+  const thumbUrl = useRef('');
+  const busy = useRef(false);
 
-  // Initialize camera stream
+  // Fluxo da câmera real (se não houver permissão, entra o visor simulado)
   useEffect(() => {
-    let activeStream: MediaStream | null = null;
-    
-    async function startCamera() {
-      if (!isActive) return;
+    if (!isActive) return;
+    let stream: MediaStream | null = null;
+    let cancelled = false;
+    (async () => {
       try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          const constraints = {
-            video: { 
-              facingMode: facingMode,
-              width: { ideal: 640 },
-              height: { ideal: 480 }
-            },
-            audio: false
-          };
-          const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-          activeStream = mediaStream;
-          setStream(mediaStream);
-          setHasCamera(true);
-          if (videoRef.current) {
-            videoRef.current.srcObject = mediaStream;
-          }
-        } else {
-          setHasCamera(false);
-        }
-      } catch (err) {
-        console.warn("Real camera denied, unavailable or blocked by policy/iframe. Switching to high-fidelity mock viewfinder.", err);
-        setHasCamera(false);
-      }
-    }
+        if (!navigator.mediaDevices?.getUserMedia) throw new Error('sem câmera');
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+        setHasCamera(true);
+        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play().catch(() => {}); }
+      } catch { if (!cancelled) setHasCamera(false); }
+    })();
+    return () => { cancelled = true; stream?.getTracks().forEach(t => t.stop()); };
+  }, [facing, isActive]);
 
-    startCamera();
-
-    return () => {
-      if (activeStream) {
-        activeStream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [facingMode, isActive]);
-
-  // Handle stream update on component unmount/mount
-  useEffect(() => {
-    if (hasCamera && videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-    }
-  }, [hasCamera, stream]);
-
-  // Cleanup AudioContext on unmount
-  useEffect(() => {
-    return () => {
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close().catch(() => {});
-      }
-    };
+  // Miniatura da última foto (acompanha a Galeria)
+  const loadThumb = useCallback(() => {
+    listMedia('photo').then(list => {
+      if (thumbUrl.current) URL.revokeObjectURL(thumbUrl.current);
+      thumbUrl.current = list[0] ? URL.createObjectURL(list[0].thumb ?? list[0].blob) : '';
+      setThumb(thumbUrl.current);
+    }).catch(() => {});
   }, []);
+  useEffect(() => {
+    loadThumb();
+    window.addEventListener('aeroos-media-changed', loadThumb);
+    return () => { window.removeEventListener('aeroos-media-changed', loadThumb); if (thumbUrl.current) URL.revokeObjectURL(thumbUrl.current); };
+  }, [loadThumb]);
+  useEffect(() => () => { audioRef.current?.close().catch(() => {}); }, []);
 
-  const toggleFacingMode = () => {
-    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
-  };
-
-  const handleZoom = (direction: 'in' | 'out') => {
-    setZoomLevel(prev => {
-      if (direction === 'in') return Math.min(3.0, prev + 0.2);
-      return Math.max(1.0, prev - 0.2);
-    });
-  };
-
-  // Synthesize a quick crisp shutter click sound
-  const playShutterSound = () => {
+  const shutterSound = () => {
     try {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-      const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') ctx.resume();
-
-      const osc = ctx.createOscillator();
-      const noise = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.frequency.setValueAtTime(800, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.1);
-
-      noise.type = 'triangle';
-      noise.frequency.setValueAtTime(1200, ctx.currentTime);
-      noise.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.08);
-
-      gain.gain.setValueAtTime(0.12, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-
-      osc.connect(gain);
-      noise.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start();
-      noise.start();
-      osc.stop(ctx.currentTime + 0.12);
-      noise.stop(ctx.currentTime + 0.12);
-    } catch (e) {
-      // AudioContext fails gracefully
-    }
+      audioRef.current = audioRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
+      const c = audioRef.current; if (c.state === 'suspended') c.resume();
+      const o = c.createOscillator(); const g = c.createGain();
+      o.frequency.setValueAtTime(900, c.currentTime); o.frequency.exponentialRampToValueAtTime(160, c.currentTime + 0.09);
+      g.gain.setValueAtTime(0.1, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.11);
+      o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + 0.12);
+    } catch { /* sem áudio */ }
   };
 
-  const capturePhoto = () => {
-    setIsCapturing(true);
-    playShutterSound();
-
-    // Trigger flash animation
-    setTimeout(() => {
-      setIsCapturing(false);
-      
-      // Build mock canvas or placeholder image URL based on selected filter and state
-      const id = String(Date.now());
-      const now = new Date();
-      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      
-      // We generate beautiful colored canvas-like mock photos depending on filters
-      let baseColor = 'from-sky-400 to-indigo-600';
-      if (activeFilter === 'retro') baseColor = 'from-amber-600 to-orange-950';
-      else if (activeFilter === 'cyber') baseColor = 'from-purple-600 via-pink-500 to-cyan-500';
-      else if (activeFilter === 'mono') baseColor = 'from-slate-800 to-slate-900';
-      else if (activeFilter === 'warm') baseColor = 'from-yellow-500 to-red-500';
-
-      const newPhoto: CapturedPhoto = {
-        id,
-        url: baseColor, // store gradient classes
-        filter: activeFilter,
-        timestamp: timeStr
-      };
-
-      if (onCapturePhoto) {
-        onCapturePhoto(newPhoto);
-      } else {
-        setLocalPhotos(prev => {
-          const updated = [newPhoto, ...prev];
-          localStorage.setItem('mockos_captured_photos', JSON.stringify(updated));
-          return updated;
-        });
+  // Gera a imagem final: quadro do vídeo (com zoom, espelho e filtro) ou uma cena do visor simulado
+  const snapshot = (): Promise<Blob | null> => {
+    const css = FILTERS.find(f => f.id === filter)?.css || 'none';
+    const v = videoRef.current;
+    const c = document.createElement('canvas');
+    let ctx: CanvasRenderingContext2D | null;
+    if (hasCamera && v && v.videoWidth) {
+      const W = v.videoWidth, H = v.videoHeight, sw = W / zoom, sh = H / zoom;
+      c.width = Math.round(sw); c.height = Math.round(sh);
+      ctx = c.getContext('2d');
+      if (!ctx) return Promise.resolve(null);
+      if (facing === 'user') { ctx.translate(c.width, 0); ctx.scale(-1, 1); }
+      (ctx as any).filter = css;
+      ctx.drawImage(v, (W - sw) / 2, (H - sh) / 2, sw, sh, 0, 0, c.width, c.height);
+    } else {
+      c.width = 1080; c.height = 1440;
+      ctx = c.getContext('2d');
+      if (!ctx) return Promise.resolve(null);
+      const h = Math.floor(Math.random() * 360);
+      const g = ctx.createLinearGradient(0, 0, c.width, c.height);
+      g.addColorStop(0, `hsl(${h} 70% 55%)`); g.addColorStop(1, `hsl(${(h + 70) % 360} 65% 28%)`);
+      (ctx as any).filter = css;
+      ctx.fillStyle = g; ctx.fillRect(0, 0, c.width, c.height);
+      for (let i = 0; i < 6; i++) {
+        ctx.fillStyle = `hsla(${(h + i * 40) % 360} 80% 70% / 0.22)`;
+        ctx.beginPath(); ctx.arc(Math.random() * c.width, Math.random() * c.height, 120 + Math.random() * 280, 0, 7); ctx.fill();
       }
-    }, 150);
+    }
+    return new Promise(res => c.toBlob(b => res(b), 'image/jpeg', 0.9));
   };
 
-  const getFilterStyle = () => {
-    switch (activeFilter) {
-      case 'retro': return 'sepia contrast-[1.1] brightness-[0.95] hue-rotate-[10deg]';
-      case 'cyber': return 'hue-rotate-[140deg] saturate-[1.6] contrast-[1.2]';
-      case 'mono': return 'grayscale contrast-[1.3] brightness-[1.05]';
-      case 'warm': return 'saturate-[1.3] brightness-[1.02] sepia-[0.15] contrast-[1.05]';
-      default: return '';
+  const shoot = async () => {
+    if (busy.current) return;
+    busy.current = true;
+    shutterSound();
+    if (flash) { setFlashing(true); setTimeout(() => setFlashing(false), 220); }
+    const blob = await snapshot();
+    if (blob) {
+      const d = new Date();
+      const p = (n: number) => String(n).padStart(2, '0');
+      const file = new File([blob], `IMG_${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.jpg`, { type: 'image/jpeg' });
+      try {
+        const item = await photoFromFile(file);
+        await putMedia(item);
+        window.dispatchEvent(new Event('aeroos-media-changed'));
+        setSaved(true); setTimeout(() => setSaved(false), 1800);
+      } catch { /* não salvou */ }
     }
+    busy.current = false;
+  };
+
+  const press = () => {
+    if (count !== null || busy.current) return;
+    if (!timer) { shoot(); return; }
+    let n: number = timer;
+    setCount(n);
+    const iv = window.setInterval(() => {
+      n -= 1;
+      if (n <= 0) { clearInterval(iv); setCount(null); shoot(); } else setCount(n);
+    }, 1000);
+  };
+
+  const tapFocus = (e: React.MouseEvent) => {
+    const r = boxRef.current?.getBoundingClientRect();
+    if (!r) return;
+    setFocus({ x: e.clientX - r.left, y: e.clientY - r.top, k: Date.now() });
+    window.setTimeout(() => setFocus(f => (f && Date.now() - f.k > 900 ? null : f)), 1000);
+  };
+
+  const css = FILTERS.find(f => f.id === filter)?.css || 'none';
+  const chip = (on: boolean): React.CSSProperties => ({
+    padding: '6px 13px', borderRadius: 99, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', border: 0, cursor: 'pointer',
+    background: on ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.1)', color: on ? '#111' : 'rgba(255,255,255,0.8)', transition: 'all .2s ease',
+  });
+  const circleBtn: React.CSSProperties = {
+    width: 38, height: 38, borderRadius: 99, border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+    background: 'rgba(0,0,0,0.35)', color: '#fff', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
   };
 
   return (
-    <div className="w-full h-full pb-24 bg-black text-white flex flex-col justify-between font-sans select-none relative overflow-hidden">
-      
-      {/* Lightbox Photo Viewer overlay */}
-      {viewingPhoto && (
-        <div className="absolute inset-0 z-50 bg-black/98 flex flex-col justify-between p-6 animate-fade-in">
-          <div className="flex justify-between items-center pb-4">
-            <span className="text-xs font-semibold text-slate-400">Capturado às {viewingPhoto.timestamp}</span>
-            <button 
-              onClick={() => setViewingPhoto(null)}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/15 text-white border-none cursor-pointer"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          {/* Full size photo display */}
-          <div className="flex-1 flex items-center justify-center p-2">
-            <div 
-              className={`w-full aspect-[3/4] max-w-sm rounded-3xl bg-gradient-to-tr ${viewingPhoto.url} relative overflow-hidden flex flex-col justify-between p-6`}
-            >
-              <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                <div className="text-center space-y-2 select-none opacity-80 scale-110">
-                  <Camera size={36} className="mx-auto" />
-                  <p className="text-[11px] font-bold text-white/90">Mock Capture</p>
-                  <p className="text-[11px] font-mono text-white/50">{viewingPhoto.filter.toUpperCase()} FILTER • ZOOM {zoomLevel.toFixed(1)}X</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-center gap-4 pt-4">
-            <button 
-              onClick={() => {
-                setLocalPhotos(prev => {
-                  const updated = prev.filter(p => p.id !== viewingPhoto.id);
-                  localStorage.setItem('mockos_captured_photos', JSON.stringify(updated));
-                  return updated;
-                });
-                setViewingPhoto(null);
-              }}
-              className="px-6 py-2.5 rounded-full bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs font-bold border-none cursor-pointer"
-            >
-              Excluir Foto
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Screen White Flash Overlay */}
-      {isCapturing && (
-        <div className="absolute inset-0 bg-white z-40 animate-pulse pointer-events-none" />
-      )}
-
-      {/* Top Controls Header */}
-      <header className="px-5 py-3.5 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-10">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setFlashOn(!flashOn)}
-            className={`p-2 rounded-full border-none cursor-pointer transition-colors ${flashOn ? 'bg-amber-500 text-black' : 'bg-white/10 text-white'}`}
-            title="Flash Toggle"
-          >
-            <Zap size={15} />
-          </button>
-          <span className="text-[11px] font-bold text-slate-400">RESOLUÇÃO: 1080P</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => handleZoom('out')}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/15 text-white border-none cursor-pointer"
-            title="Zoom Out"
-          >
-            <ZoomOut size={14} />
-          </button>
-          <span className="text-[11px] font-mono font-bold px-1.5 w-10 text-center">{zoomLevel.toFixed(1)}x</span>
-          <button 
-            onClick={() => handleZoom('in')}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/15 text-white border-none cursor-pointer"
-            title="Zoom In"
-          >
-            <ZoomIn size={14} />
-          </button>
-        </div>
-      </header>
-
-      {/* Viewfinder stage */}
-      <div className="flex-1 w-full bg-slate-950 relative flex items-center justify-center overflow-hidden">
+    <div className="h-full w-full relative flex flex-col bg-black text-white select-none" style={{ paddingTop: 'calc(var(--top, 36px) + 4px)' }}>
+      {/* Visor */}
+      <div ref={boxRef} onClick={tapFocus} className="relative flex-1 min-h-0 mx-2 overflow-hidden bg-zinc-900" style={{ borderRadius: 30 }}>
         {hasCamera ? (
-          <video 
-            ref={videoRef}
-            autoPlay 
-            playsInline
-            muted
-            className={`w-full h-full object-cover select-none pointer-events-none transition-all duration-300 ${getFilterStyle()}`}
-            style={{ transform: `scale(${zoomLevel}) ${facingMode === 'user' ? 'scaleX(-1)' : ''}` }}
-          />
+          <video ref={videoRef} playsInline muted autoPlay className="absolute inset-0 w-full h-full object-cover"
+            style={{ transform: `${facing === 'user' ? 'scaleX(-1) ' : ''}scale(${zoom})`, filter: css || undefined, transition: 'transform .35s cubic-bezier(.22,1,.36,1)' }} />
         ) : (
-          /* HIGH-FIDELITY VIEWPORT SIMULATION (Parallax moving sky / filter scene) */
-          <div 
-            className={`w-full h-full bg-slate-900 relative flex items-center justify-center transition-all duration-300 ${getFilterStyle()}`}
-            style={{ transform: `scale(${zoomLevel})` }}
-          >
-            {/* Viewfinder crosshairs and guidelines */}
-            <div className="absolute inset-8 border border-white/5 pointer-events-none flex items-center justify-center">
-              <div className="w-4 h-4 border-l border-t border-white/20 absolute top-0 left-0" />
-              <div className="w-4 h-4 border-r border-t border-white/20 absolute top-0 right-0" />
-              <div className="w-4 h-4 border-l border-b border-white/20 absolute bottom-0 left-0" />
-              <div className="w-4 h-4 border-r border-b border-white/20 absolute bottom-0 right-0" />
-              <div className="w-1.5 h-1.5 bg-white/15 rounded-full" />
-            </div>
-
-            {/* Immersive moving SVG cosmic landscape for the simulator */}
-            <div className="w-44 h-44 rounded-full bg-pink-500 blur-xl animate-pulse absolute" />
-            
-            <div className="text-center z-10 space-y-3 p-4">
-              <Camera size={44} className="mx-auto text-slate-500" />
-              <div>
-                <p className="text-xs font-bold text-slate-300">Câmera Virtual</p>
-                <p className="text-[11px] text-slate-500 font-medium mt-1">Toque no botão central para capturar</p>
-              </div>
-            </div>
+          <div className="absolute inset-0 flex items-end justify-center pb-24" style={{ background: 'linear-gradient(160deg,#243b55,#141e30 55%,#2b1740)', filter: css || undefined }}>
+            <p className="text-[11px] tracking-wide text-white/45">Visor simulado: a câmera do aparelho não está disponível</p>
           </div>
         )}
 
-        {/* Live Filter Indicator Capsule */}
-        {activeFilter !== 'none' && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 px-3 py-1 rounded-full text-[11px] font-bold border border-white/10">
-            Filtro: {activeFilter}
+        {grid && (
+          <div className="absolute inset-0 pointer-events-none" style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,.28) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.28) 1px,transparent 1px)',
+            backgroundSize: '33.333% 33.333%', backgroundPosition: '0 0' }} />
+        )}
+        {flashing && <div className="absolute inset-0 bg-white pointer-events-none" style={{ animation: 'camFlash .22s ease-out both' }} />}
+        {focus && <div key={focus.k} className="absolute pointer-events-none rounded-2xl border border-amber-300" style={{ left: focus.x - 32, top: focus.y - 32, width: 64, height: 64, animation: 'camFocus .9s ease-out both' }} />}
+        {count !== null && <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-[120px] font-extralight" style={{ textShadow: '0 4px 30px rgba(0,0,0,.5)' }}>{count}</div>}
+
+        {/* Controles do topo */}
+        <div className="absolute top-3 inset-x-3 flex items-center justify-between">
+          <button type="button" style={circleBtn} onClick={e => { e.stopPropagation(); setFlash(f => !f); }} aria-label="Flash">
+            {flash ? <Zap size={17} fill="currentColor" /> : <ZapOff size={17} />}
+          </button>
+          <div className="flex gap-2">
+            <button type="button" style={{ ...circleBtn, width: 'auto', padding: '0 12px', gap: 6, fontSize: 12, fontWeight: 600 }}
+              onClick={e => { e.stopPropagation(); setTimer(t => (t === 0 ? 3 : t === 3 ? 10 : 0)); }} aria-label="Temporizador">
+              <Timer size={16} />{timer ? `${timer}s` : ''}
+            </button>
+            <button type="button" style={{ ...circleBtn, background: grid ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.35)', color: grid ? '#111' : '#fff' }}
+              onClick={e => { e.stopPropagation(); setGrid(g => !g); }} aria-label="Grade"><Grid3x3 size={16} /></button>
           </div>
+        </div>
+
+        {/* Zoom */}
+        <div className="absolute bottom-3 inset-x-0 flex justify-center">
+          <div className="flex gap-1 p-1 rounded-full" style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
+            {ZOOMS.map(z => (
+              <button key={z} type="button" onClick={e => { e.stopPropagation(); setZoom(z); }}
+                style={{ width: 34, height: 34, borderRadius: 99, border: 0, fontSize: 12, fontWeight: 700, cursor: 'pointer', color: zoom === z ? '#111' : '#fff', background: zoom === z ? '#fff' : 'transparent', transition: 'all .2s' }}>{z}×</button>
+            ))}
+          </div>
+        </div>
+
+        {saved && (
+          <button type="button" onClick={e => { e.stopPropagation(); onOpenGallery?.(); }}
+            className="absolute top-16 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold"
+            style={{ background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', animation: 'camFocus .3s ease-out both reverse' }}>
+            <Check size={14} className="text-emerald-400" /> Salva na Galeria
+          </button>
         )}
       </div>
 
-      {/* Bottom Camera Dashboard Toolbar */}
-      <footer className="bg-black/90 px-6 py-6 space-y-6 z-10">
-        
-        {/* Filters Carousel Scroll */}
-        <div className="flex justify-center gap-3.5 overflow-x-auto no-scrollbar py-1">
-          {[
-            { id: 'none', label: 'Normal', color: 'bg-slate-700' },
-            { id: 'retro', label: 'Vintage', color: 'bg-amber-800' },
-            { id: 'cyber', label: 'Cyber', color: 'bg-fuchsia-800' },
-            { id: 'mono', label: 'P&B', color: 'bg-slate-500' },
-            { id: 'warm', label: 'Quente', color: 'bg-orange-600' }
-          ].map(f => (
-            <button
-              key={f.id}
-              onClick={() => setActiveFilter(f.id as any)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border-none cursor-pointer ${
- activeFilter === f.id 
- ? 'bg-blue-600 text-white scale-105' 
- : 'bg-white/10 hover:bg-white/15 text-slate-300'
- }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+      {/* Filtros */}
+      <div className="shrink-0 flex gap-2 overflow-x-auto no-scrollbar px-4 pt-3.5 pb-1">
+        {FILTERS.map(f => <button key={f.id} type="button" style={chip(filter === f.id)} onClick={() => setFilter(f.id)}>{f.label}</button>)}
+      </div>
 
-        {/* Shutter core console */}
-        <div className="flex justify-between items-center px-4">
-          
-          {/* Bottom-left: Last Captured Image thumbnail */}
-          <div className="w-11 h-11 rounded-xl bg-slate-900 border border-white/10 overflow-hidden flex items-center justify-center">
-            {capturedPhotos.length > 0 ? (
-              <button 
-                onClick={() => setViewingPhoto(capturedPhotos[0])}
-                className="w-full h-full bg-gradient-to-tr border-none cursor-pointer"
-                style={{ backgroundImage: `linear-gradient(to top right, ${capturedPhotos[0].url.split(' ')[1] || '#3b82f6'}, ${capturedPhotos[0].url.split(' ')[3] || '#8b5cf6'})` }}
-              />
-            ) : (
-              <Image size={14} className="text-slate-600" />
-            )}
-          </div>
+      {/* Obturador */}
+      <div className="shrink-0 flex items-center justify-between px-9 pt-3 pb-4">
+        <button type="button" onClick={onOpenGallery} aria-label="Abrir Galeria"
+          className="w-[52px] h-[52px] rounded-2xl overflow-hidden border border-white/25 bg-zinc-800 active:scale-95 transition-transform">
+          {thumb && <img src={thumb} alt="" className="w-full h-full object-cover" />}
+        </button>
+        <button type="button" onClick={press} aria-label="Tirar foto"
+          className="w-[78px] h-[78px] rounded-full flex items-center justify-center active:scale-95 transition-transform" style={{ border: '3px solid #fff', padding: 5, background: 'transparent' }}>
+          <span className="w-full h-full rounded-full bg-white block" style={{ transition: 'transform .12s' }} />
+        </button>
+        <button type="button" onClick={() => setFacing(f => (f === 'user' ? 'environment' : 'user'))} aria-label="Virar câmera"
+          className="w-[52px] h-[52px] rounded-full flex items-center justify-center active:scale-95 transition-transform" style={{ background: 'rgba(255,255,255,.12)' }}>
+          <RefreshCw size={20} />
+        </button>
+      </div>
 
-          {/* Center: Big circular shutter button */}
-          <button 
-            onClick={capturePhoto}
-            className="w-16 h-16 rounded-full bg-white flex items-center justify-center border-none cursor-pointer active:scale-95 transition-transform"
-          >
-            <div className="w-[52px] h-[52px] rounded-full border-2 border-black bg-white flex items-center justify-center">
-              <div className="w-10 h-10 rounded-full bg-red-600" />
-            </div>
-          </button>
-
-          {/* Bottom-right: Rotate camera toggle */}
-          <button 
-            onClick={toggleFacingMode}
-            className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/15 active:scale-90 flex items-center justify-center border-none cursor-pointer transition-transform text-white"
-            title="Girar Câmera"
-          >
-            <RefreshCw size={18} />
-          </button>
-
-        </div>
-      </footer>
+      <style>{`
+        @keyframes camFlash { from { opacity: .95; } to { opacity: 0; } }
+        @keyframes camFocus { from { transform: scale(1.5); opacity: 0; } 35% { opacity: 1; } to { transform: scale(1); opacity: 0.9; } }
+      `}</style>
     </div>
   );
 }
