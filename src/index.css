@@ -1197,8 +1197,8 @@
    ========================================================================== */
 #screen-container { --sys-bottom: calc(var(--sab) + 26px); }
 #screen-container.nav-buttons { --sys-bottom: calc(var(--sab) + var(--nav-h, 44px)); }
-.app-window { inset: 0 0 var(--sys-bottom) 0; }
-.app-window.immersive { inset: 0 0 var(--sys-bottom) 0; }
+.app-window { inset: 0 0 calc(var(--sys-bottom) + var(--kb-h, 0px)) 0; }
+.app-window.immersive { inset: 0 0 calc(var(--sys-bottom) + var(--kb-h, 0px)) 0; }
 
 /* ==========================================================================
    TELA DE BLOQUEIO
@@ -1280,17 +1280,47 @@
 .toast-icon { flex: none; }
 
 
+
+
+/* ==========================================================================
+   ÁREA DO SISTEMA (botões ou gestos): desfoque pesado + escurecimento
+   ========================================================================== */
+#bottom-scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--sys-bottom);
+  z-index: 30;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(6, 6, 10, 0.58), rgba(6, 6, 10, 0.4));
+  -webkit-backdrop-filter: blur(30px) saturate(1.5) brightness(0.75);
+  backdrop-filter: blur(30px) saturate(1.5) brightness(0.75);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+#nav-bar, #screen-container.app-open #nav-bar { color: #fff !important; }
+.home-indicator { background: rgba(255, 255, 255, 0.88) !important; }
+
 /* ==========================================================================
    PAISAGEM DO APP
-   Gira só a janela do app aberto (ex.: um jogo). Barra de status e botões ficam em pé.
+   Gira só a janela do app (ex.: jogo) e ocupa a tela toda, de cima até a área do sistema.
+   A barra de status vira pílulas (StatusPills) dentro do quadro girado.
    ========================================================================== */
-#screen-container.app-rotated .app-window:not(.closed) {
-  --rot-area: calc(100dvh - var(--top) - var(--sys-bottom));
+#screen-container.app-rotated {
+  --rot-w: calc(var(--stage-h, 100dvh) - var(--sys-bottom));
+  --rot-h: var(--stage-w, 100vw);
+}
+#screen-container.app-rotated .app-window:not(.closed),
+#screen-container.app-rotated .rot-frame {
   inset: auto;
   left: 50%;
-  top: calc(var(--top) + var(--rot-area) / 2);
-  width: var(--rot-area);
-  height: 100vw;
+  top: calc(var(--rot-w) / 2);
+  width: var(--rot-w);
+  height: var(--rot-h);
+  padding-top: 0;
   transform: translate(-50%, -50%) rotate(90deg);
   transform-origin: center;
 }
+#screen-container.app-rotated .app-window:not(.closed) .app-window-header { display: none; }
+#screen-container.app-rotated #status-bar { opacity: 0; pointer-events: none; }
+.rot-frame { position: absolute; z-index: 26; pointer-events: none; }

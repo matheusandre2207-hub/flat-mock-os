@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Wifi, WifiOff, Bluetooth, Signal, Plane, Moon, Sun, 
@@ -39,6 +39,12 @@ import BootSetupScreen from './components/BootSetupScreen';
 import LockScreen from './components/LockScreen';
 import SwipeDismiss from './components/SwipeDismiss';
 import SignInScreen from './components/SignInScreen';
+import GalleryApp from './components/GalleryApp';
+import SystemKeyboard from './components/SystemKeyboard';
+import StatusPills from './components/StatusPills';
+import { BUNDLED_APPS, isBundledId } from './bundledApps';
+import { listMedia, putMedia, deleteMedia, audioFromFile, fmtDuration, TRACK_COLORS, type MediaItem } from './mediaStorage';
+import type { Track as MediaTrack } from './types';
 import { getAccount, isSignedIn, signOut, type PublicAccount } from './accountDb';
 import { CustomApp, setCustomAppRegistry, getCustomApp, isCustomAppId, withThemeBridge } from './customApps';
 import { loadAllApps, putApp, deleteApp, deleteAppFiles } from './appStorage';
@@ -851,7 +857,12 @@ export default function App() {
   const online = !airplaneMode && (wifiActive || cellularActive);
 
   // Apps HTML importados pela App Store (guardados no IndexedDB)
-  const [customApps, setCustomApps] = useState<CustomApp[]>([]);
+  const [storedCustomApps, setCustomApps] = useState<CustomApp[]>([]);
+  // Apps que vêm com o sistema (aparecem na loja) + os importados; edições dos embutidos ficam guardadas por cima
+  const customApps = useMemo<CustomApp[]>(() => {
+    const byId = new Map(storedCustomApps.map(a => [a.id, a] as const));
+    return [...BUNDLED_APPS.map(b => byId.get(b.id) ?? b), ...storedCustomApps.filter(a => !isBundledId(a.id))];
+  }, [storedCustomApps]);
   useEffect(() => {
     loadAllApps().then(setCustomApps).catch(() => { /* sem apps salvos */ });
   }, []);
@@ -926,6 +937,64 @@ export default function App() {
   const [musicPlaying, setMusicPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
 
+  // Músicas: as de demonstração + as importadas (tocam de verdade num <audio> oculto)
+  const [mediaTracks, setMediaTracks] = useState<MediaItem[]>([]);
+  const [musicBusy, setMusicBusy] = useState('');
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  if (audioRef.current === null && typeof Audio !== 'undefined') audioRef.current = new Audio();
+  const mediaUrls = useRef<Map<string, string>>(new Map());
+  useEffect(() => { listMedia('audio').then(setMediaTracks).catch(() => { /* sem músicas salvas */ }); }, []);
+  const importedTracks = useMemo<MediaTrack[]>(() => mediaTracks.map(m => ({
+    title: m.name, artist: m.artist || 'Importada', duration: fmtDuration(m.durationSec || 0), durationSec: m.durationSec || 0,
+    genre: 'Importada', color: m.color || TRACK_COLORS[0], mediaId: m.id,
+  })), [mediaTracks]);
+  const allTracks = useMemo<MediaTrack[]>(() => [...tracksList, ...importedTracks], [importedTracks]);
+  const activeMediaId = (allTracks[currentTrackIndex] ?? allTracks[0])?.mediaId;
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (!activeMediaId) { a.pause(); return; }
+    const item = mediaTracks.find(m => m.id === activeMediaId);
+    if (!item) return;
+    let url = mediaUrls.current.get(activeMediaId);
+    if (!url) { url = URL.createObjectURL(item.blob); mediaUrls.current.set(activeMediaId, url); }
+    if (a.src !== url) a.src = url;
+    if (musicPlaying) a.play().catch(() => setMusicPlaying(false));
+  }, [activeMediaId, mediaTracks]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a || !activeMediaId) return;
+    if (musicPlaying) a.play().catch(() => setMusicPlaying(false)); else a.pause();
+  }, [musicPlaying, activeMediaId]);
+  useEffect(() => { if (audioRef.current) audioRef.current.volume = Math.max(0, Math.min(1, volume / 100)); }, [volume]);
+
+  const handleImportTracks = async (files: FileList) => {
+    const list = Array.from(files).filter(f => f.type.startsWith('audio/') || /\.(mp3|m4a|wav|ogg|flac|aac|opus)$/i.test(f.name));
+    let ok = 0;
+    for (let i = 0; i < list.length; i++) {
+      setMusicBusy(`Importando ${i + 1} de ${list.length}…`);
+      try {
+        const item = await audioFromFile(list[i], i);
+        await putMedia(item);
+        setMediaTracks(prev => [item, ...prev]);
+        ok++;
+      } catch { /* arquivo ignorado */ }
+    }
+    setMusicBusy(list.length === 0 ? 'Nenhum arquivo de áudio válido' : '');
+    if (!list.length) window.setTimeout(() => setMusicBusy(''), 2500);
+    return ok;
+  };
+  const handleDeleteTrack = (mediaId: string) => {
+    const removed = allTracks.findIndex(t => t.mediaId === mediaId);
+    if (removed < 0) return;
+    if (removed === currentTrackIndex) { setMusicPlaying(false); audioRef.current?.pause(); }
+    setCurrentTrackIndex(i => (i === removed ? 0 : i > removed ? i - 1 : i));
+    const u = mediaUrls.current.get(mediaId);
+    if (u) { URL.revokeObjectURL(u); mediaUrls.current.delete(mediaId); }
+    deleteMedia(mediaId).catch(() => {});
+    setMediaTracks(prev => prev.filter(m => m.id !== mediaId));
+  };
+
   // Wallpaper manager
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>(() => {
     const saved = localStorage.getItem('os_wallpapers');
@@ -944,7 +1013,7 @@ export default function App() {
   const currentLockWallpaper = wallpapers[lockWallpaperIndex] || wallpapers[0];
   const [wallpaperTarget, setWallpaperTarget] = useState<'home' | 'lock' | 'both'>('home');
 
-  useEffect(() => { localStorage.setItem('os_wallpapers', JSON.stringify(wallpapers)); }, [wallpapers]);
+  useEffect(() => { try { localStorage.setItem('os_wallpapers', JSON.stringify(wallpapers)); } catch { /* cota cheia: mantém só na sessão */ } }, [wallpapers]);
   useEffect(() => { localStorage.setItem('os_wallpaper_index', String(wallpaperIndex)); }, [wallpaperIndex]);
   useEffect(() => { localStorage.setItem('os_lock_wallpaper_index', String(lockWallpaperIndex)); }, [lockWallpaperIndex]);
 
@@ -1168,23 +1237,19 @@ export default function App() {
     return true;
   };
 
-  const handleSetCustomFollow = (appId: string, value: boolean) => {
+  const patchCustomApp = (appId: string, patch: Partial<CustomApp>) => {
     const cur = customApps.find(a => a.id === appId);
     if (!cur) return;
-    const updated = { ...cur, followWallpaper: value };
-    putApp(updated).catch(() => { /* mantém o valor da sessão */ });
-    setCustomApps(prev => prev.map(a => (a.id === appId ? updated : a)));
-  };
-
-  const handleSetCustomOrientation = (appId: string, o: 'portrait' | 'landscape') => {
-    const cur = customApps.find(a => a.id === appId);
-    if (!cur) return;
-    const updated = { ...cur, orientation: o };
+    const updated = { ...cur, ...patch };
     putApp(updated).catch(() => { /* mantém na sessão */ });
-    setCustomApps(prev => prev.map(a => (a.id === appId ? updated : a)));
+    setCustomApps(prev => (prev.some(a => a.id === appId) ? prev.map(a => (a.id === appId ? updated : a)) : [...prev, updated]));
   };
+  const handleSetCustomFollow = (appId: string, value: boolean) => patchCustomApp(appId, { followWallpaper: value });
+
+  const handleSetCustomOrientation = (appId: string, o: 'portrait' | 'landscape') => patchCustomApp(appId, { orientation: o });
 
   const handleDeleteCustomApp = (appId: string) => {
+    if (isBundledId(appId)) return;
     deleteApp(appId).catch(() => { /* ignora */ });
     deleteAppFiles(appId).catch(() => { /* ignora */ });
     setCustomApps(prev => prev.filter(a => a.id !== appId));
@@ -1551,12 +1616,22 @@ export default function App() {
   }, [useManualBattery]);
 
   // 5. Helper callbacks for cross-app communication
+  const handleApplyBuiltinWallpaper = (idx: number, target: 'home' | 'lock' | 'both') => {
+    if (target !== 'lock') setWallpaperIndex(idx);
+    if (target !== 'home') setLockWallpaperIndex(idx);
+  };
+  const handleUseGalleryPhoto = (dataUrl: string, name: string, target: 'home' | 'lock' | 'both') => {
+    const idx = wallpapers.length;
+    setWallpapers(prev => [...prev, { name, gradient: `url(${dataUrl}) center/cover no-repeat`, isDark: false }]);
+    handleApplyBuiltinWallpaper(idx, target);
+  };
+
   const handleSetWallpaperFromFile = (idx: number) => {
     setWallpaperIndex(idx);
   };
 
   const handlePlayTrackFromFile = (trackTitle: string) => {
-    const trackIdx = tracksList.findIndex(t => t.title === trackTitle);
+    const trackIdx = allTracks.findIndex(t => t.title === trackTitle);
     if (trackIdx !== -1) {
       setCurrentTrackIndex(trackIdx);
       setMusicPlaying(true);
@@ -1964,6 +2039,7 @@ export default function App() {
 
   // Navegação por botões (estilo Android): voltar, início e apps em segundo plano
   const goBack = () => {
+    if (document.documentElement.dataset.kb === '1') { (document.activeElement as HTMLElement | null)?.blur?.(); return; }
     if (recentAppsOpen) { setRecentAppsOpen(false); return; }
     if (anySheetOpen) { closeSheets(); return; }
     if (activeApp === 'galeria' && selectedGalleryImg !== null) { setSelectedGalleryImg(null); return; }
@@ -2480,7 +2556,7 @@ export default function App() {
       case 'musica':
         return (
           <MusicPlayer
-            tracks={tracksList}
+            tracks={allTracks}
             isPlaying={musicPlaying}
             setIsPlaying={setMusicPlaying}
             currentTrackIndex={currentTrackIndex}
@@ -2516,6 +2592,7 @@ export default function App() {
             onDeleteCustomApp={handleDeleteCustomApp}
               onSetFollowWallpaper={handleSetCustomFollow}
               onSetOrientation={handleSetCustomOrientation}
+              onUpdateCustomApp={patchCustomApp}
           />
         );
       case 'notas':
@@ -2563,7 +2640,7 @@ export default function App() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ position: 'absolute', inset: 0, filter: `brightness(${brightness}%)`, '--tint': tint, '--tint-h': `${tintInfo.h}deg`, '--tint-s': `${tintInfo.s}%`, ...accentVars } as React.CSSProperties}
+        style={{ position: 'absolute', inset: 0, '--stage-w': `${stage.w}px`, '--stage-h': `${stage.h}px`, filter: `brightness(${brightness}%)`, '--tint': tint, '--tint-h': `${tintInfo.h}deg`, '--tint-s': `${tintInfo.s}%`, ...accentVars } as React.CSSProperties}
       >
 
         {/* Filtro de luz noturna */}
@@ -2786,15 +2863,15 @@ export default function App() {
           <div className="qs-media">
             <div className="qs-media-art"><MusicIcon size={18} /></div>
             <div className="qs-media-meta">
-              <div className="qs-media-title">{tracksList[currentTrackIndex].title}</div>
-              <div className="qs-media-artist">{tracksList[currentTrackIndex].artist}</div>
+              <div className="qs-media-title">{allTracks[currentTrackIndex].title}</div>
+              <div className="qs-media-artist">{allTracks[currentTrackIndex].artist}</div>
             </div>
             <div className="qs-media-ctrls">
               <button
                 type="button"
                 className="icon-btn"
                 aria-label={language === 'en' ? 'Previous' : 'Anterior'}
-                onClick={(e) => { e.stopPropagation(); setCurrentTrackIndex(currentTrackIndex === 0 ? tracksList.length - 1 : currentTrackIndex - 1); }}
+                onClick={(e) => { e.stopPropagation(); setCurrentTrackIndex(currentTrackIndex === 0 ? allTracks.length - 1 : currentTrackIndex - 1); }}
               >
                 <SkipBack size={16} />
               </button>
@@ -2810,7 +2887,7 @@ export default function App() {
                 type="button"
                 className="icon-btn"
                 aria-label={language === 'en' ? 'Next' : 'Próxima'}
-                onClick={(e) => { e.stopPropagation(); setCurrentTrackIndex((currentTrackIndex + 1) % tracksList.length); }}
+                onClick={(e) => { e.stopPropagation(); setCurrentTrackIndex((currentTrackIndex + 1) % allTracks.length); }}
               >
                 <SkipForward size={16} />
               </button>
@@ -2895,11 +2972,11 @@ export default function App() {
                     type={w.type}
                     batteryLevel={batteryLevel}
                     isCharging={isCharging}
-                    track={tracksList[currentTrackIndex]}
+                    track={allTracks[currentTrackIndex]}
                     playing={musicPlaying}
-                    onPrev={() => setCurrentTrackIndex(currentTrackIndex === 0 ? tracksList.length - 1 : currentTrackIndex - 1)}
+                    onPrev={() => setCurrentTrackIndex(currentTrackIndex === 0 ? allTracks.length - 1 : currentTrackIndex - 1)}
                     onToggle={() => setMusicPlaying(!musicPlaying)}
-                    onNext={() => setCurrentTrackIndex((currentTrackIndex + 1) % tracksList.length)}
+                    onNext={() => setCurrentTrackIndex((currentTrackIndex + 1) % allTracks.length)}
                     onOpen={(id) => { if (!isEditingHome) openApp(id); }}
                   />
                 </div>
@@ -3105,119 +3182,17 @@ export default function App() {
               <ChevronDown size={18} />
             </button>
           </div>
-          <div className="app-content no-scrollbar pt-4 pb-24 px-5 space-y-4 overflow-y-auto">
-            <div className="space-y-1">
-              <h3 className="font-bold text-base">Minha Galeria</h3>
-              <p className="text-xs opacity-65">Escolha um gradiente ou envie uma foto para ser seu papel de parede do sistema.</p>
-            </div>
-            
-            <div className="flex p-1 rounded-2xl bg-slate-200/60 dark:bg-white/5 gap-1">
-              {(['all', 'gradient', 'photo'] as const).map(f => (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => setGalleryFilter(f)}
-                  className={`flex-1 py-1.5 rounded-xl text-[11px] font-semibold transition-all ${galleryFilter === f ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
-                >
-                  {f === 'all' ? (language === 'en' ? 'All' : 'Todos') : f === 'gradient' ? (language === 'en' ? 'Gradients' : 'Gradientes') : (language === 'en' ? 'Photos' : 'Fotos')}
-                </button>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-3.5 pt-2">
-              {/* Option to upload wallpaper from real device */}
-              <button
-                onClick={() => galleryFileInputRef.current?.click()}
-                className="aspect-[9/16] rounded-2xl overflow-hidden relative transition-all cursor-pointer border border-dashed border-slate-300 dark:border-white/20 bg-slate-100/50 dark:bg-white/5 flex flex-col items-center justify-center text-center p-4 gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 hover:border-blue-500"
-              >
-                <div className="w-10 h-10 rounded-full bg-slate-200/80 dark:bg-white/10 flex items-center justify-center text-slate-700 dark:text-white">
-                  <Plus size={20} />
-                </div>
-                <div>
-                  <p className="font-bold text-xs">Adicionar Foto</p>
-                  <p className="text-[11px] opacity-60">Escolher do dispositivo</p>
-                </div>
-              </button>
-
-              <input 
-                type="file" 
-                ref={galleryFileInputRef} 
-                className="hidden" 
-                accept="image/*" 
-                onChange={handleCustomWallpaperUpload} 
-              />
-
-              {wallpapers.map((wp, idx) => {
-                const isPhoto = wp.gradient.startsWith('url(');
-                if ((galleryFilter === 'photo' && !isPhoto) || (galleryFilter === 'gradient' && isPhoto)) return null;
-                return (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedGalleryImg(idx)}
-                  className="aspect-[9/16] rounded-2xl overflow-hidden relative transition-transform cursor-pointer border border-white/5 text-left w-full"
-                  style={{ background: wp.gradient }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-3 text-white">
-                    <p className="font-bold text-xs leading-tight">{wp.name}</p>
-                  </div>
-                </button>
-                );
-              })}
-            </div>
-
-            {/* LIGHTBOX CONFIRMAÇÃO DE PAPEL DE PAREDE */}
-            {selectedGalleryImg !== null && wallpapers[selectedGalleryImg] && (
-              <div className="absolute inset-0 bg-black/95 flex flex-col justify-center items-center p-6 z-50 text-white space-y-6">
-                <div className="w-44 aspect-[9/16] rounded-2xl border-4 border-white/10 relative overflow-hidden" style={{ background: wallpapers[selectedGalleryImg].gradient }}>
-                  <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/40 px-3 py-1 rounded-full text-[11px] text-center">
-                    Visualização
-                  </div>
-                </div>
-                
-                <div className="text-center space-y-1">
-                  <h4 className="font-bold text-sm">Definir "{wallpapers[selectedGalleryImg].name}"?</h4>
-                  <p className="text-xs opacity-60">Isso atualizará a tela de fundo do sistema operacional.</p>
-                </div>
-
-                <div className="flex flex-col gap-2 w-full max-w-xs text-xs">
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => {
-                        handleSetWallpaperFromFile(selectedGalleryImg);
-                        setSelectedGalleryImg(null);
-                      }}
-                      className="flex-1 py-2 bg-blue-600 font-bold rounded-xl hover:bg-blue-700 border-none cursor-pointer text-white text-center"
-                    >
-                      Tela Inicial
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setLockWallpaperIndex(selectedGalleryImg);
-                        setSelectedGalleryImg(null);
-                      }}
-                      className="flex-1 py-2 bg-emerald-600 font-bold rounded-xl hover:bg-emerald-700 border-none cursor-pointer text-white text-center"
-                    >
-                      Tela de Bloqueio
-                    </button>
-                  </div>
-                  <button 
-                    onClick={() => {
-                      handleSetWallpaperFromFile(selectedGalleryImg);
-                      setLockWallpaperIndex(selectedGalleryImg);
-                      setSelectedGalleryImg(null);
-                    }}
-                    className="w-full py-2 bg-violet-600 font-bold rounded-xl hover:bg-violet-700 border-none cursor-pointer text-white text-center"
-                  >
-                    Definir para Ambas
-                  </button>
-                  <button 
-                    onClick={() => setSelectedGalleryImg(null)}
-                    className="w-full py-2 bg-slate-800 font-bold rounded-xl hover:bg-slate-700 border-none cursor-pointer text-white text-center mt-1"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            )}
+          <div className="app-content no-scrollbar p-0">
+            <GalleryApp
+              darkMode={darkMode}
+              language={language}
+              isActive={activeApp === 'galeria'}
+              wallpapers={wallpapers}
+              wallpaperIndex={wallpaperIndex}
+              lockWallpaperIndex={lockWallpaperIndex}
+              onApplyBuiltin={handleApplyBuiltinWallpaper}
+              onUsePhoto={handleUseGalleryPhoto}
+            />
           </div>
         </div>
 
@@ -3255,7 +3230,7 @@ export default function App() {
           </div>
           <div className="app-content no-scrollbar p-0">
             <MusicPlayer
-              tracks={tracksList}
+              tracks={allTracks}
               isPlaying={musicPlaying}
               setIsPlaying={setMusicPlaying}
               currentTrackIndex={currentTrackIndex}
@@ -3263,6 +3238,10 @@ export default function App() {
               volume={volume}
               setVolume={setVolume}
               darkMode={darkMode}
+              audio={audioRef.current}
+              onImport={handleImportTracks}
+              onDeleteTrack={handleDeleteTrack}
+              importing={musicBusy}
             />
           </div>
         </div>
@@ -3320,6 +3299,7 @@ export default function App() {
               onDeleteCustomApp={handleDeleteCustomApp}
               onSetFollowWallpaper={handleSetCustomFollow}
               onSetOrientation={handleSetCustomOrientation}
+              onUpdateCustomApp={patchCustomApp}
             />
           </div>
         </div>
@@ -3882,6 +3862,23 @@ export default function App() {
             }}
           />
         )}
+
+        {/* Fundo da área do sistema (botões ou gestos): desfoque pesado + escurecimento */}
+        {!isBooting && !isLocked && !screenOff && <div id="bottom-scrim" />}
+
+        {/* Paisagem: barra de status em pílulas, girada junto com o app */}
+        {landscape && activeApp !== null && !isLocked && !isBooting && (() => {
+          const tone = customApps.find(a => a.id === activeApp)?.statusTone ?? 'auto';
+          return (
+            <div className="rot-frame" aria-hidden="true">
+              <StatusPills time={systemTime} dark={tone === 'dark' || (tone === 'auto' && darkMode)} wifi={wifiActive} cellular={cellularActive}
+                bluetooth={bluetoothActive} airplane={airplaneMode} battery={batteryLevel} charging={isCharging} unread={notifications.length} />
+            </div>
+          );
+        })()}
+
+        {/* Teclado do sistema */}
+        <SystemKeyboard darkMode={darkMode} overlay={isBooting || isLocked || (!!account && !signedIn)} />
 
         {/* Navegação por botões (estilo Android) */}
         {prefs.navStyle === 'buttons' && !isBooting && !isLocked && !screenOff && (

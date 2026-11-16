@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tema AeroOS</title>
+<meta name="aeroos-icon" content="🎨">
+<style>
+  /* Sempre use um valor padrão (2º parâmetro do var): o app fica bonito mesmo com o recurso desligado */
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; background: var(--aero-bg, #0b0b0d); color: var(--aero-fg, #f4f4f5); transition: background .5s, color .5s; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 40px 22px 24px; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-weight: 300; font-size: 28px; }
+  .card { background: var(--aero-surface, #18181b); border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .chip { align-self: flex-start; background: var(--aero-accent-soft, rgba(62,99,221,.16)); color: var(--aero-accent, #3E63DD); padding: 5px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
+  input { width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--aero-accent-soft, #333); background: transparent; color: inherit; font: inherit; outline: none; }
+  input:focus { border-color: var(--aero-accent, #3E63DD); }
+  button { border: 0; padding: 13px; border-radius: 999px; font: inherit; font-weight: 600; background: var(--aero-accent, #3E63DD); color: #fff; }
+  .muted { color: var(--aero-muted, #8a8a94); font-size: 12px; }
+</style>
+</head>
+<body>
+  <h1>Tema AeroOS</h1>
+  <div class="card">
+    <span class="chip" id="mode">modo</span>
+    <p class="muted">Ative "Mudar com o papel de parede" para este app na loja e troque o papel de parede: as cores mudam sozinhas.</p>
+    <input id="t" placeholder="Toque aqui: abre o teclado do AeroOS">
+    <button onclick="document.getElementById('o').textContent = document.getElementById('t').value || '(vazio)'">Mostrar texto</button>
+    <p id="o" class="muted"></p>
+  </div>
+  <script>
+    // Variáveis também podem ser lidas no JavaScript (ex.: para desenhar num canvas)
+    function show() {
+      var mode = getComputedStyle(document.documentElement).getPropertyValue('--aero-mode').trim();
+      document.getElementById('mode').textContent = 'Modo ' + (mode === 'light' ? 'claro' : 'escuro');
+    }
+    show();
+    new MutationObserver(show).observe(document.documentElement, { attributes: true });
+  </script>
+</body>
+</html>

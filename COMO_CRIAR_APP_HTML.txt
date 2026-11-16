@@ -243,3 +243,57 @@ Você pode deixar só o app aberto na horizontal, como um jogo:
 
 A barra de status e os botões do sistema continuam em pé. Ao sair do app,
 o sistema volta ao retrato.
+
+
+13. APPS QUE COMBINAM COM O PAPEL DE PAREDE (PASSO A PASSO)
+-----------------------------------------------------------
+  1. Escreva o CSS usando as variáveis --aero-* (seção 10) sempre com valor
+     padrão:   background: var(--aero-accent, #3E63DD);
+  2. Importe o app. Na loja, abra o app e ligue "Mudar com o papel de parede".
+  3. Troque o papel de parede (Galeria > Papéis de parede) ou o modo
+     claro/escuro: o app atualiza na hora, sem reabrir.
+  4. Dica: use --aero-bg para o fundo, --aero-surface para cartões,
+     --aero-accent para botões e --aero-accent-soft para fundos suaves.
+O arquivo exemplo-tema-aeroos.html mostra tudo isso funcionando. Os apps
+que já vêm na loja (2048, Cobrinha etc.) também usam essas variáveis.
+
+Pedido pronto para uma IA:
+  "Crie um app HTML de um arquivo só, para celular em retrato, que use as
+  variáveis CSS --aero-bg, --aero-surface, --aero-fg, --aero-muted,
+  --aero-accent e --aero-accent-soft (sempre com valor padrão no var()).
+  Sem localStorage nem recursos externos. Inclua <title> e a meta
+  aeroos-icon com um emoji. Devolva só o código."
+
+
+14. TECLADO DO SISTEMA
+----------------------
+O AeroOS tem teclado próprio: nenhum campo abre o teclado do celular.
+  - Ajustes: Configurações > Tela > "Teclado do sistema" (tema escuro,
+    claro, automático ou do papel de parede; transparência; desfoque;
+    altura; arredondamento; vibração; som; maiúscula automática; acentos).
+  - Segure uma vogal para ver os acentos (á, ã, é, ô...).
+  - Apps HTML importados usam o teclado do sistema automaticamente, em
+    campos <input> e <textarea>. Não precisa fazer nada no seu código.
+  - Jogos instalados por pasta rodam sem essa ponte: eles usam o teclado
+    do celular se tiverem campos de texto.
+  - Campos type="number" e type="tel" mostram um teclado numérico;
+    type="email" e type="url" ganham as teclas @ e /.
+
+
+15. GALERIA E MÚSICAS
+---------------------
+  - Galeria: toque no + para adicionar fotos (várias de uma vez). Toque
+    numa foto para ver em tela cheia, deslize para trocar, toque duas
+    vezes para ampliar. Dá para favoritar, definir como papel de parede
+    (início, bloqueio ou os dois) e excluir. "Selecionar" apaga várias.
+  - Música: no app Música, toque em "Importar músicas" e escolha arquivos
+    de áudio (mp3, m4a, wav, ogg...). Nomeie como "Artista - Música.mp3"
+    para preencher o artista. As músicas tocam de verdade, inclusive com o
+    app fechado.
+
+
+16. EDITAR UM APP DA LOJA
+-------------------------
+Na loja, abra o app e toque em "Editar nome e foto". Escolha uma foto para
+o ícone (ela é recortada em quadrado) e mude o nome. Vale para apps
+importados e para os que já vêm no sistema.

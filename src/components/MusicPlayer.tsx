@@ -1,8 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, 
-  Volume2, Music, ListMusic
-} from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Volume2, Music, ListMusic, Plus, Trash2 } from 'lucide-react';
 import { Track } from '../types';
 
 interface MusicPlayerProps {
@@ -14,253 +11,165 @@ interface MusicPlayerProps {
   volume: number;
   setVolume: (n: number) => void;
   darkMode: boolean;
+  /** Player de áudio real (só na instância principal). Sem ele, a faixa importada fica parada. */
+  audio?: HTMLAudioElement | null;
+  onImport?: (files: FileList) => void;
+  onDeleteTrack?: (mediaId: string) => void;
+  importing?: string;
 }
 
+const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
 export default function MusicPlayer({
-  tracks,
-  isPlaying,
-  setIsPlaying,
-  currentTrackIndex,
-  setCurrentTrackIndex,
-  volume,
-  setVolume,
-  darkMode
+  tracks, isPlaying, setIsPlaying, currentTrackIndex, setCurrentTrackIndex, volume, setVolume, darkMode,
+  audio = null, onImport, onDeleteTrack, importing,
 }: MusicPlayerProps) {
-  const [progress, setProgress] = useState(30); // 0 to 100 percentage
-  const [currentTimeSec, setCurrentTimeSec] = useState(45);
-  const [isShuffle, setIsShuffle] = useState(false);
-  const [isRepeat, setIsRepeat] = useState(false);
+  const [cur, setCur] = useState(0);
+  const [dur, setDur] = useState(0);
+  const [shuffle, setShuffle] = useState(false);
+  const [repeat, setRepeat] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const activeTrack = tracks[currentTrackIndex] || tracks[0];
+  const active = tracks[currentTrackIndex] || tracks[0];
+  const real = !!active.mediaId;
+  const live = real && !!audio;
 
-  // Simulated song timer progression when playing
+  const next = () => {
+    if (tracks.length < 2) return;
+    if (shuffle) {
+      let r = currentTrackIndex;
+      while (r === currentTrackIndex) r = Math.floor(Math.random() * tracks.length);
+      setCurrentTrackIndex(r);
+    } else setCurrentTrackIndex((currentTrackIndex + 1) % tracks.length);
+  };
+  const prev = () => {
+    if (cur > 3) { if (live && audio) audio.currentTime = 0; setCur(0); }
+    else setCurrentTrackIndex(currentTrackIndex === 0 ? tracks.length - 1 : currentTrackIndex - 1);
+  };
+
+  // Faixas de demonstração: relógio simulado
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTimeSec(prev => {
-          if (prev >= activeTrack.durationSec) {
-            // Song ended
-            if (isRepeat) {
-              return 0; // restart
-            } else {
-              handleNext();
-              return 0;
-            }
-          }
-          const nextSec = prev + 1;
-          setProgress(Math.round((nextSec / activeTrack.durationSec) * 100));
-          return nextSec;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, currentTrackIndex, isRepeat]);
+    setCur(0);
+    setDur(active.durationSec);
+    if (real || !isPlaying) return;
+    const iv = setInterval(() => setCur(p => {
+      if (p + 1 >= active.durationSec) { if (repeat) return 0; next(); return 0; }
+      return p + 1;
+    }), 1000);
+    return () => clearInterval(iv);
+  }, [currentTrackIndex, isPlaying, repeat, shuffle, real]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Synchronize progress and duration when track changes
+  // Faixas importadas: áudio de verdade
   useEffect(() => {
-    setProgress(0);
-    setCurrentTimeSec(0);
-  }, [currentTrackIndex]);
+    if (!live || !audio) return;
+    const onT = () => setCur(audio.currentTime);
+    const onM = () => { if (Number.isFinite(audio.duration)) setDur(audio.duration); };
+    const onEnd = () => { if (repeat) { audio.currentTime = 0; audio.play().catch(() => {}); } else next(); };
+    audio.addEventListener('timeupdate', onT);
+    audio.addEventListener('loadedmetadata', onM);
+    audio.addEventListener('ended', onEnd);
+    onT(); onM();
+    return () => {
+      audio.removeEventListener('timeupdate', onT);
+      audio.removeEventListener('loadedmetadata', onM);
+      audio.removeEventListener('ended', onEnd);
+    };
+  }, [live, audio, currentTrackIndex, repeat, shuffle, tracks.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleNext = () => {
-    if (isShuffle) {
-      const rand = Math.floor(Math.random() * tracks.length);
-      setCurrentTrackIndex(rand);
-    } else {
-      setCurrentTrackIndex((currentTrackIndex + 1) % tracks.length);
-    }
+  const seek = (v: number) => {
+    setCur(v);
+    if (live && audio) audio.currentTime = v;
   };
 
-  const handlePrev = () => {
-    if (currentTimeSec > 3) {
-      // restart current song
-      setCurrentTimeSec(0);
-      setProgress(0);
-    } else {
-      // previous song
-      const prevIdx = currentTrackIndex === 0 ? tracks.length - 1 : currentTrackIndex - 1;
-      setCurrentTrackIndex(prevIdx);
-    }
-  };
-
-  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newProgress = parseInt(e.target.value);
-    setProgress(newProgress);
-    const newTimeSec = Math.round((newProgress / 100) * activeTrack.durationSec);
-    setCurrentTimeSec(newTimeSec);
-  };
-
-  const formatTime = (totalSec: number) => {
-    const mins = Math.floor(totalSec / 60);
-    const secs = totalSec % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
+  const shell = darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900';
+  const card = darkMode ? 'bg-white/5' : 'bg-white shadow-sm';
+  const total = Math.max(1, Math.round(dur || active.durationSec));
 
   return (
-    <div className={`h-full flex flex-col md:flex-row rounded-none overflow-y-auto no-scrollbar pb-24 ${
- darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
- }`}>
-      
-      {/* Immersive Audio Visual Player Screen */}
-      <div className={`flex-1 pt-3 pb-6 px-5 flex flex-col justify-center items-center relative ${
- darkMode ? 'bg-slate-900' : 'bg-slate-100'
- }`}>
-        <div className="text-center space-y-4 w-full max-w-sm">
-          
-          {/* SPINNING VINYL CD COVER ART */}
-          <div className="relative mx-auto w-44 h-44 flex items-center justify-center">
-            {/* Spinning Disc container */}
-            <div className={`absolute inset-0 rounded-full bg-black border-4 border-slate-700 flex items-center justify-center spin-vinyl ${
- isPlaying ? '' : 'spin-vinyl-paused'
- }`}>
-              {/* Grooves */}
-              <div className="absolute inset-2.5 rounded-full border border-slate-800" />
-              <div className="absolute inset-5 rounded-full border border-slate-800/60" />
-              <div className="absolute inset-8 rounded-full border border-slate-900" />
-              
-              {/* Dynamic Album Cover Center Artwork */}
-              <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${activeTrack.color} flex items-center justify-center text-white font-semibold border border-black`}>
-                <Music size={20} />
-              </div>
-            </div>
-            
-            {/* Tone arm needle simulator icon */}
-            <div className={`absolute top-0 right-4 w-12 h-16 origin-top transition-transform duration-500 ${
- isPlaying ? 'rotate-12' : 'rotate-0'
- }`}>
-              <div className="w-1 bg-slate-400 h-10 mx-auto rounded-full" />
-              <div className="w-2 h-2 bg-slate-500 rounded-full mx-auto" />
-            </div>
+    <div className={`h-full overflow-y-auto no-scrollbar pb-24 ${shell}`}>
+      <div className="px-6 pt-4 flex flex-col items-center gap-5">
+        {/* Capa */}
+        <div className="relative w-56 h-56">
+          <div className={`absolute inset-0 rounded-[2rem] bg-gradient-to-br ${active.color} opacity-60 blur-2xl`} />
+          <div className={`relative w-full h-full rounded-[2rem] bg-gradient-to-br ${active.color} flex items-center justify-center text-white shadow-xl transition-transform duration-700 ${isPlaying ? 'scale-100' : 'scale-95'}`}>
+            <Music size={64} strokeWidth={1.4} className="opacity-90" />
           </div>
-
-          {/* Song Details Title */}
-          <div>
-            <h3 className="font-semibold text-lg tracking-tight truncate">{activeTrack.title}</h3>
-            <p className="text-xs opacity-60 font-medium truncate mt-0.5">{activeTrack.artist}</p>
-          </div>
-
-          {/* DYNAMIC SPECTRUM ANALYZER BARS */}
-          <div className="h-10 flex items-end justify-center gap-1.5 py-1">
-            {[1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1].map((b, i) => (
-              <div 
-                key={i} 
-                className={`w-1 rounded-full bg-blue-600 transition-all ${
-                  isPlaying ? `audio-bar-${(i % 5) + 1}` : 'h-1.5 bg-slate-500/40'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Scrubbable Seek Slider */}
-          <div className="space-y-1">
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={progress}
-              onChange={handleProgressChange}
-              className="w-full h-1 bg-slate-300 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
-            />
-            <div className="flex justify-between text-[11px] font-mono opacity-50">
-              <span>{formatTime(currentTimeSec)}</span>
-              <span>{activeTrack.duration}</span>
-            </div>
-          </div>
-
-          {/* Music Playback Panel buttons */}
-          <div className="flex justify-between items-center px-4">
-            <button 
-              onClick={() => setIsShuffle(!isShuffle)}
-              className={`p-1.5 transition-colors ${isShuffle ? 'text-blue-500' : 'opacity-40 hover:opacity-100'}`}
-              title="Embaralhar"
-            >
-              <Shuffle size={16} />
-            </button>
-
-            <button 
-              onClick={handlePrev}
-              className="p-1.5 opacity-80 hover:opacity-100 active:scale-90 transition-all"
-              title="Anterior"
-            >
-              <SkipBack size={20} />
-            </button>
-
-            <button 
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="w-12 h-12 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-full flex items-center justify-center transition-all cursor-pointer"
-              title={isPlaying ? "Pausar" : "Tocar"}
-            >
-              {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
-            </button>
-
-            <button 
-              onClick={handleNext}
-              className="p-1.5 opacity-80 hover:opacity-100 active:scale-90 transition-all"
-              title="Próxima"
-            >
-              <SkipForward size={20} />
-            </button>
-
-            <button 
-              onClick={() => setIsRepeat(!isRepeat)}
-              className={`p-1.5 transition-colors ${isRepeat ? 'text-blue-500' : 'opacity-40 hover:opacity-100'}`}
-              title="Repetir"
-            >
-              <Repeat size={16} />
-            </button>
-          </div>
-
-          {/* Quick inline Volume capsule slider */}
-          <div className="flex items-center gap-2 justify-center pt-2.5 opacity-70">
-            <Volume2 size={12} />
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={volume}
-              onChange={e => setVolume(parseInt(e.target.value))}
-              className="w-24 h-1 bg-slate-300 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
-            />
-          </div>
-
         </div>
-      </div>
 
-      {/* Track List Sidebar */}
-      <div className={`w-full md:w-64 border-t md:border-t-0 md:border-l flex flex-col px-5 py-4 ${
- darkMode ? 'bg-slate-950 border-white/10' : 'bg-slate-100 border-slate-200'
- }`}>
-        <h4 className="text-xs font-semibold opacity-60 mb-3 flex items-center gap-1.5">
-          <ListMusic size={14} className="text-blue-500" /> Playlist
-        </h4>
-        <div className="flex-1 overflow-y-auto space-y-1.5 no-scrollbar max-h-48 md:max-h-none">
-          {tracks.map((track, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                setCurrentTrackIndex(idx);
-                setIsPlaying(true);
-              }}
-              className={`w-full p-2.5 rounded-xl flex items-center gap-2.5 text-left text-xs transition-colors ${
- currentTrackIndex === idx
- ? 'bg-blue-600 text-white font-bold'
- : (darkMode ? 'hover:bg-white/5' : 'hover:bg-black/5')
- }`}
-            >
-              <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${track.color} flex items-center justify-center text-[11px]`}>
-                {currentTrackIndex === idx && isPlaying ? <Volume2 size={12} /> : <Music size={12} />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="truncate font-semibold">{track.title}</p>
-                <p className="truncate text-[11px] opacity-70">{track.artist}</p>
-              </div>
-              <span className="font-mono text-[11px] opacity-60">{track.duration}</span>
-            </button>
+        <div className="text-center w-full">
+          <h3 className="font-semibold text-xl tracking-tight truncate">{active.title}</h3>
+          <p className="text-sm opacity-60 truncate mt-0.5">{active.artist}</p>
+        </div>
+
+        {/* Barras */}
+        <div className="h-8 flex items-end justify-center gap-1.5">
+          {[1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1].map((_, i) => (
+            <div key={i} className={`w-1 rounded-full bg-blue-600 ${isPlaying ? `audio-bar-${(i % 5) + 1}` : 'h-1.5 opacity-30'}`} />
           ))}
         </div>
+
+        {/* Progresso */}
+        <div className="w-full space-y-1">
+          <input type="range" min={0} max={total} step={1} value={Math.min(Math.floor(cur), total)}
+            onChange={e => seek(parseInt(e.target.value))} aria-label="Progresso"
+            className="w-full h-1 rounded-lg appearance-none cursor-pointer accent-blue-600 bg-slate-300 dark:bg-slate-800" />
+          <div className="flex justify-between text-[11px] font-mono opacity-50"><span>{fmt(cur)}</span><span>{fmt(total)}</span></div>
+        </div>
+
+        {/* Controles */}
+        <div className="w-full flex items-center justify-between px-2">
+          <button onClick={() => setShuffle(!shuffle)} className={`p-2 ${shuffle ? 'text-blue-500' : 'opacity-40'}`} aria-label="Embaralhar"><Shuffle size={18} /></button>
+          <button onClick={prev} className="p-2 active:scale-90 transition-transform" aria-label="Anterior"><SkipBack size={24} fill="currentColor" /></button>
+          <button onClick={() => setIsPlaying(!isPlaying)} className="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center active:scale-95 transition-transform shadow-lg" aria-label={isPlaying ? 'Pausar' : 'Tocar'}>
+            {isPlaying ? <Pause size={26} fill="currentColor" /> : <Play size={26} fill="currentColor" className="ml-1" />}
+          </button>
+          <button onClick={next} className="p-2 active:scale-90 transition-transform" aria-label="Próxima"><SkipForward size={24} fill="currentColor" /></button>
+          <button onClick={() => setRepeat(!repeat)} className={`p-2 ${repeat ? 'text-blue-500' : 'opacity-40'}`} aria-label="Repetir"><Repeat size={18} /></button>
+        </div>
+
+        <div className="flex items-center gap-2 opacity-70">
+          <Volume2 size={14} />
+          <input type="range" min={0} max={100} value={volume} onChange={e => setVolume(parseInt(e.target.value))} aria-label="Volume"
+            className="w-32 h-1 rounded-lg appearance-none cursor-pointer accent-blue-600 bg-slate-300 dark:bg-slate-800" />
+        </div>
       </div>
 
+      {/* Biblioteca */}
+      <div className="px-5 mt-7">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-xs font-semibold opacity-60 flex items-center gap-1.5"><ListMusic size={14} className="text-blue-500" /> Sua biblioteca · {tracks.length}</h4>
+          {onImport && (
+            <button onClick={() => fileRef.current?.click()} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-blue-600 text-white active:scale-95 transition-transform">
+              <Plus size={13} /> Importar músicas
+            </button>
+          )}
+        </div>
+        <input ref={fileRef} type="file" accept="audio/*" multiple className="hidden" onChange={e => { if (e.target.files?.length) onImport?.(e.target.files); e.target.value = ''; }} />
+        {importing && <p className="text-xs text-blue-400 mb-2">{importing}</p>}
+        <div className="space-y-1.5">
+          {tracks.map((t, idx) => {
+            const on = currentTrackIndex === idx;
+            return (
+              <div key={`${t.mediaId ?? t.title}-${idx}`} className={`flex items-center gap-1 rounded-2xl ${on ? 'bg-blue-600 text-white' : card}`}>
+                <button onClick={() => { setCurrentTrackIndex(idx); setIsPlaying(true); }} className="flex-1 min-w-0 p-2.5 flex items-center gap-3 text-left">
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${t.color} flex items-center justify-center text-white shrink-0`}>
+                    {on && isPlaying ? <Volume2 size={16} /> : <Music size={16} />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{t.title}</p>
+                    <p className="text-[11px] opacity-70 truncate">{t.artist}</p>
+                  </div>
+                  <span className="font-mono text-[11px] opacity-60">{t.duration}</span>
+                </button>
+                {t.mediaId && onDeleteTrack && (
+                  <button onClick={() => onDeleteTrack(t.mediaId!)} className="p-2.5 opacity-60 hover:opacity-100" aria-label="Remover música"><Trash2 size={15} /></button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-[11px] opacity-40 mt-4 text-center">Dica: nomeie os arquivos como "Artista - Música.mp3" para preencher o artista.</p>
+      </div>
     </div>
   );
 }

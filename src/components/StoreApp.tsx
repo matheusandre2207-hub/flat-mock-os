@@ -110,6 +110,20 @@ function renderAppStoreIcon(iconName: string, size: number = 24, className?: str
           <circle cx="27" cy="25" r="3" fill="white" />
         </svg>
       );
+    case 'Folder':
+      return (
+        <svg viewBox="0 0 48 48" className={`w-full h-full p-2 ${className}`}>
+          <path d="M6 14a3 3 0 0 1 3-3h9l4 5h17a3 3 0 0 1 3 3v17a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z" fill="#3b82f6" />
+          <path d="M6 20h36v15a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z" fill="#60a5fa" />
+        </svg>
+      );
+    case 'Chat':
+      return (
+        <svg viewBox="0 0 48 48" className={`w-full h-full p-2 ${className}`}>
+          <path d="M8 12a5 5 0 0 1 5-5h22a5 5 0 0 1 5 5v16a5 5 0 0 1-5 5H21l-8 7v-7a5 5 0 0 1-5-5z" fill="#22c55e" />
+          <circle cx="17" cy="20" r="2.2" fill="#fff" /><circle cx="24" cy="20" r="2.2" fill="#fff" /><circle cx="31" cy="20" r="2.2" fill="#fff" />
+        </svg>
+      );
     case 'Globe': 
       return (
         <svg viewBox="0 0 48 48" className={`w-full h-full p-2 ${className}`}>
@@ -152,6 +166,9 @@ interface AppItem {
   desc: string;
   isCore?: boolean;
   iconUrl?: string;
+  color?: string;
+  bundled?: boolean;
+  imported?: boolean;
 }
 
 const STORE_APPS: AppItem[] = [
@@ -257,6 +274,32 @@ const STORE_APPS: AppItem[] = [
     downloads: 'Nativo',
     desc: 'Navegue por portais famosos e sites simulados do sistema com barra de endereços inteligente, histórico de pesquisa e abas rápidas.',
     isCore: true,
+  },
+  {
+    id: 'arquivos',
+    name: 'Arquivos',
+    category: 'system',
+    icon: 'Folder',
+    iconBgClass: 'bg-blue-500',
+    size: '12 MB',
+    version: 'v1.2.0',
+    rating: 4.5,
+    downloads: 'Nativo',
+    desc: 'Organize pastas, abra documentos e encontre tudo que está guardado no seu aparelho.',
+    isCore: true,
+  },
+  {
+    id: 'mensagens',
+    name: 'Mensagens',
+    category: 'system',
+    icon: 'Chat',
+    iconBgClass: 'bg-green-500',
+    size: '18 MB',
+    version: 'v2.0.1',
+    rating: 4.6,
+    downloads: 'Nativo',
+    desc: 'Converse com seus contatos, receba notificações e responda direto da barra de avisos.',
+    isCore: true,
   }
 ];
 
@@ -277,6 +320,7 @@ interface StoreAppProps {
   onDeleteCustomApp: (id: string) => void;
   onSetFollowWallpaper: (id: string, value: boolean) => void;
   onSetOrientation: (id: string, o: 'portrait' | 'landscape') => void;
+  onUpdateCustomApp: (id: string, patch: Partial<CustomApp>) => void;
 }
 
 // Ícone de um app da loja: imagem enviada pelo app importado, ou o desenho padrão
@@ -293,21 +337,24 @@ function customToItem(app: CustomApp): AppItem {
   return {
     id: app.id,
     name: app.name,
-    category: 'utilities',
+    color: app.color,
+    bundled: !!app.bundled,
+    imported: !app.bundled,
+    category: app.category ?? 'utilities',
     icon: 'Custom',
     iconBgClass: 'bg-slate-500',
     size: app.size,
     version: app.kind === 'folder' ? `${app.fileCount ?? 0} arquivos` : 'v1.0.0',
-    rating: 0,
-    downloads: 'Importado',
+    rating: app.rating ?? 0,
+    downloads: app.downloads ?? 'Importado',
     iconUrl: app.iconUrl,
-    desc: app.kind === 'folder'
+    desc: app.desc ? app.desc : app.kind === 'folder'
       ? 'Pacote instalado de uma pasta, com os arquivos dele. Roda com o mesmo acesso do AeroOS: instale só pastas de fontes confiáveis.'
       : 'App HTML importado por você. Roda isolado do sistema e não tem acesso aos seus dados.',
   };
 }
 
-export default function StoreApp({ darkMode, installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp, onSetFollowWallpaper, onSetOrientation }: StoreAppProps) {
+export default function StoreApp({ darkMode, installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp, onSetFollowWallpaper, onSetOrientation, onUpdateCustomApp }: StoreAppProps) {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -379,6 +426,9 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
   const [activeTab, setActiveTab] = useState<'all' | 'productivity' | 'games' | 'utilities' | 'creativity' | 'system'>('all');
   const [search, setSearch] = useState('');
   const [selectedApp, setSelectedApp] = useState<AppItem | null>(null);
+  const [heroIdx, setHeroIdx] = useState(0);
+  const [editing, setEditing] = useState<{ id: string; name: string; iconUrl?: string } | null>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
   
   // Install progress simulation
   const [installingId, setInstallingId] = useState<string | null>(null);
@@ -455,6 +505,34 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
     }
   };
 
+  // Destaques dinâmicos: novidades (importados e do sistema) primeiro, depois os clássicos da loja
+  const featured = [...catalog.filter(a => a.imported), ...catalog.filter(a => a.bundled), ...catalog.filter(a => !a.isCore && !a.imported && !a.bundled)].slice(0, 6);
+  useEffect(() => {
+    if (featured.length < 2) return;
+    const t = window.setInterval(() => setHeroIdx(i => i + 1), 5200);
+    return () => window.clearInterval(t);
+  }, [featured.length]);
+  const hero = featured[heroIdx % Math.max(1, featured.length)];
+  const heroColor = hero?.color ?? ['#7e22ce', '#0e7490', '#b45309', '#be185d', '#4338ca', '#047857'][(heroIdx % 6)];
+  const novidades = catalog.filter(a => a.imported || a.bundled);
+  const installedCount = catalog.filter(a => a.isCore || installedApps.includes(a.id)).length;
+
+  // Foto do app: recorta quadrado e reduz para 192 px (leve para guardar)
+  const pickPhoto = (file: File | undefined) => {
+    if (!file || !editing) return;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = c.height = 192;
+      const side = Math.min(img.width, img.height);
+      c.getContext('2d')?.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 192, 192);
+      setEditing(e => (e ? { ...e, iconUrl: c.toDataURL('image/png') } : e));
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  };
+
   const filteredApps = catalog.filter(app => {
     const matchesTab = activeTab === 'all' || app.category === activeTab;
     const matchesSearch = app.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -517,6 +595,41 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
           </div>
         )}
       </div>
+
+      {/* Editar nome e foto de um app adicionado */}
+      {editing && (
+        <div className="absolute inset-0 z-[60] bg-black/55 flex items-end" onClick={() => setEditing(null)}>
+          <div onClick={e => e.stopPropagation()} className={`w-full rounded-t-3xl p-5 pb-7 space-y-4 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
+            <h3 className="font-semibold text-center">Editar app</h3>
+            <div className="flex flex-col items-center gap-2.5">
+              <button type="button" onClick={() => photoRef.current?.click()}
+                className="w-24 h-24 rounded-[26px] overflow-hidden flex items-center justify-center text-4xl border border-slate-300 dark:border-white/10 bg-slate-100 dark:bg-slate-800">
+                {editing.iconUrl?.startsWith('data:image') ? <img src={editing.iconUrl} alt="" className="w-full h-full object-cover" /> : (editing.iconUrl || editing.name.charAt(0).toUpperCase())}
+              </button>
+              <div className="flex gap-3 text-xs font-semibold">
+                <button type="button" onClick={() => photoRef.current?.click()} className="text-blue-500">Trocar foto</button>
+                {editing.iconUrl && <button type="button" onClick={() => setEditing(e => (e ? { ...e, iconUrl: undefined } : e))} className="text-slate-500">Remover</button>}
+              </div>
+              <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={e => { pickPhoto(e.target.files?.[0]); e.target.value = ''; }} />
+            </div>
+            <label className="block">
+              <span className="text-[11px] font-semibold opacity-60">Nome do app</span>
+              <input value={editing.name} maxLength={30} onChange={e => setEditing(x => (x ? { ...x, name: e.target.value } : x))}
+                className="mt-1 w-full px-3.5 py-2.5 rounded-xl text-sm outline-none bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-blue-500/50" />
+            </label>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setEditing(null)} className="flex-1 py-3 rounded-2xl text-sm font-semibold bg-slate-100 dark:bg-white/10">Cancelar</button>
+              <button type="button" disabled={!editing.name.trim()}
+                onClick={() => {
+                  onUpdateCustomApp(editing.id, { name: editing.name.trim(), iconUrl: editing.iconUrl });
+                  setSelectedApp(a => (a && a.id === editing.id ? { ...a, name: editing.name.trim(), iconUrl: editing.iconUrl } : a));
+                  setEditing(null);
+                }}
+                className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white bg-blue-600 disabled:opacity-40">Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Menu do perfil (fecha ao tocar fora) */}
       {avatarMenuOpen && !selectedApp && (
@@ -702,6 +815,34 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
             )}
 
             {selectedApp.id.startsWith('custom-') && (
+              <div className="p-4 rounded-[20px] bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 flex flex-col gap-3">
+                <div>
+                  <h4 className="text-xs font-semibold text-slate-900 dark:text-white">Barra de status na paisagem</h4>
+                  <p className="text-[11px] opacity-60 mt-0.5 text-slate-500 dark:text-slate-400">As pílulas de hora, sinal e bateria mudam de cor conforme o fundo do app.</p>
+                </div>
+                <div className="flex p-1 rounded-2xl bg-slate-200/60 dark:bg-white/5 gap-1">
+                  {([['auto', 'Automática'], ['dark', 'Escura'], ['light', 'Clara']] as const).map(([t, l]) => {
+                    const cur = customApps.find(a => a.id === selectedApp.id)?.statusTone ?? 'auto';
+                    return (
+                      <button key={t} type="button" onClick={() => onUpdateCustomApp(selectedApp.id, { statusTone: t })}
+                        className={`flex-1 py-1.5 rounded-xl text-[11px] font-semibold transition-all ${cur === t ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>{l}</button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {selectedApp.id.startsWith('custom-') && (
+              <button
+                type="button"
+                onClick={() => setEditing({ id: selectedApp.id, name: selectedApp.name, iconUrl: selectedApp.iconUrl })}
+                className="w-full py-3 rounded-xl border-none cursor-pointer text-xs font-semibold bg-blue-500/10 hover:bg-blue-500/20 text-blue-500"
+              >
+                Editar nome e foto
+              </button>
+            )}
+
+            {selectedApp.id.startsWith('custom-') && !selectedApp.bundled && (
               <button
                 type="button"
                 onClick={() => { onDeleteCustomApp(selectedApp.id); setSelectedApp(null); }}
@@ -748,45 +889,54 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
           /* MAIN STORE HOME SCREEN */
           <div className="p-4 space-y-5">
             
-            {/* HERO PROMOTIONAL BANNER (Perfect Match to Photo) */}
-            <div 
-              onClick={() => {
-                setSelectedApp(STORE_APPS[1]);
-                playTone(493.88, 'sine', 0.05);
-              }}
-              className="relative rounded-[28px] aspect-[16/9.5] overflow-hidden bg-slate-800 text-white p-5 flex flex-col justify-between group cursor-pointer border border-white/5"
-            >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.15),transparent)] pointer-events-none" />
-              
-              {/* Purple Rocket & Star Graphic illustration on the right */}
-              <div className="absolute right-4 bottom-2 top-2 flex items-center justify-center pointer-events-none transform group-hover:scale-105 transition-transform duration-500">
-                <svg viewBox="0 0 100 100" className="w-28 h-28 drop-">
-                  <path d="M15,25 Q15,20 18,17 Q15,14 15,9 Q15,14 12,17 Q15,20 15,25 Z" fill="#d8b4fe" opacity="0.8" className="animate-pulse" />
-                  <path d="M85,45 Q85,42 87,40 Q85,38 85,35 Q85,38 83,40 Q85,42 85,45 Z" fill="#c084fc" opacity="0.6" />
-                  <path d="M75,75 Q75,70 78,67 Q75,64 75,59 Q75,64 72,67 Q75,70 75,75 Z" fill="#f472b6" opacity="0.9" />
-                  <g transform="translate(15, 15) rotate(-15 40 40)">
-                    <path d="M15,65 Q12,75 5,80 Q15,75 25,75 Q20,70 15,65 Z" fill="#ec4899" />
-                    <path d="M18,62 Q16,68 11,71 Q18,68 22,68 Q20,65 18,62 Z" fill="#f43f5e" />
-                    <path d="M22,50 L10,60 L20,40 Z" fill="#c084fc" />
-                    <path d="M40,22 L60,10 L50,20 Z" fill="#c084fc" />
-                    <rect x="20" y="20" width="40" height="40" rx="20" transform="rotate(-45 40 40)" fill="#a855f7" />
-                    <path d="M42.4,17.6 L62.4,17.6 L62.4,37.6 Z" transform="rotate(-45 40 40)" fill="#7e22ce" />
-                    <circle cx="47" cy="33" r="6" fill="#e9d5ff" />
-                    <circle cx="45" cy="31" r="2" fill="white" />
-                  </g>
-                </svg>
+            {/* DESTAQUE DINÂMICO: troca sozinho entre as novidades */}
+            {hero && (
+              <div
+                onClick={() => { setSelectedApp(hero); playTone(493.88, 'sine', 0.05); }}
+                className="relative rounded-[28px] aspect-[16/9.5] overflow-hidden text-white p-5 flex flex-col justify-between cursor-pointer border border-white/10"
+                style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${heroColor} 75%, #000), color-mix(in srgb, ${heroColor} 28%, #0b0b0f))` }}
+              >
+                <div key={hero.id} className="absolute inset-0 flex flex-col justify-between p-5" style={{ animation: 'storeFade .6s ease both' }}>
+                  <span className="self-start text-[11px] font-semibold px-3 py-1 bg-black/35 backdrop-blur rounded-full border border-white/10">
+                    {hero.imported ? 'IMPORTADO POR VOCÊ' : hero.bundled ? 'NOVIDADE' : 'APP RECOMENDADO'}
+                  </span>
+                  <div className="absolute right-5 top-1/2 -translate-y-1/2 w-24 h-24 rounded-[26px] bg-white/15 backdrop-blur border border-white/20 flex items-center justify-center overflow-hidden text-4xl">
+                    {appIconNode(hero, 52)}
+                  </div>
+                  <div className="relative z-10 pr-28">
+                    <h2 className="font-semibold text-xl leading-tight tracking-tight">{hero.name}</h2>
+                    <p className="text-xs text-white/70 mt-1 line-clamp-2">{hero.desc}</p>
+                  </div>
+                </div>
+                <div className="absolute bottom-3 right-5 flex gap-1.5">
+                  {featured.map((f, i) => (
+                    <span key={f.id} className={`h-1.5 rounded-full transition-all ${i === heroIdx % featured.length ? 'w-4 bg-white' : 'w-1.5 bg-white/40'}`} />
+                  ))}
+                </div>
               </div>
+            )}
+            <style>{`@keyframes storeFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }`}</style>
 
-              {/* Tag / Badge */}
-              <span className="self-start text-[11px] font-semibold px-3 py-1 bg-slate-900/80 text-slate-200 rounded-full border border-white/5">
-                APP RECOMENDADO
-              </span>
-
-              {/* Title & info description */}
-              <div className="space-y-1 relative z-10 text-left mb-2">
-                <h2 className="font-semibold text-lg leading-tight text-white tracking-tight">Flappy Bird Arcade</h2>
+            {activeTab === 'all' && !search && novidades.length > 0 && (
+              <div className="space-y-2.5">
+                <div className="flex items-baseline justify-between">
+                  <h3 className="text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">Novidades</h3>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-500">{installedCount} instalados · {catalog.length} disponíveis</span>
+                </div>
+                <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+                  {novidades.map(a => (
+                    <button key={a.id} onClick={() => { setSelectedApp(a); playTone(520, 'sine', 0.04); }}
+                      className="shrink-0 w-[104px] flex flex-col items-center gap-2 p-3 rounded-[20px] bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 active:scale-95 transition-transform">
+                      <div className="w-14 h-14 rounded-[16px] flex items-center justify-center overflow-hidden text-2xl" style={{ background: a.color ?? '#475569' }}>
+                        <span className="w-full h-full flex items-center justify-center text-white">{appIconNode(a, 28)}</span>
+                      </div>
+                      <span className="text-[11px] font-semibold leading-tight text-center line-clamp-2">{a.name}</span>
+                      <span className="text-[10px] text-slate-500">{installedApps.includes(a.id) ? 'Instalado' : a.downloads}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* CATEGORIES HORIZONTAL NAVIGATION PILLS */}
             <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">

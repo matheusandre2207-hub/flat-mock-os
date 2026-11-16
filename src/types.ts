@@ -30,6 +30,8 @@ export interface Track {
   durationSec: number;
   genre: string;
   color: string;
+  /** Música importada: id do arquivo na biblioteca de mídia */
+  mediaId?: string;
 }
 
 export interface Message {
