@@ -339,3 +339,21 @@ importados e para os que já vêm no sistema.
   - Apps recentes: cada cartão mostra a janela de verdade, ao vivo, na tela
     exata em que o app está, inclusive apps importados. Apps importados
     continuam rodando em segundo plano até serem fechados nos recentes.
+
+
+19. NOME E ÍCONES DE QUALQUER APP, ESTILO DOS ÍCONES E FUNDOS
+-------------------------------------------------------------
+  - Editar um app: na loja, abra o app e toque em "Editar nome e ícones". Na
+    tela inicial, em modo de edição, toque no pequeno ícone de ajustes no
+    canto de cada app. Funciona com apps padrão, da loja e importados.
+  - Cada app tem dois ícones: o "normal" (modo colorido) e o "cor do sistema"
+    (usado nos modos Escuro, Claro e Papel de parede). Sem imagem, vale o
+    desenho padrão. "Restaurar" volta ao nome e aos ícones originais.
+  - Estilo dos ícones: Configurações > Tela > "Estilo dos ícones":
+      Colorido (original), Escuro, Claro ou Papel de parede. O modo Papel de
+      parede também muda a cor de destaque do sistema.
+  - Dock e barra de navegação usam agora a mesma cor e o mesmo filtro: com os
+    mesmos valores de opacidade e desfoque ficam idênticas.
+  - Tela por baixo dos painéis: em Configurações > Tela > "Vidro", ajuste o
+    escurecimento e o desfoque que aparecem atrás da barra de apps, das
+    notificações e da central de controle quando abertas.

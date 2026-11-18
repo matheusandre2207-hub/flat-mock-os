@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePrefs, setPrefs, ClockPref, NavStyle, DrawerStyle, KbPrefs, GlassPrefs, GlassLevel, DockStyle, DEFAULTS } from '../prefs';
+import { usePrefs, setPrefs, ClockPref, NavStyle, DrawerStyle, KbPrefs, GlassPrefs, GlassLevel, DockStyle, IconMode, DEFAULTS } from '../prefs';
 import { getIconTint } from '../wallpaperTint';
 
 function Seg({ value, options, onChange }: { value: string; options: [string, string][]; onChange: (v: string) => void }) {
@@ -73,6 +73,17 @@ function GlassSection() {
           <Range title="Desfoque" value={g[k].blur} min={0} max={50} unit="px" onChange={n => set(k, { blur: n })} />
         </div>
       ))}
+      <div className="pt-1">
+        <h3 className="text-sm font-semibold">Tela por baixo dos painéis</h3>
+        <p className="text-xs opacity-55 mt-0.5">O quanto a tela escurece e desfoca atrás da barra de apps, das notificações e da central de controle quando abertas.</p>
+      </div>
+      {([['bdDrawer', 'Atrás da barra de apps'], ['bdNotif', 'Atrás das notificações'], ['bdControl', 'Atrás da central de controle']] as [keyof GlassPrefs, string][]).map(([k, label]) => (
+        <div key={k} className="space-y-2.5 rounded-xl p-3 bg-slate-100 dark:bg-slate-800/60">
+          <h4 className="text-xs font-semibold">{label}</h4>
+          <Range title="Escurecimento" value={g[k].op} min={0} max={90} unit="%" onChange={n => set(k, { op: n })} />
+          <Range title="Desfoque" value={g[k].blur} min={0} max={40} unit="px" onChange={n => set(k, { blur: n })} />
+        </div>
+      ))}
       <button type="button" onClick={() => setPrefs({ glass: DEFAULTS.glass })} className="text-xs font-semibold text-blue-500 border-0 bg-transparent cursor-pointer">Restaurar padrão</button>
     </div>
   );
@@ -132,8 +143,16 @@ export default function DisplayPrefs() {
   const { prefs } = usePrefs();
   return (
     <div className="rounded-2xl p-4 space-y-5 bg-white dark:bg-slate-900">
-      <Switch title="Ícones combinando com o papel de parede" desc="Pinta os ícones dos apps com a cor do papel de parede da tela inicial." checked={prefs.iconTint} onChange={b => setPrefs({ iconTint: b })} />
-      <AccentExplainer on={prefs.iconTint} />
+      <div className="space-y-2.5">
+        <div>
+          <h3 className="text-sm font-semibold">Estilo dos ícones</h3>
+          <p className="text-xs opacity-55 mt-0.5">Colorido usa as cores originais. Escuro, Claro e Papel de parede usam o ícone do modo "cor do sistema" de cada app, ou o desenho padrão nessas cores.</p>
+        </div>
+        <Seg value={prefs.iconMode ?? (prefs.iconTint ? 'wallpaper' : 'normal')}
+          onChange={v => setPrefs({ iconMode: v as IconMode, iconTint: v === 'wallpaper' })}
+          options={[['normal', 'Colorido'], ['dark', 'Escuro'], ['light', 'Claro'], ['wallpaper', 'Papel de parede']]} />
+      </div>
+      <AccentExplainer on={(prefs.iconMode ?? (prefs.iconTint ? 'wallpaper' : 'normal')) === 'wallpaper'} />
       <Switch title="Dois toques para apagar a tela" desc="Na tela inicial, toque duas vezes num espaço vazio. Dois toques na tela apagada ligam a tela de bloqueio." checked={prefs.doubleTapSleep} onChange={b => setPrefs({ doubleTapSleep: b })} />
       <div className="h-px bg-slate-200 dark:bg-white/10" />
       <ClockSection scope="lock" title="Relógio da tela de bloqueio" />

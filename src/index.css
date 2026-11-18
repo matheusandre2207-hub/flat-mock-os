@@ -1384,3 +1384,19 @@ button, [role="button"], a, input, select, textarea, label, summary { touch-acti
 
 /* Relógio da tela inicial é um widget: sem moldura própria */
 .home-widget.widget-clock { background: transparent; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 0; }
+
+
+/* Dock e barra de navegação: mesma cor e mesmo filtro, então com os mesmos valores ficam iguais */
+#bottom-scrim {
+  background: rgba(10, 10, 14, var(--g-nav-a, 0.46));
+  -webkit-backdrop-filter: blur(var(--g-nav-b, 30px)) saturate(1.5);
+  backdrop-filter: blur(var(--g-nav-b, 30px)) saturate(1.5);
+  border-top: 0;
+}
+#bottom-dock {
+  background: rgba(10, 10, 14, var(--g-dock-a, 0.46));
+  -webkit-backdrop-filter: blur(var(--g-dock-b, 30px)) saturate(1.5);
+  backdrop-filter: blur(var(--g-dock-b, 30px)) saturate(1.5);
+}
+#bottom-dock.drop-target { background: rgba(62, 99, 221, 0.5); }
+#screen-container.dock-fixed #bottom-dock { border-top: 0; }

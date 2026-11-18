@@ -22,6 +22,8 @@ import { WidgetView, WIDGETS } from './components/Widgets';
 import { usePrefs } from './prefs';
 import { COLS, ROWS, resolveLayout, occupiedCells, findFree, widgetSize, DEFAULT_CLOCK, ClockCfg, WidgetItem } from './homeGrid';
 import ClockWidgetEditor from './components/ClockWidgetEditor';
+import AppEditSheet from './components/AppEditSheet';
+import { loadOverrides, saveOverrides, setOverrideRegistry, getAppOverride, type AppOverride } from './appOverrides';
 import Calculator from './components/Calculator';
 import SettingsApp from './components/SettingsApp';
 import MessagesApp from './components/MessagesApp';
@@ -689,16 +691,33 @@ function AppIcon({ id, size = 52 }: { id: string; size?: number }) {
   const custom = meta ? undefined : getCustomApp(id);
   if (!meta && !custom) return null;
   const tint = getIconTint();
+  const ov = getAppOverride(id);
   const seed = hashId(id);
+  // Modo normal = colorido. Modos do sistema: escuro, claro ou da cor do papel de parede
+  const sys = tint.mode !== 'normal';
+  const bg = tint.mode === 'dark' ? 'linear-gradient(155deg,#34363b,#16171a)'
+    : tint.mode === 'light' ? 'linear-gradient(155deg,#ffffff,#dde0e6)'
+    : tintBackground(tint.h, tint.s, seed);
   const style = {
     '--s': `${size}px`,
-    ...(tint.enabled ? { background: tintBackground(tint.h, tint.s, seed) } : {}),
+    ...(sys ? { background: bg, color: tint.mode === 'light' ? '#1b1c1f' : '#fff' } : {}),
     ...(custom ? { '--custom-color': custom.color } : {}),
   } as React.CSSProperties;
-  if (!meta && custom) {
+  const cls = `app-tile ${meta ? meta.iconBgClass : 'tile-custom'}`;
+  const img = sys ? ov?.iconSystem : ov?.iconNormal;
+  if (img) {
+    return (
+      <div className={cls} style={style}>
+        {img.startsWith('data:image')
+          ? <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />
+          : <span className="custom-app-initial">{img}</span>}
+      </div>
+    );
+  }
+  if (custom) {
     const icon = custom.iconUrl;
     return (
-      <div className="app-tile tile-custom" style={style}>
+      <div className={cls} style={style}>
         {icon && icon.startsWith('data:image') ? (
           <img src={icon} alt="" className="w-full h-full object-cover" style={{ borderRadius: 'inherit' }} />
         ) : (
@@ -708,8 +727,8 @@ function AppIcon({ id, size = 52 }: { id: string; size?: number }) {
     );
   }
   return (
-    <div className={`app-tile ${meta.iconBgClass}`} style={style}>
-      {meta.icon}
+    <div className={cls} style={style}>
+      {meta!.icon}
     </div>
   );
 }
@@ -884,6 +903,17 @@ export default function App() {
     const byId = new Map(storedCustomApps.map(a => [a.id, a] as const));
     return [...BUNDLED_APPS.map(b => byId.get(b.id) ?? b), ...storedCustomApps.filter(a => !isBundledId(a.id))];
   }, [storedCustomApps]);
+
+  // Nome e ícones personalizados (valem para qualquer app)
+  const [appOverrides, setAppOverrides] = useState<Record<string, AppOverride>>(() => loadOverrides());
+  setOverrideRegistry(appOverrides);
+  const [editAppId, setEditAppId] = useState<string | null>(null);
+  const updateAppOverride = (id: string, ov: AppOverride | null) => setAppOverrides(prev => {
+    const next = { ...prev };
+    if (!ov || (!ov.name && !ov.iconNormal && !ov.iconSystem)) delete next[id]; else next[id] = ov;
+    saveOverrides(next);
+    return next;
+  });
   useEffect(() => {
     loadAllApps().then(setCustomApps).catch(() => { /* sem apps salvos */ });
   }, []);
@@ -907,12 +937,15 @@ export default function App() {
     contatos: ['Contatos', 'Contacts'],
     camera: ['Câmera', 'Camera']
   };
-  const appMetadata: Record<string, { label: string; icon: React.ReactNode; iconBgClass: string }> = {
+  const appMetadataRaw: Record<string, { label: string; icon: React.ReactNode; iconBgClass: string }> = {
     ...Object.fromEntries(
       Object.entries(baseAppMetadata).map(([id, m]) => [id, { ...m, label: appLabels[id]?.[language === 'en' ? 1 : 0] ?? m.label }])
     ),
     ...Object.fromEntries(customApps.map(a => [a.id, { label: a.name, icon: null, iconBgClass: 'tile-custom' }])),
   };
+  const appMetadata: Record<string, { label: string; icon: React.ReactNode; iconBgClass: string }> = Object.fromEntries(
+    Object.entries(appMetadataRaw).map(([id, m]) => [id, appOverrides[id]?.name ? { ...m, label: appOverrides[id].name as string } : m])
+  );
 
   // Theme & screen settings
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -2528,9 +2561,10 @@ export default function App() {
   const wpTint = useWallpaperTint(currentWallpaper.gradient);
   const tintInfo = { h: wpTint.h, s: wpTint.s, css: `hsl(${wpTint.h} ${wpTint.s}% 44%)` };
   const tint = tintInfo.css;
-  setIconTint({ enabled: prefs.iconTint, h: tintInfo.h, s: tintInfo.s });
+  const iconMode = prefs.iconMode ?? (prefs.iconTint ? 'wallpaper' : 'normal');
+  setIconTint({ enabled: iconMode === 'wallpaper', h: tintInfo.h, s: tintInfo.s, mode: iconMode });
   // Modo "ícones da cor do papel de parede": a cor de destaque do sistema segue a cor média dos ícones
-  const accentVars: Record<string, string> = prefs.iconTint ? buildAccentPalette(tintInfo.h, tintInfo.s) : {};
+  const accentVars: Record<string, string> = iconMode === 'wallpaper' ? buildAccentPalette(tintInfo.h, tintInfo.s) : {};
   const gl = prefs.glass;
   const glassVars: Record<string, string | number> = {
     '--g-drawer-a': gl.drawer.op / 100, '--g-drawer-b': `${gl.drawer.blur}px`,
@@ -2692,6 +2726,8 @@ export default function App() {
               onSetFollowWallpaper={handleSetCustomFollow}
               onSetOrientation={handleSetCustomOrientation}
               onUpdateCustomApp={patchCustomApp}
+              overrides={appOverrides}
+              onUpdateApp={updateAppOverride}
           />
         );
       case 'notas':
@@ -2763,6 +2799,11 @@ export default function App() {
           aria-label="Fechar"
           tabIndex={-1}
           className={anySheetOpen ? 'open' : ''}
+          style={(() => {
+            const b = utilitiesOpen ? gl.bdControl : notificationsOpen ? gl.bdNotif : gl.bdDrawer;
+            const f = b.blur ? `blur(${b.blur}px)` : 'none';
+            return { background: `rgba(0,0,0,${b.op / 100})`, backdropFilter: f, WebkitBackdropFilter: f } as React.CSSProperties;
+          })()}
           onClick={(e) => { e.stopPropagation(); closeSheets(); }}
           onTouchStart={(e) => e.stopPropagation()}
           onTouchMove={(e) => e.stopPropagation()}
@@ -3127,6 +3168,19 @@ export default function App() {
                         <X size={12} strokeWidth={3} />
                       </button>
                     )}
+                    {isEditingHome && (
+                      <button
+                        type="button"
+                        className="remove-badge"
+                        style={{ left: -4, right: 'auto' }}
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setEditAppId(appId); }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        aria-label="Editar nome e ícones"
+                      >
+                        <WidgetEditIcon size={11} strokeWidth={2.6} />
+                      </button>
+                    )}
                     <AppIcon id={appId} size={54} />
                     <span className="home-app-label">{meta.label}</span>
                   </div>
@@ -3396,6 +3450,8 @@ export default function App() {
               onSetFollowWallpaper={handleSetCustomFollow}
               onSetOrientation={handleSetCustomOrientation}
               onUpdateCustomApp={patchCustomApp}
+              overrides={appOverrides}
+              onUpdateApp={updateAppOverride}
             />
           </div>
         </div>
@@ -3738,6 +3794,29 @@ export default function App() {
 
         {/* Escolher widget */}
         <AnimatePresence>
+          {editAppId && (() => {
+            const id = editAppId;
+            const defName = appLabels[id]?.[language === 'en' ? 1 : 0] ?? baseAppMetadata[id]?.label ?? getCustomApp(id)?.name ?? id;
+            const ov = appOverrides[id];
+            return (
+              <motion.div key="app-edit" className="sheet-bottom-wrap" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setEditAppId(null)}>
+                <motion.div className="sheet-bottom" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 32, stiffness: 320 }}
+                  style={{ maxHeight: '90%', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                  <AppEditSheet
+                    defaultName={defName}
+                    name={ov?.name ?? defName}
+                    iconNormal={ov?.iconNormal}
+                    iconSystem={ov?.iconSystem}
+                    darkMode={darkMode}
+                    customized={!!ov}
+                    onSave={(v) => { updateAppOverride(id, { name: v.name === defName ? undefined : v.name, iconNormal: v.iconNormal, iconSystem: v.iconSystem }); setEditAppId(null); }}
+                    onReset={() => { updateAppOverride(id, null); setEditAppId(null); }}
+                    onCancel={() => setEditAppId(null)}
+                  />
+                </motion.div>
+              </motion.div>
+            );
+          })()}
           {editWidgetId && widgets.find(x => x.id === editWidgetId) && (() => {
             const ew = widgets.find(x => x.id === editWidgetId)!;
             const esz = widgetSize(ew) ?? { w: 4, h: 2 };

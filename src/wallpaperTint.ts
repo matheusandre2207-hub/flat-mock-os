@@ -8,8 +8,9 @@ const FALLBACK: TintHS = { h: 226, s: 60 };
 const NEUTRAL: TintHS = { h: 220, s: 18 };
 
 // Estado lido pelos ícones (que não recebem props da App)
-let iconTintState = { enabled: false, h: 226, s: 60 };
-export function setIconTint(v: { enabled: boolean; h: number; s: number }) { iconTintState = v; }
+export type IconMode = 'normal' | 'dark' | 'light' | 'wallpaper';
+let iconTintState: { enabled: boolean; h: number; s: number; mode: IconMode } = { enabled: false, h: 226, s: 60, mode: 'normal' };
+export function setIconTint(v: { enabled: boolean; h: number; s: number; mode?: IconMode }) { iconTintState = { mode: v.enabled ? 'wallpaper' : 'normal', ...v } as typeof iconTintState; }
 export function getIconTint() { return iconTintState; }
 
 function toHsl(r: number, g: number, b: number) {

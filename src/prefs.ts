@@ -9,7 +9,12 @@ export type NavStyle = 'gestures' | 'buttons';
 export type DrawerStyle = 'list' | 'grid';
 
 export interface GlassLevel { op: number; blur: number }   // op: opacidade do fundo (0 a 100), blur em px
-export interface GlassPrefs { drawer: GlassLevel; notif: GlassLevel; control: GlassLevel; nav: GlassLevel; dock: GlassLevel }
+export interface GlassPrefs {
+  drawer: GlassLevel; notif: GlassLevel; control: GlassLevel; nav: GlassLevel; dock: GlassLevel;
+  // tela que fica por baixo da barra de apps, das notificações e da central de controle
+  bdDrawer: GlassLevel; bdNotif: GlassLevel; bdControl: GlassLevel;
+}
+export type IconMode = 'normal' | 'dark' | 'light' | 'wallpaper';
 export type DockStyle = 'floating' | 'fixed';
 
 export interface KbPrefs {
@@ -33,6 +38,8 @@ export interface Prefs {
   kb: KbPrefs;
   glass: GlassPrefs;
   dockStyle: DockStyle;
+  /** Estilo dos ícones; se ausente, vem de iconTint (compatibilidade) */
+  iconMode?: IconMode;
   home: ClockPref;
   lock: ClockPref;
 }
@@ -41,7 +48,7 @@ export const DEFAULTS: Prefs = {
   navStyle: 'gestures',
   drawerStyle: 'list',
   dockStyle: 'floating',
-  glass: { drawer: { op: 72, blur: 28 }, notif: { op: 72, blur: 28 }, control: { op: 72, blur: 28 }, nav: { op: 46, blur: 30 }, dock: { op: 38, blur: 24 } },
+  glass: { drawer: { op: 72, blur: 28 }, notif: { op: 72, blur: 28 }, control: { op: 72, blur: 28 }, nav: { op: 46, blur: 30 }, dock: { op: 46, blur: 30 }, bdDrawer: { op: 38, blur: 10 }, bdNotif: { op: 45, blur: 14 }, bdControl: { op: 45, blur: 14 } },
   iconTint: false,
   doubleTapSleep: true,
   kb: { enabled: true, theme: 'auto', opacity: 82, blur: 24, height: 46, radius: 12, sound: false, vibrate: true, autoCap: true, accents: true },
@@ -54,7 +61,7 @@ const KEY = 'os_prefs';
 export function getPrefs(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) || '{}');
-    return { ...DEFAULTS, ...p, kb: { ...DEFAULTS.kb, ...p.kb }, glass: { drawer: { ...DEFAULTS.glass.drawer, ...p.glass?.drawer }, notif: { ...DEFAULTS.glass.notif, ...p.glass?.notif }, control: { ...DEFAULTS.glass.control, ...p.glass?.control }, nav: { ...DEFAULTS.glass.nav, ...p.glass?.nav }, dock: { ...DEFAULTS.glass.dock, ...p.glass?.dock } }, home: { ...DEFAULTS.home, ...p.home }, lock: { ...DEFAULTS.lock, ...p.lock } };
+    return { ...DEFAULTS, ...p, kb: { ...DEFAULTS.kb, ...p.kb }, glass: { drawer: { ...DEFAULTS.glass.drawer, ...p.glass?.drawer }, notif: { ...DEFAULTS.glass.notif, ...p.glass?.notif }, control: { ...DEFAULTS.glass.control, ...p.glass?.control }, nav: { ...DEFAULTS.glass.nav, ...p.glass?.nav }, dock: { ...DEFAULTS.glass.dock, ...p.glass?.dock }, bdDrawer: { ...DEFAULTS.glass.bdDrawer, ...p.glass?.bdDrawer }, bdNotif: { ...DEFAULTS.glass.bdNotif, ...p.glass?.bdNotif }, bdControl: { ...DEFAULTS.glass.bdControl, ...p.glass?.bdControl } }, home: { ...DEFAULTS.home, ...p.home }, lock: { ...DEFAULTS.lock, ...p.lock } };
   } catch {
     return DEFAULTS;
   }

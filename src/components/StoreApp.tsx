@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { CustomApp, MAX_CUSTOM_APP_BYTES, extractIcon, extractTitle, makeCustomAppId, pickColor } from '../customApps';
 import { installFolderApp } from '../folderApps';
+import AppEditSheet from './AppEditSheet';
+import type { AppOverride } from '../appOverrides';
 import { Search as SearchIcon, X as ClearIcon } from 'lucide-react';
 
 function renderAppStoreIcon(iconName: string, size: number = 24, className?: string) {
@@ -322,6 +324,8 @@ interface StoreAppProps {
   onSetFollowWallpaper: (id: string, value: boolean) => void;
   onSetOrientation: (id: string, o: 'portrait' | 'landscape') => void;
   onUpdateCustomApp: (id: string, patch: Partial<CustomApp>) => void;
+  overrides: Record<string, AppOverride>;
+  onUpdateApp: (id: string, o: AppOverride | null) => void;
 }
 
 // Ícone de um app da loja: imagem enviada pelo app importado, ou o desenho padrão
@@ -355,12 +359,17 @@ function customToItem(app: CustomApp): AppItem {
   };
 }
 
-export default function StoreApp({ darkMode, installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp, onSetFollowWallpaper, onSetOrientation, onUpdateCustomApp }: StoreAppProps) {
+export default function StoreApp({ darkMode, installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp, onSetFollowWallpaper, onSetOrientation, onUpdateCustomApp, overrides, onUpdateApp }: StoreAppProps) {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
-  const catalog: AppItem[] = [...STORE_APPS, ...customApps.map(customToItem)];
+  const baseCatalog: AppItem[] = [...STORE_APPS, ...customApps.map(customToItem)];
+  // Nome e ícone personalizados valem para qualquer app (padrão, da loja ou importado)
+  const catalog: AppItem[] = baseCatalog.map(a => {
+    const ov = overrides[a.id];
+    return ov ? { ...a, name: ov.name ?? a.name, iconUrl: ov.iconNormal ?? a.iconUrl } : a;
+  });
 
   useEffect(() => {
     if (!importMsg) return;
@@ -428,8 +437,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
   const [search, setSearch] = useState('');
   const [selectedApp, setSelectedApp] = useState<AppItem | null>(null);
   const [heroIdx, setHeroIdx] = useState(0);
-  const [editing, setEditing] = useState<{ id: string; name: string; iconUrl?: string } | null>(null);
-  const photoRef = useRef<HTMLInputElement>(null);
+  const [editing, setEditing] = useState<{ id: string } | null>(null);
   
   // Install progress simulation
   const [installingId, setInstallingId] = useState<string | null>(null);
@@ -518,21 +526,6 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
   const novidades = catalog.filter(a => a.imported || a.bundled);
   const installedCount = catalog.filter(a => a.isCore || installedApps.includes(a.id)).length;
 
-  // Foto do app: recorta quadrado e reduz para 192 px (leve para guardar)
-  const pickPhoto = (file: File | undefined) => {
-    if (!file || !editing) return;
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = c.height = 192;
-      const side = Math.min(img.width, img.height);
-      c.getContext('2d')?.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 192, 192);
-      setEditing(e => (e ? { ...e, iconUrl: c.toDataURL('image/png') } : e));
-      URL.revokeObjectURL(url);
-    };
-    img.src = url;
-  };
 
   const filteredApps = catalog.filter(app => {
     const matchesTab = activeTab === 'all' || app.category === activeTab;
@@ -597,40 +590,36 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
         )}
       </div>
 
-      {/* Editar nome e foto de um app adicionado */}
-      {editing && (
-        <div className="absolute inset-0 z-[60] bg-black/55 flex items-end" onClick={() => setEditing(null)}>
-          <div onClick={e => e.stopPropagation()} className={`w-full rounded-t-3xl p-5 pb-7 space-y-4 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
-            <h3 className="font-semibold text-center">Editar app</h3>
-            <div className="flex flex-col items-center gap-2.5">
-              <button type="button" onClick={() => photoRef.current?.click()}
-                className="w-24 h-24 rounded-[26px] overflow-hidden flex items-center justify-center text-4xl border border-slate-300 dark:border-white/10 bg-slate-100 dark:bg-slate-800">
-                {editing.iconUrl?.startsWith('data:image') ? <img src={editing.iconUrl} alt="" className="w-full h-full object-cover" /> : (editing.iconUrl || editing.name.charAt(0).toUpperCase())}
-              </button>
-              <div className="flex gap-3 text-xs font-semibold">
-                <button type="button" onClick={() => photoRef.current?.click()} className="text-blue-500">Trocar foto</button>
-                {editing.iconUrl && <button type="button" onClick={() => setEditing(e => (e ? { ...e, iconUrl: undefined } : e))} className="text-slate-500">Remover</button>}
-              </div>
-              <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={e => { pickPhoto(e.target.files?.[0]); e.target.value = ''; }} />
-            </div>
-            <label className="block">
-              <span className="text-[11px] font-semibold opacity-60">Nome do app</span>
-              <input value={editing.name} maxLength={30} onChange={e => setEditing(x => (x ? { ...x, name: e.target.value } : x))}
-                className="mt-1 w-full px-3.5 py-2.5 rounded-xl text-sm outline-none bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-blue-500/50" />
-            </label>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setEditing(null)} className="flex-1 py-3 rounded-2xl text-sm font-semibold bg-slate-100 dark:bg-white/10">Cancelar</button>
-              <button type="button" disabled={!editing.name.trim()}
-                onClick={() => {
-                  onUpdateCustomApp(editing.id, { name: editing.name.trim(), iconUrl: editing.iconUrl });
-                  setSelectedApp(a => (a && a.id === editing.id ? { ...a, name: editing.name.trim(), iconUrl: editing.iconUrl } : a));
+      {/* Editar nome e ícones de qualquer app */}
+      {editing && (() => {
+        const base = baseCatalog.find(a => a.id === editing.id);
+        const ov = overrides[editing.id];
+        return (
+          <div className="absolute inset-0 z-[60] bg-black/55 flex items-end" onClick={() => setEditing(null)}>
+            <div onClick={e => e.stopPropagation()} className={`w-full max-h-[90%] overflow-y-auto rounded-t-3xl p-5 pb-7 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
+              <AppEditSheet
+                defaultName={base?.name ?? ''}
+                name={ov?.name ?? base?.name ?? ''}
+                iconNormal={ov?.iconNormal}
+                iconSystem={ov?.iconSystem}
+                darkMode={darkMode}
+                customized={!!ov}
+                onSave={v => {
+                  onUpdateApp(editing.id, { name: v.name === base?.name ? undefined : v.name, iconNormal: v.iconNormal, iconSystem: v.iconSystem });
+                  setSelectedApp(a => (a && a.id === editing.id ? { ...a, name: v.name, iconUrl: v.iconNormal ?? base?.iconUrl } : a));
                   setEditing(null);
                 }}
-                className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white bg-blue-600 disabled:opacity-40">Salvar</button>
+                onReset={() => {
+                  onUpdateApp(editing.id, null);
+                  setSelectedApp(a => (a && a.id === editing.id && base ? { ...a, name: base.name, iconUrl: base.iconUrl } : a));
+                  setEditing(null);
+                }}
+                onCancel={() => setEditing(null)}
+              />
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Menu do perfil (fecha ao tocar fora) */}
       {avatarMenuOpen && !selectedApp && (
@@ -833,13 +822,13 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
               </div>
             )}
 
-            {selectedApp.id.startsWith('custom-') && (
+            {(
               <button
                 type="button"
-                onClick={() => setEditing({ id: selectedApp.id, name: selectedApp.name, iconUrl: selectedApp.iconUrl })}
+                onClick={() => setEditing({ id: selectedApp.id })}
                 className="w-full py-3 rounded-xl border-none cursor-pointer text-xs font-semibold bg-blue-500/10 hover:bg-blue-500/20 text-blue-500"
               >
-                Editar nome e foto
+                Editar nome e ícones
               </button>
             )}
 
