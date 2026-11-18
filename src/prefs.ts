@@ -8,6 +8,10 @@ export interface ClockPref {
 export type NavStyle = 'gestures' | 'buttons';
 export type DrawerStyle = 'list' | 'grid';
 
+export interface GlassLevel { op: number; blur: number }   // op: opacidade do fundo (0 a 100), blur em px
+export interface GlassPrefs { drawer: GlassLevel; notif: GlassLevel; control: GlassLevel; nav: GlassLevel; dock: GlassLevel }
+export type DockStyle = 'floating' | 'fixed';
+
 export interface KbPrefs {
   enabled: boolean;                                   // usar o teclado do AeroOS em vez do teclado do celular
   theme: 'auto' | 'dark' | 'light' | 'wallpaper';
@@ -27,6 +31,8 @@ export interface Prefs {
   iconTint: boolean;
   doubleTapSleep: boolean;
   kb: KbPrefs;
+  glass: GlassPrefs;
+  dockStyle: DockStyle;
   home: ClockPref;
   lock: ClockPref;
 }
@@ -34,6 +40,8 @@ export interface Prefs {
 export const DEFAULTS: Prefs = {
   navStyle: 'gestures',
   drawerStyle: 'list',
+  dockStyle: 'floating',
+  glass: { drawer: { op: 72, blur: 28 }, notif: { op: 72, blur: 28 }, control: { op: 72, blur: 28 }, nav: { op: 46, blur: 30 }, dock: { op: 38, blur: 24 } },
   iconTint: false,
   doubleTapSleep: true,
   kb: { enabled: true, theme: 'auto', opacity: 82, blur: 24, height: 46, radius: 12, sound: false, vibrate: true, autoCap: true, accents: true },
@@ -46,7 +54,7 @@ const KEY = 'os_prefs';
 export function getPrefs(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) || '{}');
-    return { ...DEFAULTS, ...p, kb: { ...DEFAULTS.kb, ...p.kb }, home: { ...DEFAULTS.home, ...p.home }, lock: { ...DEFAULTS.lock, ...p.lock } };
+    return { ...DEFAULTS, ...p, kb: { ...DEFAULTS.kb, ...p.kb }, glass: { drawer: { ...DEFAULTS.glass.drawer, ...p.glass?.drawer }, notif: { ...DEFAULTS.glass.notif, ...p.glass?.notif }, control: { ...DEFAULTS.glass.control, ...p.glass?.control }, nav: { ...DEFAULTS.glass.nav, ...p.glass?.nav }, dock: { ...DEFAULTS.glass.dock, ...p.glass?.dock } }, home: { ...DEFAULTS.home, ...p.home }, lock: { ...DEFAULTS.lock, ...p.lock } };
   } catch {
     return DEFAULTS;
   }

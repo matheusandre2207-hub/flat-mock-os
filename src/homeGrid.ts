@@ -1,19 +1,37 @@
 export const COLS = 4;
 export const ROWS = 6;
 export interface Cell { c: number; r: number }
-export interface WidgetItem { id: string; type: string; c: number; r: number }
+export interface ClockCfg {
+  style: 'digital' | 'thin' | 'stacked' | 'minimal' | 'analog';
+  color: string;                         // 'auto' = branco do sistema
+  date: boolean;
+  weight: 200 | 400 | 700;
+  align: 'left' | 'center' | 'right';
+  bg: 'none' | 'glass' | 'solid';
+}
+export const DEFAULT_CLOCK: ClockCfg = { style: 'digital', color: 'auto', date: true, weight: 200, align: 'center', bg: 'none' };
+
+export interface WidgetItem { id: string; type: string; c: number; r: number; w?: number; h?: number; cfg?: ClockCfg }
 
 export const WSIZE: Record<string, { w: number; h: number }> = {
   calendario: { w: 2, h: 2 },
   clima: { w: 2, h: 1 },
   bateria: { w: 2, h: 1 },
-  musica: { w: 4, h: 1 }
+  musica: { w: 4, h: 1 },
+  relogio: { w: 4, h: 2 }
 };
+
+// Tamanho de um widget: o escolhido pelo usuário ou o padrão do tipo
+export function widgetSize(w: WidgetItem): { w: number; h: number } | null {
+  const s = WSIZE[w.type];
+  if (!s) return null;
+  return { w: w.w ?? s.w, h: w.h ?? s.h };
+}
 
 const key = (c: number, r: number) => `${c},${r}`;
 
 export function widgetCells(w: WidgetItem): string[] {
-  const s = WSIZE[w.type];
+  const s = widgetSize(w);
   const out: string[] = [];
   if (!s) return out;
   for (let dc = 0; dc < s.w; dc++) for (let dr = 0; dr < s.h; dr++) out.push(key(w.c + dc, w.r + dr));

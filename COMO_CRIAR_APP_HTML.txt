@@ -314,3 +314,28 @@ importados e para os que já vêm no sistema.
   - Música: toque na lixeira de qualquer faixa para apagá-la, inclusive as
     que vêm no sistema. "Restaurar músicas padrão" traz elas de volta.
   - Loja: use o campo de pesquisa no topo para achar apps e jogos.
+
+
+18. RELÓGIO, VIDRO, DOCK, VOLTAR E APPS RECENTES
+------------------------------------------------
+  - Relógio da tela inicial: agora é um widget. Segure a tela inicial para
+    editar, toque no relógio (ou no ícone de ajustes dele) e escolha estilo
+    (digital, fino, empilhado, minimal, analógico), tamanho (2x1 até 4x3),
+    cor, fundo (sem fundo, vidro, sólido), alinhamento, espessura e data.
+    Para mudar a posição, arraste o widget. O relógio da tela de bloqueio
+    continua em Configurações > Tela.
+  - Vidro: Configurações > Tela > "Vidro" define a opacidade do fundo e o
+    desfoque da barra de apps lateral, das notificações, da central de
+    controle, da barra de navegação e da dock.
+  - Dock: Configurações > Tela > "Estilo da dock": Flutuante (com margem) ou
+    Fixa (barra de ponta a ponta colada na base).
+  - Modo imersivo: tela cheia e o gesto de voltar do celular passam a
+    controlar só o AeroOS. Navegadores não conseguem esconder a barra do
+    celular sem tela cheia: no Android instale o AeroOS (Adicionar à tela
+    inicial) e no iPhone use Compartilhar > Adicionar à Tela de Início.
+  - Voltar: volta para a tela anterior (por exemplo, da Galeria para
+    Configurações, se você abriu a Galeria a partir dali) e só então vai
+    para o início.
+  - Apps recentes: cada cartão mostra a janela de verdade, ao vivo, na tela
+    exata em que o app está, inclusive apps importados. Apps importados
+    continuam rodando em segundo plano até serem fechados nos recentes.

@@ -1261,13 +1261,13 @@ export default function SettingsApp({
                     <div className="h-px mx-4 bg-slate-200 dark:bg-white/10" />
                     <div className="p-4 flex items-center justify-between gap-4">
                       <div className="min-w-0">
-                        <h3 className="text-sm font-semibold">Tela cheia automática</h3>
-                        <p className="text-xs opacity-55 mt-0.5">Entra em tela cheia no primeiro toque ao abrir o sistema. No iPhone, use Compartilhar &gt; Adicionar à Tela de Início.</p>
+                        <h3 className="text-sm font-semibold">Modo imersivo</h3>
+                        <p className="text-xs opacity-55 mt-0.5">Esconde a barra de status e a navegação do celular (tela cheia) e usa o gesto de voltar do celular só dentro do AeroOS. No iPhone, use Compartilhar &gt; Adicionar à Tela de Início.</p>
                       </div>
                       <input
                         type="checkbox"
                         checked={autoFullscreen}
-                        aria-label="Tela cheia automática"
+                        aria-label="Modo imersivo"
                         onChange={(e) => {
                           setAutoFullscreen?.(e.target.checked);
                           playTone(e.target.checked ? 600 : 400, 'sine', 0.05);

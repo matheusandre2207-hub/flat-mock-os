@@ -20,7 +20,8 @@ import BatteryDots from './components/BatteryDots';
 import ClockFace from './components/ClockFace';
 import { WidgetView, WIDGETS } from './components/Widgets';
 import { usePrefs } from './prefs';
-import { COLS, ROWS, resolveLayout, occupiedCells, findFree, WidgetItem } from './homeGrid';
+import { COLS, ROWS, resolveLayout, occupiedCells, findFree, widgetSize, DEFAULT_CLOCK, ClockCfg, WidgetItem } from './homeGrid';
+import ClockWidgetEditor from './components/ClockWidgetEditor';
 import Calculator from './components/Calculator';
 import SettingsApp from './components/SettingsApp';
 import MessagesApp from './components/MessagesApp';
@@ -43,7 +44,7 @@ import GalleryApp from './components/GalleryApp';
 import SystemKeyboard from './components/SystemKeyboard';
 import StatusPills from './components/StatusPills';
 import LandscapePanel from './components/LandscapePanel';
-import { Wifi as WifiIcon, Bluetooth as BluetoothIcon, Plane as PlaneIcon, Moon as MoonIcon, Signal as SignalIcon } from 'lucide-react';
+import { Wifi as WifiIcon, Bluetooth as BluetoothIcon, Plane as PlaneIcon, Moon as MoonIcon, Signal as SignalIcon, Settings2 as WidgetEditIcon } from 'lucide-react';
 import { BUNDLED_APPS, isBundledId } from './bundledApps';
 import { listMedia, putMedia, deleteMedia, audioFromFile, fmtDuration, TRACK_COLORS, type MediaItem } from './mediaStorage';
 import type { Track as MediaTrack } from './types';
@@ -2056,7 +2057,16 @@ export default function App() {
   };
 
   // Open an app safely
+  // Histórico de telas: "voltar" retorna ao app anterior (ex.: Galeria aberta a partir de Configurações) antes de ir ao início
+  const backStack = useRef<string[]>([]);
   const openApp = (appName: string) => {
+    if (activeApp && activeApp !== appName) {
+      const st = backStack.current;
+      if (st[st.length - 1] !== activeApp) st.push(activeApp);
+      if (st.length > 12) st.shift();
+    } else if (!activeApp) {
+      backStack.current = [];
+    }
     setActiveApp(appName);
     setAppDrawerOpen(false);
     setNotificationsOpen(false);
@@ -2070,7 +2080,14 @@ export default function App() {
 
   // Close active app
   const closeApp = () => {
+    backStack.current = [];
     setActiveApp(null);
+  };
+
+  const backOrClose = () => {
+    const prev = backStack.current.pop();
+    if (prev && prev !== activeApp) setActiveApp(prev);
+    else { backStack.current = []; setActiveApp(null); }
   };
 
   // Navegação por botões (estilo Android): voltar, início e apps em segundo plano
@@ -2082,13 +2099,14 @@ export default function App() {
     if (activeApp === 'galeria' && selectedGalleryImg !== null) { setSelectedGalleryImg(null); return; }
     const event = new Event('mockos-back', { cancelable: true });
     const wasCancelled = !window.dispatchEvent(event);
-    if (!wasCancelled) closeApp();
+    if (!wasCancelled) backOrClose();
   };
   const goHome = () => {
     setRecentAppsOpen(false);
     closeSheets();
     setIsEditingHome(false);
     setSelectedGalleryImg(null);
+    backStack.current = [];
     setActiveApp(null);
   };
   const toggleRecents = () => {
@@ -2243,7 +2261,7 @@ export default function App() {
           const event = new Event('mockos-back', { cancelable: true });
           const wasCancelled = !window.dispatchEvent(event);
           if (!wasCancelled) {
-            closeApp();
+            backOrClose();
           }
         }
       }
@@ -2256,7 +2274,7 @@ export default function App() {
     const dragVerticalLeftToRight = Math.abs(touchEndY - (touchStartYRef.current || touchEndY));
     // Zona de abertura: a esquerda da tela, em qualquer altura
     const leftZone = Math.max(70, screenW() * 0.3);
-    if (!noGesture && touchStartX !== null && touchStartX < leftZone && dragDistanceLeftToRight > 80 && dragVerticalLeftToRight < dragDistanceLeftToRight * 0.5) {
+    if (!noGesture && !notificationsOpen && !utilitiesOpen && !activePopup && touchStartX !== null && touchStartX < leftZone && dragDistanceLeftToRight > 80 && dragVerticalLeftToRight < dragDistanceLeftToRight * 0.5) {
       setAppDrawerOpen(true);
       setNotificationsOpen(false);
       setUtilitiesOpen(false);
@@ -2300,6 +2318,54 @@ export default function App() {
     return () => window.removeEventListener('pointerup', enter);
   }, [autoFullscreen, isFullscreen]);
 
+  // Modo imersivo: o voltar do celular (gesto ou botão) controla só o AeroOS e não sai da página
+  const goBackRef = useRef<() => void>(() => {});
+  goBackRef.current = goBack;
+  useEffect(() => {
+    if (!autoFullscreen) return;
+    try { history.pushState({ aeroos: 1 }, ''); } catch { /* ok */ }
+    const onPop = () => { goBackRef.current(); try { history.pushState({ aeroos: 1 }, ''); } catch { /* ok */ } };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [autoFullscreen]);
+
+  // Apps em segundo plano: a janela de verdade (ao vivo), reduzida dentro de cada cartão,
+  // então o cartão mostra exatamente a tela em que o app está, inclusive apps importados
+  const hasLiveWindow = (id: string) => typeof document !== 'undefined' && !!document.querySelector(`.app-window[data-app="${id}"]`);
+  useEffect(() => {
+    if (!recentAppsOpen) return;
+    const container = document.getElementById('screen-container');
+    if (!container) return;
+    const PROPS = ['transition', 'visibility', 'opacity', 'pointer-events', 'z-index', 'inset', 'left', 'top', 'width', 'height', 'transform-origin', 'transform', 'border-radius'];
+    const styled = new Set<HTMLElement>();
+    const clear = (w: HTMLElement) => PROPS.forEach(p => w.style.removeProperty(p));
+    let raf = 0;
+    const tick = () => {
+      const cr = container.getBoundingClientRect();
+      const seen = new Set<HTMLElement>();
+      container.querySelectorAll<HTMLElement>('.recent-card[data-app]').forEach(card => {
+        const win = container.querySelector<HTMLElement>(`.app-window[data-app="${card.dataset.app}"]`);
+        const body = card.querySelector<HTMLElement>('.recent-card-body');
+        if (!win || !body) return;
+        const w = win.offsetWidth, h = win.offsetHeight;
+        if (!w || !h) return;
+        const wantH = Math.round((body.clientWidth * h) / w);
+        if (Math.abs(body.offsetHeight - wantH) > 1) body.style.height = `${wantH}px`;
+        const br = body.getBoundingClientRect();
+        const scale = br.width / w;
+        const set = (k: string, v: string) => win.style.setProperty(k, v, 'important');
+        set('transition', 'none'); set('visibility', 'visible'); set('opacity', '1'); set('pointer-events', 'none'); set('z-index', '41');
+        set('inset', 'auto'); set('left', `${br.left - cr.left}px`); set('top', `${br.top - cr.top}px`); set('width', `${w}px`); set('height', `${h}px`);
+        set('transform-origin', 'top left'); set('transform', `scale(${scale})`); set('border-radius', `${16 / scale}px`);
+        styled.add(win); seen.add(win);
+      });
+      styled.forEach(w => { if (!seen.has(w)) { clear(w); styled.delete(w); } });
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(raf); styled.forEach(clear); };
+  }, [recentAppsOpen]);
+
   // Barra do sistema com a mesma cor da tela: nada de faixa preta sobrando
   useEffect(() => {
     let color = darkMode ? '#0B0B0C' : '#F5F5F6';
@@ -2332,6 +2398,8 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('os_widgets') || '[]'); } catch { return []; }
   });
   const [widgetSheet, setWidgetSheet] = useState(false);
+  const [editWidgetId, setEditWidgetId] = useState<string | null>(null);
+  const widgetJustDragged = useRef(false);
 
   // Arrastar widgets pela tela inicial (no modo de edição)
   const [widgetDrag, setWidgetDrag] = useState<WidgetDrag | null>(null);
@@ -2339,14 +2407,27 @@ export default function App() {
   const [screenOff, setScreenOff] = useState(false);
   useEffect(() => { localStorage.setItem('os_home_layout', JSON.stringify(layout)); }, [layout]);
   useEffect(() => { localStorage.setItem('os_widgets', JSON.stringify(widgets)); }, [widgets]);
+  // Migração: o relógio da tela inicial agora é um widget (uma única vez, usando o estilo que o usuário já tinha)
+  useEffect(() => {
+    if (localStorage.getItem('os_clock_widget_v1')) return;
+    try { localStorage.setItem('os_clock_widget_v1', '1'); } catch { /* ok */ }
+    if (prefs.home.style === 'none') return;
+    setWidgets(ws => {
+      if (ws.some(x => x.type === 'relogio')) return ws;
+      const spot = findFree(occupiedCells({}, ws), 4, 2, { c: 0, r: 0 });
+      if (!spot) return ws;
+      const cfg: ClockCfg = { ...DEFAULT_CLOCK, style: prefs.home.style === 'stacked' ? 'stacked' : 'digital', align: prefs.home.align ?? 'center' };
+      return [{ id: 'w-clock', type: 'relogio', c: spot.c, r: spot.r, w: 4, h: 2, cfg }, ...ws];
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const autoStart = prefs.home.style === 'none' || prefs.home.pos !== 'top' ? 0 : prefs.home.style === 'stacked' ? 3 : 2;
+  const autoStart = 0;
   const placed = resolveLayout(homeApps.filter(a => installedApps.includes(a)), layout, widgets, autoStart);
   stateRef.current = { placed, widgets };
 
   const handleWidgetPressStart = (e: React.MouseEvent | React.TouchEvent, w: WidgetItem) => {
     if (!isEditingHome) return;
-    const sz = WIDGETS[w.type];
+    const sz = widgetSize(w);
     const g = document.getElementById('home-grid');
     if (!sz || !g) return;
     const p = 'touches' in e ? e.touches[0] : e;
@@ -2403,6 +2484,7 @@ export default function App() {
       const d = widgetDragRef.current;
       widgetDragRef.current = null;
       setWidgetDrag(null);
+      if (d?.moved) { widgetJustDragged.current = true; window.setTimeout(() => { widgetJustDragged.current = false; }, 80); }
       if (!d || !d.moved || !d.target) return;
       const t = d.target;
       setWidgets(ws => ws.map(x => (x.id === d.id ? { ...x, c: t.c, r: t.r } : x)));
@@ -2419,10 +2501,26 @@ export default function App() {
     };
   }, [widgetDragId]);
 
+  const updateWidget = (id: string, patch: Partial<WidgetItem>) => setWidgets(ws => ws.map(x => (x.id === id ? { ...x, ...patch } : x)));
+  const resizeWidget = (id: string, nw: number, nh: number): boolean => {
+    const cur = widgets.find(x => x.id === id);
+    if (!cur) return false;
+    const occ = occupiedCells({}, widgets.filter(x => x.id !== id));
+    const free = (c: number, r: number) => {
+      if (c + nw > COLS || r + nh > ROWS) return false;
+      for (let dc = 0; dc < nw; dc++) for (let dr = 0; dr < nh; dr++) if (occ.has(`${c + dc},${r + dr}`)) return false;
+      return true;
+    };
+    const spot = free(cur.c, cur.r) ? { c: cur.c, r: cur.r } : findFree(occ, nw, nh, { c: cur.c, r: cur.r });
+    if (!spot) return false;
+    updateWidget(id, { w: nw, h: nh, c: spot.c, r: spot.r });
+    return true;
+  };
+
   const addWidget = (type: string) => {
     const sz = WIDGETS[type];
     const spot = findFree(occupiedCells(placed, widgets), sz.w, sz.h, { c: 0, r: autoStart });
-    if (spot) setWidgets(ws => [...ws, { id: 'w' + Date.now(), type, c: spot.c, r: spot.r }]);
+    if (spot) setWidgets(ws => [...ws, { id: 'w' + Date.now(), type, c: spot.c, r: spot.r, ...(type === 'relogio' ? { cfg: { ...DEFAULT_CLOCK } } : {}) }]);
     setWidgetSheet(false);
   };
 
@@ -2433,6 +2531,14 @@ export default function App() {
   setIconTint({ enabled: prefs.iconTint, h: tintInfo.h, s: tintInfo.s });
   // Modo "ícones da cor do papel de parede": a cor de destaque do sistema segue a cor média dos ícones
   const accentVars: Record<string, string> = prefs.iconTint ? buildAccentPalette(tintInfo.h, tintInfo.s) : {};
+  const gl = prefs.glass;
+  const glassVars: Record<string, string | number> = {
+    '--g-drawer-a': gl.drawer.op / 100, '--g-drawer-b': `${gl.drawer.blur}px`,
+    '--g-notif-a': gl.notif.op / 100, '--g-notif-b': `${gl.notif.blur}px`,
+    '--g-control-a': gl.control.op / 100, '--g-control-b': `${gl.control.blur}px`,
+    '--g-nav-a': gl.nav.op / 100, '--g-nav-b': `${gl.nav.blur}px`,
+    '--g-dock-a': gl.dock.op / 100, '--g-dock-b': `${gl.dock.blur}px`,
+  };
 
   // Apps HTML que seguem o papel de parede: recebem o tema por postMessage
   const appTheme = buildAppTheme(tintInfo.h, tintInfo.s, darkMode);
@@ -2620,11 +2726,11 @@ export default function App() {
       <div className="absolute overflow-hidden" style={{ left: stage.left, top: stage.top, width: stage.w, height: stage.h }}>
       <div
         id="screen-container"
-        className={`${darkMode ? 'dark theme-dark' : 'theme-light'} ${activeApp !== null ? 'app-open' : ''} ${immersiveApp ? 'app-immersive' : ''} ${(anySheetOpen || recentAppsOpen) ? 'sheet-open' : ''} ${justUnlocked ? 'just-unlocked' : ''} ${edge ? 'edge' : ''} ${prefs.iconTint ? 'icons-tinted' : ''} ${prefs.navStyle === 'buttons' ? 'nav-buttons' : ''} ${(isLocked && !isBooting) ? 'is-locked' : ''} ${(landscape && activeApp !== null) ? 'app-rotated' : ''}`}
+        className={`${darkMode ? 'dark theme-dark' : 'theme-light'} ${activeApp !== null ? 'app-open' : ''} ${immersiveApp ? 'app-immersive' : ''} ${(anySheetOpen || recentAppsOpen) ? 'sheet-open' : ''} ${justUnlocked ? 'just-unlocked' : ''} ${edge ? 'edge' : ''} ${prefs.iconTint ? 'icons-tinted' : ''} ${prefs.navStyle === 'buttons' ? 'nav-buttons' : ''} ${(isLocked && !isBooting) ? 'is-locked' : ''} ${(landscape && activeApp !== null) ? 'app-rotated' : ''} ${prefs.dockStyle === 'fixed' ? 'dock-fixed' : ''}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ position: 'absolute', inset: 0, '--stage-w': `${stage.w}px`, '--stage-h': `${stage.h}px`, filter: `brightness(${brightness}%)`, '--tint': tint, '--tint-h': `${tintInfo.h}deg`, '--tint-s': `${tintInfo.s}%`, ...accentVars } as React.CSSProperties}
+        style={{ position: 'absolute', inset: 0, '--stage-w': `${stage.w}px`, '--stage-h': `${stage.h}px`, filter: `brightness(${brightness}%)`, '--tint': tint, '--tint-h': `${tintInfo.h}deg`, '--tint-s': `${tintInfo.s}%`, ...accentVars, ...glassVars } as React.CSSProperties}
       >
 
         {/* Filtro de luz noturna */}
@@ -2897,12 +3003,6 @@ export default function App() {
             }
           }}
         >
-          {!isEditingHome && prefs.home.style !== 'none' && (
-            <div className={`home-clock-layer pos-${prefs.home.pos}`} style={{ '--i': 0 } as React.CSSProperties}>
-              <ClockFace scope="home" time={systemTime} date={systemDate} />
-            </div>
-          )}
-
           {isEditingHome && (
             <div className="edit-bar" onClick={(e) => e.stopPropagation()}>
               <span>{language === 'en' ? 'Edit' : 'Editar'}</span>
@@ -2924,14 +3024,14 @@ export default function App() {
 
           <div id="home-grid" className="home-grid home-bg-area">
             {widgets.map(w => {
-              const sz = WIDGETS[w.type];
+              const sz = widgetSize(w);
               if (!sz) return null;
               const dd = widgetDrag && widgetDrag.id === w.id && widgetDrag.moved ? widgetDrag : null;
               return (
                 <div
                   key={w.id}
-                  data-no-sheet-gesture=""
-                  className={`home-widget ${isEditingHome && !dd ? 'jiggle' : ''}`}
+                  {...(isEditingHome ? { 'data-no-sheet-gesture': '' } : {})}
+                  className={`home-widget ${w.type === 'relogio' ? 'widget-clock' : ''} ${isEditingHome && !dd ? 'jiggle' : ''}`}
                   style={{
                     gridColumn: `${w.c + 1} / span ${sz.w}`,
                     gridRow: `${w.r + 1} / span ${sz.h}`,
@@ -2940,7 +3040,7 @@ export default function App() {
                   } as React.CSSProperties}
                   onMouseDown={(e) => handleWidgetPressStart(e, w)}
                   onTouchStart={(e) => handleWidgetPressStart(e, w)}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); if (isEditingHome && w.type === 'relogio' && !widgetJustDragged.current) setEditWidgetId(w.id); }}
                 >
                   {isEditingHome && (
                     <button
@@ -2952,8 +3052,18 @@ export default function App() {
                       <X size={12} strokeWidth={3} />
                     </button>
                   )}
+                  {isEditingHome && w.type === 'relogio' && (
+                    <button type="button" className="remove-badge" style={{ right: 38, top: 8 }} aria-label="Editar relógio"
+                      onClick={(e) => { e.stopPropagation(); setEditWidgetId(w.id); }}>
+                      <WidgetEditIcon size={12} strokeWidth={2.6} />
+                    </button>
+                  )}
                   <WidgetView
                     type={w.type}
+                    time={systemTime}
+                    date={systemDate}
+                    cfg={w.cfg}
+                    size={sz}
                     batteryLevel={batteryLevel}
                     isCharging={isCharging}
                     track={allTracks[currentTrackIndex]}
@@ -2961,7 +3071,7 @@ export default function App() {
                     onPrev={() => setCurrentTrackIndex(currentTrackIndex === 0 ? allTracks.length - 1 : currentTrackIndex - 1)}
                     onToggle={() => setMusicPlaying(!musicPlaying)}
                     onNext={() => setCurrentTrackIndex((currentTrackIndex + 1) % allTracks.length)}
-                    onOpen={(id) => { if (!isEditingHome) openApp(id); }}
+                    onOpen={(id) => { if (!isEditingHome && appMetadata[id]) openApp(id); }}
                   />
                 </div>
               );
@@ -3086,7 +3196,7 @@ export default function App() {
            ========================================== */}
         
         {/* APP A: CONFIGURAÇÕES */}
-        <div className={`app-window ${activeApp === 'configuracoes' ? '' : 'closed'}`}>
+        <div data-app={'configuracoes'} className={`app-window ${activeApp === 'configuracoes' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3146,7 +3256,7 @@ export default function App() {
         </div>
 
         {/* APP B: CALCULADORA */}
-        <div className={`app-window ${activeApp === 'calculadora' ? '' : 'closed'}`}>
+        <div data-app={'calculadora'} className={`app-window ${activeApp === 'calculadora' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3159,7 +3269,7 @@ export default function App() {
         </div>
 
         {/* APP C: GALERIA */}
-        <div className={`app-window ${activeApp === 'galeria' ? '' : 'closed'}`}>
+        <div data-app={'galeria'} className={`app-window ${activeApp === 'galeria' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3181,7 +3291,7 @@ export default function App() {
         </div>
 
         {/* APP D: MENSAGENS */}
-        <div className={`app-window ${activeApp === 'mensagens' ? '' : 'closed'}`}>
+        <div data-app={'mensagens'} className={`app-window ${activeApp === 'mensagens' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3205,7 +3315,7 @@ export default function App() {
         </div>
 
         {/* APP E: MÚSICA */}
-        <div className={`app-window ${activeApp === 'musica' ? '' : 'closed'}`}>
+        <div data-app={'musica'} className={`app-window ${activeApp === 'musica' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3233,7 +3343,7 @@ export default function App() {
         </div>
 
         {/* APP F: NAVEGADOR */}
-        <div className={`app-window ${activeApp === 'navegador' ? '' : 'closed'}`}>
+        <div data-app={'navegador'} className={`app-window ${activeApp === 'navegador' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3246,7 +3356,7 @@ export default function App() {
         </div>
 
         {/* APP G: ARQUIVOS */}
-        <div className={`app-window ${activeApp === 'arquivos' ? '' : 'closed'}`}>
+        <div data-app={'arquivos'} className={`app-window ${activeApp === 'arquivos' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3266,7 +3376,7 @@ export default function App() {
         </div>
 
         {/* APP H: LOJA DE APLICATIVOS */}
-        <div className={`app-window ${activeApp === 'loja' ? '' : 'closed'}`}>
+        <div data-app={'loja'} className={`app-window ${activeApp === 'loja' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3291,7 +3401,7 @@ export default function App() {
         </div>
 
         {/* APP I: BLOCO DE NOTAS */}
-        <div className={`app-window ${activeApp === 'notas' ? '' : 'closed'}`}>
+        <div data-app={'notas'} className={`app-window ${activeApp === 'notas' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3304,7 +3414,7 @@ export default function App() {
         </div>
 
         {/* APP J: FLAPPY BIRD */}
-        <div className={`app-window ${activeApp === 'flappy' ? '' : 'closed'}`}>
+        <div data-app={'flappy'} className={`app-window ${activeApp === 'flappy' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3317,7 +3427,7 @@ export default function App() {
         </div>
 
         {/* APP K: PREVISÃO DO TEMPO */}
-        <div className={`app-window immersive ${activeApp === 'clima' ? '' : 'closed'}`}>
+        <div data-app={'clima'} className={`app-window immersive ${activeApp === 'clima' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3330,7 +3440,7 @@ export default function App() {
         </div>
 
         {/* APP L: MINI PAINT */}
-        <div className={`app-window ${activeApp === 'paint' ? '' : 'closed'}`}>
+        <div data-app={'paint'} className={`app-window ${activeApp === 'paint' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3343,7 +3453,7 @@ export default function App() {
         </div>
 
         {/* APP M: TELEFONE */}
-        <div className={`app-window ${activeApp === 'telefone' ? '' : 'closed'}`}>
+        <div data-app={'telefone'} className={`app-window ${activeApp === 'telefone' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3356,7 +3466,7 @@ export default function App() {
         </div>
 
         {/* APP N: CONTATOS */}
-        <div className={`app-window ${activeApp === 'contatos' ? '' : 'closed'}`}>
+        <div data-app={'contatos'} className={`app-window ${activeApp === 'contatos' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3375,7 +3485,7 @@ export default function App() {
         </div>
 
         {/* APP O: CÂMERA */}
-        <div className={`app-window immersive cam ${activeApp === 'camera' ? '' : 'closed'}`}>
+        <div data-app={'camera'} className={`app-window immersive cam ${activeApp === 'camera' ? '' : 'closed'}`}>
           <div className="app-window-header">
             <div className="app-window-drag-handle" />
             <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3389,7 +3499,7 @@ export default function App() {
 
         {/* Apps HTML importados: cada um roda isolado num iframe sem acesso ao sistema */}
         {customApps.map(app => (
-          <div key={app.id} className={`app-window ${activeApp === app.id ? '' : 'closed'}`}>
+          <div key={app.id} data-app={app.id} className={`app-window ${activeApp === app.id ? '' : 'closed'}`}>
             <div className="app-window-header">
               <div className="app-window-drag-handle" />
               <button className="app-window-close-btn" onClick={() => closeApp()} title="Minimizar">
@@ -3397,7 +3507,7 @@ export default function App() {
               </button>
             </div>
             <div className="app-content p-0" style={{ display: 'flex', flexDirection: 'column', paddingBottom: 0 }}>
-              {activeApp === app.id && app.kind === 'folder' && (
+              {(activeApp === app.id || openedApps.includes(app.id)) && app.kind === 'folder' && (
                 folderServer === 'ready' ? (
                   <iframe
                     ref={(el) => { customFrames.current[app.id] = el; }}
@@ -3416,7 +3526,7 @@ export default function App() {
                   <div className="flex-1 flex items-center justify-center text-xs opacity-60">Preparando…</div>
                 )
               )}
-              {activeApp === app.id && app.kind !== 'folder' && (
+              {(activeApp === app.id || openedApps.includes(app.id)) && app.kind !== 'folder' && (
                 <iframe
                   ref={(el) => { customFrames.current[app.id] = el; }}
                   title={app.name}
@@ -3516,6 +3626,7 @@ export default function App() {
                   return (
                     <motion.div
                       key={appName}
+                      data-app={appName}
                       className="recent-card"
                       drag="y"
                       dragConstraints={{ top: -300, bottom: 0 }}
@@ -3541,19 +3652,11 @@ export default function App() {
                         <span>{meta.label}</span>
                       </div>
                       <div className="recent-card-body">
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '384px',
-                            height: '488px',
-                            transformOrigin: 'top left',
-                            transform: 'scale(0.5)'
-                          }}
-                        >
-                          {renderAppPreviewContent(appName)}
-                        </div>
+                        {!hasLiveWindow(appName) && (
+                          <div style={{ position: 'absolute', top: 0, left: 0, width: '384px', height: '488px', transformOrigin: 'top left', transform: 'scale(0.5)' }}>
+                            {renderAppPreviewContent(appName)}
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   );
@@ -3584,6 +3687,10 @@ export default function App() {
             <motion.div
               key={activePopup.id}
               className="toast"
+              data-no-sheet-gesture=""
+              onTouchStart={(e: React.TouchEvent) => e.stopPropagation()}
+              onTouchMove={(e: React.TouchEvent) => e.stopPropagation()}
+              onTouchEnd={(e: React.TouchEvent) => e.stopPropagation()}
               style={{ pointerEvents: toastLive ? 'auto' : 'none' }}
               initial={{ y: -90, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -3631,6 +3738,25 @@ export default function App() {
 
         {/* Escolher widget */}
         <AnimatePresence>
+          {editWidgetId && widgets.find(x => x.id === editWidgetId) && (() => {
+            const ew = widgets.find(x => x.id === editWidgetId)!;
+            const esz = widgetSize(ew) ?? { w: 4, h: 2 };
+            return (
+              <motion.div key="widget-edit" className="sheet-bottom-wrap" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setEditWidgetId(null)}>
+                <motion.div className="sheet-bottom" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 32, stiffness: 320 }}
+                  style={{ maxHeight: '82%', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                  <ClockWidgetEditor
+                    cfg={ew.cfg ?? DEFAULT_CLOCK}
+                    size={esz}
+                    onCfg={(patch) => updateWidget(ew.id, { cfg: { ...(ew.cfg ?? DEFAULT_CLOCK), ...patch } })}
+                    onSize={(w, h) => resizeWidget(ew.id, w, h)}
+                    onRemove={() => { setWidgets(ws => ws.filter(x => x.id !== ew.id)); setEditWidgetId(null); }}
+                    onClose={() => setEditWidgetId(null)}
+                  />
+                </motion.div>
+              </motion.div>
+            );
+          })()}
           {widgetSheet && (
             <motion.div
               className="sheet-bottom-wrap"

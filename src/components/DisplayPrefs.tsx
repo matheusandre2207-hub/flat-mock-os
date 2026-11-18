@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePrefs, setPrefs, ClockPref, NavStyle, DrawerStyle, KbPrefs } from '../prefs';
+import { usePrefs, setPrefs, ClockPref, NavStyle, DrawerStyle, KbPrefs, GlassPrefs, GlassLevel, DockStyle, DEFAULTS } from '../prefs';
 import { getIconTint } from '../wallpaperTint';
 
 function Seg({ value, options, onChange }: { value: string; options: [string, string][]; onChange: (v: string) => void }) {
@@ -55,6 +55,29 @@ function AccentExplainer({ on }: { on: boolean }) {
   );
 }
 
+function GlassSection() {
+  const { prefs } = usePrefs();
+  const g = prefs.glass;
+  const items: [keyof GlassPrefs, string][] = [['drawer', 'Barra de apps (lateral)'], ['notif', 'Notificações'], ['control', 'Central de controle'], ['nav', 'Barra de navegação'], ['dock', 'Dock']];
+  const set = (k: keyof GlassPrefs, patch: Partial<GlassLevel>) => setPrefs({ glass: { ...g, [k]: { ...g[k], ...patch } } });
+  return (
+    <div className="space-y-3">
+      <div>
+        <h3 className="text-sm font-semibold">Vidro: opacidade e desfoque</h3>
+        <p className="text-xs opacity-55 mt-0.5">Escolha o quanto cada superfície mostra o que está atrás dela (menos opacidade) e o quanto desfoca.</p>
+      </div>
+      {items.map(([k, label]) => (
+        <div key={k} className="space-y-2.5 rounded-xl p-3 bg-slate-100 dark:bg-slate-800/60">
+          <h4 className="text-xs font-semibold">{label}</h4>
+          <Range title="Opacidade do fundo" value={g[k].op} min={0} max={100} unit="%" onChange={n => set(k, { op: n })} />
+          <Range title="Desfoque" value={g[k].blur} min={0} max={50} unit="px" onChange={n => set(k, { blur: n })} />
+        </div>
+      ))}
+      <button type="button" onClick={() => setPrefs({ glass: DEFAULTS.glass })} className="text-xs font-semibold text-blue-500 border-0 bg-transparent cursor-pointer">Restaurar padrão</button>
+    </div>
+  );
+}
+
 function KeyboardSection() {
   const { prefs } = usePrefs();
   const kb = prefs.kb;
@@ -72,7 +95,7 @@ function KeyboardSection() {
           options={[['auto', 'Automático'], ['dark', 'Escuro'], ['light', 'Claro'], ['wallpaper', 'Papel de parede']]} />
         <p className="text-xs opacity-55">{kb.theme === 'auto' ? 'Segue o modo claro/escuro do sistema.' : kb.theme === 'wallpaper' ? 'Usa a cor do seu papel de parede nas teclas.' : 'Fixo, independente do tema do sistema.'}</p>
       </div>
-      <Range title="Transparência" value={kb.opacity} min={30} max={100} unit="%" onChange={n => set({ opacity: n })} />
+      <Range title="Opacidade do fundo" value={kb.opacity} min={30} max={100} unit="%" onChange={n => set({ opacity: n })} />
       <Range title="Desfoque do fundo" value={kb.blur} min={0} max={40} unit="px" onChange={n => set({ blur: n })} />
       <Range title="Altura das teclas" value={kb.height} min={34} max={60} unit="px" onChange={n => set({ height: n })} />
       <Range title="Arredondamento" value={kb.radius} min={4} max={22} unit="px" onChange={n => set({ radius: n })} />
@@ -113,8 +136,6 @@ export default function DisplayPrefs() {
       <AccentExplainer on={prefs.iconTint} />
       <Switch title="Dois toques para apagar a tela" desc="Na tela inicial, toque duas vezes num espaço vazio. Dois toques na tela apagada ligam a tela de bloqueio." checked={prefs.doubleTapSleep} onChange={b => setPrefs({ doubleTapSleep: b })} />
       <div className="h-px bg-slate-200 dark:bg-white/10" />
-      <ClockSection scope="home" title="Relógio da tela inicial" />
-      <div className="h-px bg-slate-200 dark:bg-white/10" />
       <ClockSection scope="lock" title="Relógio da tela de bloqueio" />
       <div className="h-px bg-slate-200 dark:bg-white/10" />
       <div className="space-y-2.5">
@@ -140,6 +161,16 @@ export default function DisplayPrefs() {
         <Seg value={prefs.drawerStyle} onChange={v => setPrefs({ drawerStyle: v as DrawerStyle })}
           options={[['list', 'Lista'], ['grid', 'Grade']]} />
       </div>
+      <div className="h-px bg-slate-200 dark:bg-white/10" />
+      <div className="space-y-2.5">
+        <div>
+          <h3 className="text-sm font-semibold">Estilo da dock</h3>
+          <p className="text-xs opacity-55 mt-0.5">{prefs.dockStyle === 'fixed' ? 'Barra fixa, colada na base da tela e de ponta a ponta.' : 'Flutuante, com margem e cantos arredondados.'}</p>
+        </div>
+        <Seg value={prefs.dockStyle} onChange={v => setPrefs({ dockStyle: v as DockStyle })} options={[['floating', 'Flutuante'], ['fixed', 'Fixa']]} />
+      </div>
+      <div className="h-px bg-slate-200 dark:bg-white/10" />
+      <GlassSection />
       <div className="h-px bg-slate-200 dark:bg-white/10" />
       <KeyboardSection />
     </div>

@@ -915,8 +915,8 @@
   display: flex;
   flex-direction: column;
   flex: none;
-  width: 196px;
-  height: 320px;
+  width: min(60vw, 236px);
+  height: auto;
   overflow: hidden;
   border-radius: 22px;
   background: #161618;
@@ -934,7 +934,7 @@
   min-width: 0;
 }
 .recent-card-head span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.recent-card-body { position: relative; flex: 1; overflow: hidden; pointer-events: none; background: var(--bg); color: var(--text); }
+.recent-card-body { position: relative; flex: none; min-height: 140px; overflow: hidden; pointer-events: none; background: var(--bg); color: var(--text); }
 .recent-clear {
   align-self: center;
   height: 40px;
@@ -1336,3 +1336,51 @@ button, [role="button"], a, input, select, textarea, label, summary { touch-acti
 #screen-container { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
 .no-scrollbar { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
+
+/* ==========================================================================
+   VIDRO: opacidade e desfoque ajustáveis (Configurações > Tela)
+   ========================================================================== */
+#app-drawer {
+  background: color-mix(in srgb, var(--surface) calc(var(--g-drawer-a, 0.72) * 100%), transparent);
+  -webkit-backdrop-filter: blur(var(--g-drawer-b, 28px)) saturate(1.5);
+  backdrop-filter: blur(var(--g-drawer-b, 28px)) saturate(1.5);
+}
+#panel-notifications {
+  background: color-mix(in srgb, var(--surface) calc(var(--g-notif-a, 0.72) * 100%), transparent);
+  -webkit-backdrop-filter: blur(var(--g-notif-b, 28px)) saturate(1.5);
+  backdrop-filter: blur(var(--g-notif-b, 28px)) saturate(1.5);
+}
+#panel-utilities {
+  background: color-mix(in srgb, var(--surface) calc(var(--g-control-a, 0.72) * 100%), transparent);
+  -webkit-backdrop-filter: blur(var(--g-control-b, 28px)) saturate(1.5);
+  backdrop-filter: blur(var(--g-control-b, 28px)) saturate(1.5);
+}
+#bottom-scrim {
+  background: rgba(6, 6, 10, var(--g-nav-a, 0.46));
+  -webkit-backdrop-filter: blur(var(--g-nav-b, 30px)) saturate(1.5) brightness(0.8);
+  backdrop-filter: blur(var(--g-nav-b, 30px)) saturate(1.5) brightness(0.8);
+}
+#bottom-dock {
+  background: rgba(14, 14, 16, var(--g-dock-a, 0.38));
+  -webkit-backdrop-filter: blur(var(--g-dock-b, 24px)) saturate(1.4);
+  backdrop-filter: blur(var(--g-dock-b, 24px)) saturate(1.4);
+}
+#bottom-dock.drop-target { background: rgba(62, 99, 221, 0.5); }
+
+/* Dock fixa: barra de ponta a ponta, colada na área do sistema */
+#screen-container.dock-fixed { --dock-b: var(--sys-bottom); }
+#screen-container.dock-fixed #bottom-dock {
+  left: 0;
+  right: 0;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  height: calc(var(--dock-h) + 14px);
+  border-radius: 0;
+  gap: 26px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Relógio da tela inicial é um widget: sem moldura própria */
+.home-widget.widget-clock { background: transparent; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 0; }
