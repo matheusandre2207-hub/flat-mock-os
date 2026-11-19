@@ -1105,7 +1105,10 @@ export default function App() {
 
   // Drawer Long press state for adding shortcuts
   const [longPressActiveApp, setLongPressActiveApp] = useState<string | null>(null);
+  const [drawerPressedApp, setDrawerPressedApp] = useState<string | null>(null);
   const drawerLongPressTimerRef = useRef<any>(null);
+  const drawerGestureMovedRef = useRef(false);
+  const drawerLongPressTriggeredRef = useRef(false);
   
   // Apps in the dock (Max 4)
   const [dockApps, setDockApps] = useState<string[]>(() => {
@@ -2016,6 +2019,8 @@ export default function App() {
     }
 
     drawerPressCoordsRef.current = { startX: clientX, startY: clientY, currentX: clientX, currentY: clientY };
+    drawerGestureMovedRef.current = false;
+    drawerLongPressTriggeredRef.current = false;
 
     drawerLongPressTimerRef.current = setTimeout(() => {
       if (navigator.vibrate) {
@@ -2059,7 +2064,8 @@ export default function App() {
     // If they moved significantly, cancel long press (they are scrolling)
     const diffX = Math.abs(clientX - drawerPressCoordsRef.current.startX);
     const diffY = Math.abs(clientY - drawerPressCoordsRef.current.startY);
-    if (diffX > 15 || diffY > 15) {
+    if (diffX > 12 || diffY > 12) {
+      drawerGestureMovedRef.current = true;
       if (drawerLongPressTimerRef.current) {
         clearTimeout(drawerLongPressTimerRef.current);
         drawerLongPressTimerRef.current = null;
@@ -2465,6 +2471,9 @@ export default function App() {
   const [widgetSheet, setWidgetSheet] = useState(false);
   const [editWidgetId, setEditWidgetId] = useState<string | null>(null);
   const widgetJustDragged = useRef(false);
+  const widgetPressTimerRef = useRef<any>(null);
+  const widgetLongPressedRef = useRef(false);
+  const widgetPressStartRef = useRef<{x:number;y:number}|null>(null);
 
   // Arrastar widgets pela tela inicial (no modo de edição)
   const [widgetDrag, setWidgetDrag] = useState<WidgetDrag | null>(null);
@@ -2491,7 +2500,18 @@ export default function App() {
   stateRef.current = { placed, widgets };
 
   const handleWidgetPressStart = (e: React.MouseEvent | React.TouchEvent, w: WidgetItem) => {
-    if (!isEditingHome) return;
+    if (!isEditingHome) {
+      widgetLongPressedRef.current = false;
+      const pt = 'touches' in e ? e.touches[0] : e;
+      if (pt) widgetPressStartRef.current = { x: pt.clientX, y: pt.clientY };
+      if (widgetPressTimerRef.current) clearTimeout(widgetPressTimerRef.current);
+      widgetPressTimerRef.current = setTimeout(() => {
+        widgetLongPressedRef.current = true;
+        setIsEditingHome(true);
+        if (navigator.vibrate) navigator.vibrate(45);
+      }, 620);
+      return;
+    }
     const sz = widgetSize(w);
     const g = document.getElementById('home-grid');
     if (!sz || !g) return;
@@ -2755,6 +2775,8 @@ export default function App() {
         return (
           <StoreApp
             darkMode={darkMode}
+            userAvatar={userAvatar}
+            userName={userName}
             installedApps={installedApps}
             onInstall={handleInstallApp}
             onUninstall={handleUninstallApp}
@@ -3129,8 +3151,14 @@ export default function App() {
                   onTouchStart={(e) => handleWidgetPressStart(e, w)}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (widgetPressTimerRef.current) { clearTimeout(widgetPressTimerRef.current); widgetPressTimerRef.current = null; }
+                    if (widgetLongPressedRef.current) { widgetLongPressedRef.current = false; return; }
                     if (isEditingHome) { if (w.type === 'relogio' && !widgetJustDragged.current) setEditWidgetId(w.id); return; }
-                    if (!(e.target as HTMLElement).closest('button, input, textarea, a')) setIsEditingHome(true);
+                    if (!(e.target as HTMLElement).closest('button, input, textarea, a')) {
+                      const targetApp: Record<string, string> = { clima: 'clima', musica: 'musica', foto: 'galeria', calendario: 'notas', bateria: 'configuracoes', memoria: 'configuracoes', notas: 'notas', tarefas: 'notas', relogio: 'configuracoes', contagem: 'notas', passos: 'configuracoes', frase: 'notas' };
+                      const appId = targetApp[w.type];
+                      if (appId && appMetadata[appId]) openApp(appId);
+                    }
                   }}
                 >
                   {isEditingHome && (
@@ -3275,7 +3303,7 @@ export default function App() {
                   <button
                     key={appName}
                     type="button"
-                    className="drawer-item"
+                    className={`drawer-item ${drawerPressedApp === appName ? 'drawer-item-selected' : ''}`}
                     onMouseDown={(e) => handleDrawerPressStart(e, appName)}
                     onTouchStart={(e) => handleDrawerPressStart(e, appName)}
                     onMouseMove={(e) => handleDrawerPressMove(e)}
@@ -3496,6 +3524,8 @@ export default function App() {
           <div className="app-content no-scrollbar p-0">
             <StoreApp
               darkMode={darkMode}
+              userAvatar={userAvatar}
+              userName={userName}
               installedApps={installedApps}
               onInstall={handleInstallApp}
               onUninstall={handleUninstallApp}
@@ -3730,7 +3760,7 @@ export default function App() {
             <div className="recents-track no-scrollbar">
               {openedApps.length === 0 ? (
                 <div className="empty-state" style={{ width: '100%', color: 'rgba(255,255,255,0.5)' }}>
-                  <span>Nenhum app aberto</span>
+                  <span style={{fontSize:16,fontWeight:600,color:"rgba(255,255,255,.82)"}}>Sem aplicativos em segundo plano</span><small style={{fontSize:12,color:"rgba(255,255,255,.48)"}}>Os apps que você abrir aparecerão aqui</small>
                 </div>
               ) : (
                 openedApps.map((appName) => {
@@ -3921,13 +3951,13 @@ export default function App() {
                   <span>Widgets</span>
                   <button type="button" className="sheet-action" onClick={() => setWidgetSheet(false)}>Fechar</button>
                 </div>
-                {Object.entries(WIDGETS).map(([type, m]) => (
+                <div className="widget-picker-list">{Object.entries(WIDGETS).map(([type, m]) => (
                   <button key={type} type="button" className="widget-opt" onClick={() => addWidget(type)}>
                     <span className="ico">{m.icon}</span>
                     <span className="font-medium">{m.label}</span>
                     <small>{m.w}×{m.h}</small>
                   </button>
-                ))}
+                ))}</div>
               </motion.div>
             </motion.div>
           )}

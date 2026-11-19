@@ -207,7 +207,8 @@ export default function SettingsApp({
   
   // Filterable options for search query
   const allSettingsItems = [
-    { id: 'perfil', label: 'Editar Perfil / Nome', description: 'Apple ID, iCloud, Mídia e Compras', keywords: 'nome perfil usuario mateus oliveira cloud' },
+    { id: 'perfil', label: 'AeroCloud', description: 'Perfil, foto, armazenamento e sincronização', keywords: 'nome perfil usuario conta aerocloud icloud foto' },
+    { id: 'teclado', label: 'Teclado', description: 'Correção automática, sugestões e aparência', keywords: 'teclado autocorrecao sugestoes digitação idioma vibração' },
     { id: 'wifi', label: 'Wi-Fi', description: 'Redes sem fio e conexões de internet', keywords: 'wifi rede internet conexao sinal' },
     { id: 'celular', label: 'Rede móvel', description: 'Dados móveis, 4G, 5G e roaming', keywords: 'celular rede dados internet chip 4g 5g mobile' },
     { id: 'bluetooth', label: 'Bluetooth', description: 'Conexão sem fio e pareamento', keywords: 'bluetooth pareamento conexao sem fio fone' },
@@ -408,7 +409,8 @@ export default function SettingsApp({
                    currentPanel === 'apps' ? "Aplicativos" : 
                    currentPanel === 'acessibilidade' ? "Acessibilidade" : 
                    currentPanel === 'sobre' ? "Sobre o Aparelho" : 
-                   currentPanel === 'perfil' ? "Perfil" : 
+                   currentPanel === 'perfil' ? "AeroCloud" :
+                    currentPanel === 'teclado' ? "Teclado" : 
                    currentPanel === 'wifi' ? "Wi-Fi" : 
                    currentPanel === 'celular' ? "Rede Móvel" : 
                    currentPanel === 'bluetooth' ? "Bluetooth" : 
@@ -426,9 +428,10 @@ export default function SettingsApp({
                   <div className={`p-5 rounded-2xl text-center space-y-3 ${
  darkMode ? 'bg-slate-900' : 'bg-white'
  }`}>
-                    <div className="w-20 h-20 rounded-full bg-slate-400 dark:bg-slate-600 flex items-center justify-center text-white border-2 border-slate-300 dark:border-slate-500 mx-auto">
-                      <User size={40} fill="white" className="opacity-95" />
-                    </div>
+                    <label className="w-20 h-20 rounded-full bg-slate-400 dark:bg-slate-600 flex items-center justify-center text-white border-2 border-slate-300 dark:border-slate-500 mx-auto overflow-hidden cursor-pointer" title="Alterar foto do perfil">
+                      {userAvatar?.startsWith('data:image') ? <img src={userAvatar} alt="Foto do perfil" className="w-full h-full object-cover" /> : <span className="text-3xl">{userAvatar && userAvatar !== '👤' ? userAvatar : <User size={40} fill="white" />}</span>}
+                      <input type="file" accept="image/*" className="hidden" onChange={e => { const input=e.currentTarget; const f=input.files?.[0]; if(!f)return; input.value=''; const r=new FileReader(); r.onload=()=>{ if(typeof r.result==='string') setUserAvatar(r.result); }; r.readAsDataURL(f); }} />
+                    </label>
                     
                     {editingName ? (
                       <div className="space-y-3 max-w-xs mx-auto">
@@ -474,7 +477,7 @@ export default function SettingsApp({
                   <div className={`p-4 rounded-2xl space-y-3 text-xs leading-normal ${
  darkMode ? 'bg-slate-900' : 'bg-white'
  }`}>
-                    <h4 className="font-bold text-sm">Armazenamento iCloud</h4>
+                    <div className="flex items-center justify-between"><h4 className="font-bold text-sm">AeroCloud</h4><span className="text-[10px] font-semibold text-emerald-500">Sincronizado</span></div><p className="opacity-60">Sua conta, fotos e dados do AeroOS em um só lugar.</p>
                     <div className="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div className="h-full bg-blue-600 rounded-full" style={{ width: '0.5%' }} />
                     </div>
@@ -482,6 +485,39 @@ export default function SettingsApp({
                       <span>24 MB de 5 GB usados</span>
                       <span>100% Livre</span>
                     </div>
+                  </div>
+                  <div className={`rounded-2xl overflow-hidden divide-y ${darkMode ? 'bg-slate-900 divide-white/5' : 'bg-white divide-slate-100'}`}>
+                    {[
+                      ['Fotos e arquivos', 'Backup de mídia e documentos'],
+                      ['Sincronização', 'Perfil, preferências e dados do sistema'],
+                      ['Dispositivos', 'Este aparelho está conectado'],
+                      ['Segurança da conta', email || 'Conta local do AeroOS'],
+                    ].map(([title, sub]) => <div key={title} className="p-4"><div className="text-sm font-semibold">{title}</div><div className="text-[11px] opacity-55 mt-1">{sub}</div></div>)}
+                  </div>
+                </div>
+              )}
+
+              {/* PANEL TECLADO */}
+              {currentPanel === 'teclado' && (
+                <div className="space-y-3">
+                  <div className={`p-4 rounded-2xl ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
+                    <div className="font-semibold text-sm">Teclado AeroOS</div>
+                    <p className="text-xs opacity-55 mt-1">O teclado aparece somente quando um campo de texto recebe foco.</p>
+                    {([
+                      ['enabled','Usar teclado do AeroOS','Substitui o teclado virtual do aparelho'],
+                      ['suggestions','Sugestões de palavras','Exibe sugestões enquanto você digita'],
+                      ['autoCorrect','Correção automática','Corrige abreviações e erros comuns ao inserir espaço'],
+                      ['autoCap','Maiúsculas automáticas','Inicia frases com letra maiúscula'],
+                      ['accents','Acentos ao pressionar','Segure uma vogal para ver variações'],
+                      ['sound','Som das teclas','Reproduz feedback sonoro'],
+                      ['vibrate','Vibração ao tocar','Feedback tátil nas teclas'],
+                    ] as const).map(([key,label,desc]) => <div key={key} className="flex items-center justify-between gap-3 py-3 border-t border-white/5"><div className="min-w-0"><div className="text-sm font-medium">{label}</div><div className="text-[11px] opacity-50">{desc}</div></div><input type="checkbox" className="os-switch shrink-0" checked={!!prefs.kb[key]} onChange={e=>setPrefs({kb:{...prefs.kb,[key]:e.target.checked}})} /></div>)}
+                  </div>
+                  <div className={`p-4 rounded-2xl space-y-3 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
+                    <div className="text-sm font-semibold">Aparência do teclado</div>
+                    <label className="block text-xs opacity-70">Tema</label><select className="w-full rounded-xl p-3 bg-black/10" value={prefs.kb.theme} onChange={e=>setPrefs({kb:{...prefs.kb,theme:e.target.value as any}})}><option value="auto">Automático</option><option value="dark">Escuro</option><option value="light">Claro</option><option value="wallpaper">Papel de parede</option></select>
+                    <label className="block text-xs opacity-70">Altura das teclas: {prefs.kb.height}px</label><input type="range" min="34" max="60" value={prefs.kb.height} onChange={e=>setPrefs({kb:{...prefs.kb,height:Number(e.target.value)}})} className="w-full"/>
+                    <label className="block text-xs opacity-70">Arredondamento: {prefs.kb.radius}px</label><input type="range" min="4" max="22" value={prefs.kb.radius} onChange={e=>setPrefs({kb:{...prefs.kb,radius:Number(e.target.value)}})} className="w-full"/>
                   </div>
                 </div>
               )}

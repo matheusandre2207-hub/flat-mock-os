@@ -294,7 +294,7 @@ export default function SystemKeyboard({ darkMode, overlay }: { darkMode: boolea
 
   // Layout
   const rows = 4, gap = 7;
-  const total = 30 + rows * kb.height + (rows - 1) * gap + 22;
+  const total = 30 + rows * kb.height + (rows - 1) * gap + 22 + (kb.suggestions ? 30 : 0);
   useEffect(() => {
     const r = document.documentElement;
     r.style.setProperty('--kb-h', open ? `${total}px` : '0px');
@@ -326,7 +326,22 @@ export default function SystemKeyboard({ darkMode, overlay }: { darkMode: boolea
     window.setTimeout(() => capRef.current(), 0);
   };
   const up = shift !== 'off';
+  const corrections: Record<string, string> = { 'vc':'você', 'vcs':'vocês', 'pq':'porque', 'tb':'também', 'naum':'não', 'nao':'não', 'voce':'você', 'voces':'vocês', 'tambem':'também', 'ola':'olá', 'ate':'até', 'entao':'então', 'obg':'obrigado', 'q':'que', 'ñ':'não' };
+  const currentWord = (getBefore().match(/[\p{L}]+$/u) || [''])[0].toLowerCase();
+  const suggestionWords = ['você','vocês','porque','também','não','sim','olá','hoje','amanhã','obrigado','tudo','como','estou','vamos','certo','beleza'];
+  const suggestions = currentWord ? Array.from(new Set([currentWord, ...suggestionWords.filter(w => w.startsWith(currentWord)), ...Object.keys(corrections).filter(w => w.startsWith(currentWord) || currentWord.startsWith(w)).map(w => corrections[w])])).slice(0,3) : ['Olá','Tudo','Você'];
+  const applySuggestion = (word: string) => {
+    const before = getBefore();
+    const last = (before.match(/[\p{L}]+$/u) || [''])[0];
+    for (let n=0;n<last.length;n++) send({op:'backspace'});
+    send({op:'insert', text:word});
+  };
   const typeText = (t: string, isLetter = true) => {
+    if (t === ' ' && kb.autoCorrect) {
+      const liveWord = ((getBefore().match(/[\p{L}]+$/u) || [''])[0]).toLowerCase();
+      const correction = corrections[liveWord];
+      if (correction) applySuggestion(correction);
+    }
     send({ op: 'insert', text: t });
     if (isLetter && shift === 'once') setShift('off');
   };

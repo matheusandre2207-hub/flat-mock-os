@@ -314,6 +314,8 @@ const REVIEWS = [
 
 interface StoreAppProps {
   darkMode: boolean;
+  userAvatar?: string;
+  userName?: string;
   installedApps: string[];
   onInstall: (id: string) => void;
   onUninstall: (id: string) => void;
@@ -359,7 +361,7 @@ function customToItem(app: CustomApp): AppItem {
   };
 }
 
-export default function StoreApp({ darkMode, installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp, onSetFollowWallpaper, onSetOrientation, onUpdateCustomApp, overrides, onUpdateApp }: StoreAppProps) {
+export default function StoreApp({ darkMode, userAvatar = '👤', userName = 'Usuário', installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp, onSetFollowWallpaper, onSetOrientation, onUpdateCustomApp, overrides, onUpdateApp }: StoreAppProps) {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -579,12 +581,7 @@ export default function StoreApp({ darkMode, installedApps, onInstall, onUninsta
               aria-expanded={avatarMenuOpen}
               className="p-0 border-none bg-transparent cursor-pointer rounded-full active:scale-95 transition-transform"
             >
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"
-                alt="User Profile"
-                className="w-9 h-9 rounded-full object-cover border border-white/20"
-                referrerPolicy="no-referrer"
-              />
+              {userAvatar.startsWith('data:image') ? <img src={userAvatar} alt={userName} className="w-9 h-9 rounded-full object-cover border border-white/20" /> : <span className="w-9 h-9 rounded-full border border-white/20 bg-white/15 flex items-center justify-center text-lg">{userAvatar}</span>}
             </button>
           </div>
         )}

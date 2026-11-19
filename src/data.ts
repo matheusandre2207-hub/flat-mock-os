@@ -1,20 +1,39 @@
 import { Wallpaper, Track, Chat, Folder, NotificationItem } from './types';
 
 // Papéis de parede de formas: minimalistas, em tons pastel (verde, amarelo, azul, rosa, roxo, marrom, branco, laranja e cinza)
-const circle = (x: number, y: number, r: number, c: string) => `radial-gradient(circle at ${x}% ${y}%, ${c} ${r}%, transparent ${r + 0.4}%)`;
-const arch = (x: number, y: number, w: number, h: number, c: string) => `radial-gradient(ellipse ${w}% ${h}% at ${x}% ${y}%, ${c} 99%, transparent 100%)`;
 const shapesWallpaper = (name: string, v: number, bg1: string, bg2: string, a: string, b: string, c: string): Wallpaper => {
-  const layers = [
-    // 0: círculo grande no canto, círculo pequeno e arco embaixo
-    [circle(8, 16, 17, a), circle(84, 58, 9, c), arch(50, 104, 78, 24, b)],
-    // 1: sol no alto e duas colinas
-    [circle(72, 20, 13, c), arch(18, 100, 70, 22, a), arch(88, 106, 60, 18, b)],
-    // 2: três círculos sobrepostos
-    [circle(30, 34, 15, a), circle(56, 46, 12, b), circle(40, 64, 9, c)],
-    // 3: faixa diagonal suave e um círculo
-    [circle(80, 82, 14, a), `linear-gradient(118deg, transparent 40%, ${b} 40.3%, ${b} 56%, transparent 56.3%)`, circle(22, 20, 7, c)],
-  ][v % 4];
-  return { name, gradient: `${layers.join(', ')}, linear-gradient(165deg, ${bg1}, ${bg2})`, isDark: false };
+  // Camadas orgânicas inspiradas em papel recortado, com contornos assimétricos
+  // e volumes próprios, sem reproduzir a referência literalmente.
+  const palettes = [
+    [
+      `radial-gradient(ellipse 78% 46% at 112% 12%, ${c} 0 48%, transparent 49%)`,
+      `radial-gradient(ellipse 86% 54% at 102% 28%, ${a} 0 48%, transparent 49%)`,
+      `radial-gradient(ellipse 95% 60% at 95% 48%, ${b} 0 49%, transparent 50%)`,
+      `radial-gradient(ellipse 105% 72% at 85% 72%, ${a} 0 49%, transparent 50%)`,
+      `radial-gradient(ellipse 115% 78% at 76% 100%, ${c} 0 49%, transparent 50%)`,
+    ],
+    [
+      `radial-gradient(ellipse 75% 52% at -12% 8%, ${c} 0 48%, transparent 49%)`,
+      `radial-gradient(ellipse 90% 58% at -2% 30%, ${a} 0 48%, transparent 49%)`,
+      `radial-gradient(ellipse 100% 66% at 8% 54%, ${b} 0 49%, transparent 50%)`,
+      `radial-gradient(ellipse 110% 76% at 18% 78%, ${a} 0 49%, transparent 50%)`,
+      `radial-gradient(ellipse 120% 82% at 28% 110%, ${c} 0 49%, transparent 50%)`,
+    ],
+    [
+      `radial-gradient(ellipse 68% 42% at 18% 12%, ${a} 0 48%, transparent 49%)`,
+      `radial-gradient(ellipse 90% 55% at 95% 35%, ${c} 0 48%, transparent 49%)`,
+      `radial-gradient(ellipse 90% 58% at 8% 66%, ${b} 0 48%, transparent 49%)`,
+      `radial-gradient(ellipse 90% 55% at 100% 92%, ${a} 0 48%, transparent 49%)`,
+    ],
+    [
+      `radial-gradient(ellipse 90% 44% at 104% 4%, ${a} 0 48%, transparent 49%)`,
+      `radial-gradient(ellipse 78% 58% at 2% 34%, ${c} 0 48%, transparent 49%)`,
+      `radial-gradient(ellipse 100% 62% at 105% 66%, ${b} 0 48%, transparent 49%)`,
+      `radial-gradient(ellipse 85% 50% at 0% 100%, ${a} 0 48%, transparent 49%)`,
+    ],
+  ];
+  const shadows = `radial-gradient(ellipse 70% 24% at 50% 42%, rgba(0,0,0,.10), transparent 72%), radial-gradient(ellipse 60% 20% at 45% 78%, rgba(0,0,0,.08), transparent 75%)`;
+  return { name, gradient: `${shadows}, ${palettes[v % palettes.length].join(', ')}, linear-gradient(145deg, ${bg1}, ${bg2})`, isDark: false };
 };
 
 export const wallpapersList: Wallpaper[] = [
