@@ -55,7 +55,7 @@ function AccentExplainer({ on }: { on: boolean }) {
   );
 }
 
-function GlassSection() {
+export function GlassSection() {
   const { prefs } = usePrefs();
   const g = prefs.glass;
   const items: [keyof GlassPrefs, string][] = [['drawer', 'Barra de apps (lateral)'], ['notif', 'Notificações'], ['control', 'Central de controle'], ['nav', 'Barra de navegação'], ['dock', 'Dock']];
@@ -188,8 +188,6 @@ export default function DisplayPrefs() {
         </div>
         <Seg value={prefs.dockStyle} onChange={v => setPrefs({ dockStyle: v as DockStyle })} options={[['floating', 'Flutuante'], ['fixed', 'Fixa']]} />
       </div>
-      <div className="h-px bg-slate-200 dark:bg-white/10" />
-      <GlassSection />
       <div className="h-px bg-slate-200 dark:bg-white/10" />
       <KeyboardSection />
     </div>

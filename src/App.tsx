@@ -22,6 +22,7 @@ import { WidgetView, WIDGETS } from './components/Widgets';
 import { usePrefs } from './prefs';
 import { COLS, ROWS, resolveLayout, occupiedCells, findFree, widgetSize, DEFAULT_CLOCK, ClockCfg, WidgetItem } from './homeGrid';
 import ClockWidgetEditor from './components/ClockWidgetEditor';
+import { useMemory, fmtMem, setMemoryInputs } from './memorySim';
 import AppEditSheet from './components/AppEditSheet';
 import { loadOverrides, saveOverrides, setOverrideRegistry, getAppOverride, type AppOverride } from './appOverrides';
 import Calculator from './components/Calculator';
@@ -46,7 +47,7 @@ import GalleryApp from './components/GalleryApp';
 import SystemKeyboard from './components/SystemKeyboard';
 import StatusPills from './components/StatusPills';
 import LandscapePanel from './components/LandscapePanel';
-import { Wifi as WifiIcon, Bluetooth as BluetoothIcon, Plane as PlaneIcon, Moon as MoonIcon, Signal as SignalIcon, Settings2 as WidgetEditIcon } from 'lucide-react';
+import { Wifi as WifiIcon, Bluetooth as BluetoothIcon, Plane as PlaneIcon, Moon as MoonIcon, Signal as SignalIcon, Settings2 as WidgetEditIcon, Contrast as ContrastIcon } from 'lucide-react';
 import { BUNDLED_APPS, isBundledId } from './bundledApps';
 import { listMedia, putMedia, deleteMedia, audioFromFile, fmtDuration, TRACK_COLORS, type MediaItem } from './mediaStorage';
 import type { Track as MediaTrack } from './types';
@@ -793,6 +794,11 @@ const randomIncomingMessages = [
   }
 ];
 
+function RecentsMemoryBadge() {
+  const m = useMemory();
+  return <div className="recents-mem">{`RAM ${fmtMem(m.used)} de ${fmtMem(m.total)} · ${fmtMem(m.free)} livres`}</div>;
+}
+
 type WidgetDrag = {
   id: string;
   w: number;
@@ -847,6 +853,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('os_setup_completed', String(isSetupCompleted));
   }, [isSetupCompleted]);
+
+  // Não perturbe: sem pop-ups nem sons; os avisos vão direto para o histórico
+  const [dnd, setDnd] = useState<boolean>(() => localStorage.getItem('os_dnd') === '1');
+  useEffect(() => { try { localStorage.setItem('os_dnd', dnd ? '1' : '0'); } catch { /* ok */ } }, [dnd]);
+  const timeOffsetRef = useRef(0);
 
   // Conta AeroOS: quem existe neste aparelho e se alguém está conectado
   const [account, setAccount] = useState<PublicAccount | null>(() => getAccount());
@@ -1568,7 +1579,7 @@ export default function App() {
   // 3. Time Tick Clock trigger
   useEffect(() => {
     const updateTime = () => {
-      const now = new Date();
+      const now = new Date(Date.now() + timeOffsetRef.current);
       const hrs = String(now.getHours()).padStart(2, '0');
       const mins = String(now.getMinutes()).padStart(2, '0');
       setSystemTime(`${hrs}:${mins}`);
@@ -1772,7 +1783,9 @@ export default function App() {
 
   // Trigger system-wide notification with a popup
   const quietRef = useRef(false);
-  quietRef.current = isLocked || notificationsOpen || utilitiesOpen || landscapePanel !== null;
+  quietRef.current = isLocked || notificationsOpen || utilitiesOpen || landscapePanel !== null || dnd;
+  const dndRef = useRef(false);
+  dndRef.current = dnd;
   const triggerNotification = (title: string, body: string, app: string, avatar?: string, chatId?: string) => {
     const newNotif: NotificationItem = {
       id: `${app}-${Date.now()}`,
@@ -1797,7 +1810,7 @@ export default function App() {
     }
 
     // Play notification sound based on selected settings tone
-    playNotificationSound(selectedRingtone);
+    if (!dndRef.current) playNotificationSound(selectedRingtone);
   };
 
   // Drag and Drop & Shortcuts customization helpers
@@ -2092,6 +2105,8 @@ export default function App() {
   // Open an app safely
   // Histórico de telas: "voltar" retorna ao app anterior (ex.: Galeria aberta a partir de Configurações) antes de ir ao início
   const backStack = useRef<string[]>([]);
+  const [recentDismiss, setRecentDismiss] = useState<string | null>(null);
+  const recentDragged = useRef(false);
   const openApp = (appName: string) => {
     if (activeApp && activeApp !== appName) {
       const st = backStack.current;
@@ -2399,6 +2414,18 @@ export default function App() {
     return () => { cancelAnimationFrame(raf); styled.forEach(clear); };
   }, [recentAppsOpen]);
 
+  // Ao abrir os apps recentes, o cartão do app atual fica centralizado
+  useEffect(() => {
+    if (!recentAppsOpen) return;
+    const id = window.setTimeout(() => {
+      const track = document.querySelector<HTMLElement>('.recents-track');
+      const target = activeApp ?? openedApps[openedApps.length - 1];
+      const card = target ? track?.querySelector<HTMLElement>(`.recent-card[data-app="${target}"]`) : null;
+      if (track && card) track.scrollTo({ left: card.offsetLeft - (track.clientWidth - card.offsetWidth) / 2, behavior: 'auto' });
+    }, 30);
+    return () => window.clearTimeout(id);
+  }, [recentAppsOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Barra do sistema com a mesma cor da tela: nada de faixa preta sobrando
   useEffect(() => {
     let color = darkMode ? '#0B0B0C' : '#F5F5F6';
@@ -2424,6 +2451,11 @@ export default function App() {
   // Preferências de tela, grade livre, widgets e tela apagada
   // ------------------------------------------------------------------
   const { prefs } = usePrefs();
+  // Memória simulada: acompanha os apps abertos
+  useEffect(() => {
+    setMemoryInputs({ open: openedApps, active: activeApp, ramMb: prefs.dev.ramGb * 1024, heavy: customApps.filter(a => a.kind === 'folder').map(a => a.id) });
+  }, [openedApps, activeApp, prefs.dev.ramGb, customApps]);
+
   const [layout, setLayout] = useState<Record<string, { c: number; r: number }>>(() => {
     try { return JSON.parse(localStorage.getItem('os_home_layout') || '{}'); } catch { return {}; }
   });
@@ -2561,6 +2593,7 @@ export default function App() {
   const wpTint = useWallpaperTint(currentWallpaper.gradient);
   const tintInfo = { h: wpTint.h, s: wpTint.s, css: `hsl(${wpTint.h} ${wpTint.s}% 44%)` };
   const tint = tintInfo.css;
+  timeOffsetRef.current = prefs.dev.timeOffsetMs;
   const iconMode = prefs.iconMode ?? (prefs.iconTint ? 'wallpaper' : 'normal');
   setIconTint({ enabled: iconMode === 'wallpaper', h: tintInfo.h, s: tintInfo.s, mode: iconMode });
   // Modo "ícones da cor do papel de parede": a cor de destaque do sistema segue a cor média dos ícones
@@ -2620,6 +2653,12 @@ export default function App() {
       case 'configuracoes':
         return (
           <SettingsApp
+            dnd={dnd}
+            setDnd={setDnd}
+            openedApps={openedApps}
+            appNames={Object.fromEntries(Object.entries(appMetadata).map(([k, v]) => [k, v.label]))}
+            onCloseApps={(ids) => { setOpenedApps(prev => prev.filter(x => !ids.includes(x))); if (activeApp && ids.includes(activeApp)) setActiveApp(null); }}
+            email={account?.email}
             userName={userName}
             setUserName={setUserName}
             wifi={wifiActive}
@@ -2849,6 +2888,7 @@ export default function App() {
           >
             <div className="status-pill">
               {airplaneMode && <Plane size={14} strokeWidth={2.4} />}
+              {dnd && <MoonIcon size={13} strokeWidth={2.4} />}
               {!airplaneMode && bluetoothActive && <Bluetooth size={14} strokeWidth={2.4} />}
               {wifiActive && !airplaneMode ? <Wifi size={15} strokeWidth={2.4} /> : <WifiOff size={15} strokeWidth={2.4} className="opacity-50" />}
               <div className="cellular-bars" style={{ opacity: cellularActive && !airplaneMode ? 1 : 0.35 }}>
@@ -2910,6 +2950,12 @@ export default function App() {
               icon={<RotateCw size={22} />}
               active={landscape}
               onClick={() => setLandscape(v => !v)}
+            />
+            <QSTile
+              label="Não perturbe"
+              icon={<MoonIcon size={22} />}
+              active={dnd}
+              onClick={() => setDnd(!dnd)}
             />
             <QSTile
               label="Wi-Fi"
@@ -3081,7 +3127,11 @@ export default function App() {
                   } as React.CSSProperties}
                   onMouseDown={(e) => handleWidgetPressStart(e, w)}
                   onTouchStart={(e) => handleWidgetPressStart(e, w)}
-                  onClick={(e) => { e.stopPropagation(); if (isEditingHome && w.type === 'relogio' && !widgetJustDragged.current) setEditWidgetId(w.id); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isEditingHome) { if (w.type === 'relogio' && !widgetJustDragged.current) setEditWidgetId(w.id); return; }
+                    if (!(e.target as HTMLElement).closest('button, input, textarea, a')) setIsEditingHome(true);
+                  }}
                 >
                   {isEditingHome && (
                     <button
@@ -3112,7 +3162,7 @@ export default function App() {
                     onPrev={() => setCurrentTrackIndex(currentTrackIndex === 0 ? allTracks.length - 1 : currentTrackIndex - 1)}
                     onToggle={() => setMusicPlaying(!musicPlaying)}
                     onNext={() => setCurrentTrackIndex((currentTrackIndex + 1) % allTracks.length)}
-                    onOpen={(id) => { if (!isEditingHome && appMetadata[id]) openApp(id); }}
+                    onOpen={() => { if (!isEditingHome) setIsEditingHome(true); }}
                   />
                 </div>
               );
@@ -3259,6 +3309,12 @@ export default function App() {
           </div>
           <div className="app-content no-scrollbar p-0">
             <SettingsApp
+              dnd={dnd}
+              setDnd={setDnd}
+              openedApps={openedApps}
+              appNames={Object.fromEntries(Object.entries(appMetadata).map(([k, v]) => [k, v.label]))}
+              onCloseApps={(ids) => { setOpenedApps(prev => prev.filter(x => !ids.includes(x))); if (activeApp && ids.includes(activeApp)) setActiveApp(null); }}
+              email={account?.email}
               userName={userName}
               setUserName={setUserName}
               wifi={wifiActive}
@@ -3670,6 +3726,7 @@ export default function App() {
         {/* Multitarefa */}
         {recentAppsOpen && (
           <div className="recents" onClick={() => setRecentAppsOpen(false)}>
+            <RecentsMemoryBadge />
             <div className="recents-track no-scrollbar">
               {openedApps.length === 0 ? (
                 <div className="empty-state" style={{ width: '100%', color: 'rgba(255,255,255,0.5)' }}>
@@ -3685,20 +3742,28 @@ export default function App() {
                       data-app={appName}
                       className="recent-card"
                       drag="y"
-                      dragConstraints={{ top: -300, bottom: 0 }}
-                      dragElastic={{ top: 0.8, bottom: 0.1 }}
+                      dragSnapToOrigin
+                      dragMomentum={false}
+                      dragConstraints={{ top: -500, bottom: 0 }}
+                      dragElastic={{ top: 0.9, bottom: 0.05 }}
+                      animate={recentDismiss === appName ? { y: -760, opacity: 0 } : undefined}
+                      transition={{ duration: 0.18, ease: 'easeIn' }}
+                      onDragStart={() => { recentDragged.current = true; }}
                       onDragEnd={(event, info) => {
-                        // Deslizar mais de 120px para cima fecha o app
-                        if (info.offset.y < -120) {
-                          setOpenedApps(prev => prev.filter(name => name !== appName));
-                          if (activeApp === appName) {
-                            setActiveApp(null);
-                          }
+                        window.setTimeout(() => { recentDragged.current = false; }, 60);
+                        // Um arrasto curto ou rápido para cima fecha o app na hora
+                        if (info.offset.y < -55 || info.velocity.y < -380) {
+                          setRecentDismiss(appName);
+                          window.setTimeout(() => {
+                            setOpenedApps(prev => prev.filter(name => name !== appName));
+                            if (activeApp === appName) setActiveApp(null);
+                            setRecentDismiss(null);
+                          }, 170);
                         }
                       }}
-                      whileTap={{ scale: 0.98 }}
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (recentDragged.current || recentDismiss) return;
                         openApp(appName);
                         setRecentAppsOpen(false);
                       }}
@@ -4077,7 +4142,8 @@ export default function App() {
                     { id: 'bt', label: 'Bluetooth', icon: <BluetoothIcon size={22} />, active: bluetoothActive, onToggle: () => setBluetoothActive(v => !v) },
                     { id: 'data', label: 'Dados', icon: <SignalIcon size={22} />, active: cellularActive, onToggle: () => setCellularActive(v => !v) },
                     { id: 'air', label: 'Avião', icon: <PlaneIcon size={22} />, active: airplaneMode, onToggle: () => setAirplaneMode(v => !v) },
-                    { id: 'dark', label: 'Escuro', icon: <MoonIcon size={22} />, active: darkMode, onToggle: () => setDarkMode(!darkMode) },
+                    { id: 'dnd', label: 'Não perturbe', icon: <MoonIcon size={22} />, active: dnd, onToggle: () => setDnd(!dnd) },
+                    { id: 'dark', label: 'Escuro', icon: <ContrastIcon size={22} />, active: darkMode, onToggle: () => setDarkMode(!darkMode) },
                     { id: 'rot', label: 'Girar', icon: <RotateCw size={22} />, active: true, onToggle: () => { setLandscapePanel(null); setLandscape(false); } },
                   ]}
                   brightness={brightness}
@@ -4152,7 +4218,8 @@ export default function App() {
             userAvatar={userAvatar}
             pincode={pincode}
             wallpaper={currentLockWallpaper}
-            notifications={notifications.map(n => ({ id: n.id, app: n.app, title: n.title, message: n.body, time: n.time }))}
+            notifications={(dnd && prefs.dndHideLock) ? [] : notifications.map(n => ({ id: n.id, app: n.app, title: n.title, message: n.body, time: n.time }))}
+            timeOffsetMs={prefs.dev.timeOffsetMs}
             onDismissNotification={(id) => removeNotification(id)}
             renderAppIcon={(id) => <NotifAppIcon app={id} />}
             appLabel={(id) => appMetadata[id]?.label ?? id}

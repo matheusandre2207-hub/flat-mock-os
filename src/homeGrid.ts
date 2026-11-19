@@ -18,7 +18,14 @@ export const WSIZE: Record<string, { w: number; h: number }> = {
   clima: { w: 2, h: 1 },
   bateria: { w: 2, h: 1 },
   musica: { w: 4, h: 1 },
-  relogio: { w: 4, h: 2 }
+  relogio: { w: 4, h: 2 },
+  memoria: { w: 2, h: 2 },
+  notas: { w: 2, h: 2 },
+  tarefas: { w: 2, h: 2 },
+  foto: { w: 2, h: 2 },
+  contagem: { w: 2, h: 1 },
+  passos: { w: 2, h: 2 },
+  frase: { w: 4, h: 1 }
 };
 
 // Tamanho de um widget: o escolhido pelo usuário ou o padrão do tipo

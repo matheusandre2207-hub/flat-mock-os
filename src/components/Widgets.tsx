@@ -1,5 +1,7 @@
-import React from 'react';
-import { CloudSun, Battery, CalendarDays, Music, SkipBack, Play, Pause, SkipForward, Clock as ClockIcon } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { CloudSun, Battery, CalendarDays, Music, SkipBack, Play, Pause, SkipForward, Clock as ClockIcon, Cpu, StickyNote, ListChecks, Image as PhotoIcon, Hourglass, Footprints, Quote, X as XIcon } from 'lucide-react';
+import { useMemory, fmtMem } from '../memorySim';
+import { listMedia } from '../mediaStorage';
 import { WSIZE, ClockCfg, DEFAULT_CLOCK } from '../homeGrid';
 
 export const WIDGETS: Record<string, { w: number; h: number; label: string; icon: React.ReactNode }> = {
@@ -7,8 +9,122 @@ export const WIDGETS: Record<string, { w: number; h: number; label: string; icon
   clima: { ...WSIZE.clima, label: 'Clima', icon: <CloudSun size={18} /> },
   bateria: { ...WSIZE.bateria, label: 'Bateria', icon: <Battery size={18} /> },
   musica: { ...WSIZE.musica, label: 'Música', icon: <Music size={18} /> },
-  relogio: { ...WSIZE.relogio, label: 'Relógio', icon: <ClockIcon size={18} /> }
+  relogio: { ...WSIZE.relogio, label: 'Relógio', icon: <ClockIcon size={18} /> },
+  memoria: { ...WSIZE.memoria, label: 'Memória', icon: <Cpu size={18} /> },
+  notas: { ...WSIZE.notas, label: 'Nota rápida', icon: <StickyNote size={18} /> },
+  tarefas: { ...WSIZE.tarefas, label: 'Tarefas', icon: <ListChecks size={18} /> },
+  foto: { ...WSIZE.foto, label: 'Foto', icon: <PhotoIcon size={18} /> },
+  contagem: { ...WSIZE.contagem, label: 'Contagem', icon: <Hourglass size={18} /> },
+  passos: { ...WSIZE.passos, label: 'Passos', icon: <Footprints size={18} /> },
+  frase: { ...WSIZE.frase, label: 'Frase do dia', icon: <Quote size={18} /> }
 };
+
+const ring = (frac: number, color: string, size = 64, stroke = 6) => {
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90 shrink-0">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, Math.max(0, frac)))} style={{ transition: 'stroke-dashoffset .8s ease' }} />
+    </svg>
+  );
+};
+
+function MemoryWidget() {
+  const m = useMemory();
+  const frac = (m.used + m.cached * 0.3) / m.total;
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+      <div className="relative">
+        {ring(frac, frac > 0.85 ? '#E5484D' : '#fff', 72, 7)}
+        <span className="absolute inset-0 flex items-center justify-center text-[15px] font-medium tabular-nums">{Math.round(frac * 100)}%</span>
+      </div>
+      <div className="text-center leading-tight">
+        <div className="text-[12px] font-semibold">Memória</div>
+        <div className="text-[11px] opacity-65">{fmtMem(m.free)} livres</div>
+      </div>
+    </div>
+  );
+}
+
+function NoteWidget() {
+  const [text, setText] = useState(() => { try { return localStorage.getItem('os_widget_note') || ''; } catch { return ''; } });
+  useEffect(() => { try { localStorage.setItem('os_widget_note', text); } catch { /* ok */ } }, [text]);
+  return (
+    <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Escreva uma nota…" maxLength={400} aria-label="Nota rápida"
+      className="w-full h-full resize-none bg-transparent outline-none text-[13px] leading-snug placeholder-white/50 text-white" />
+  );
+}
+
+function TodoWidget() {
+  const [items, setItems] = useState<{ t: string; d: boolean }[]>(() => { try { return JSON.parse(localStorage.getItem('os_widget_todos') || '[]'); } catch { return []; } });
+  const [draft, setDraft] = useState('');
+  useEffect(() => { try { localStorage.setItem('os_widget_todos', JSON.stringify(items)); } catch { /* ok */ } }, [items]);
+  return (
+    <div className="w-full h-full flex flex-col gap-1 min-h-0">
+      <div className="text-[12px] font-semibold flex items-center justify-between"><span>Tarefas</span><span className="opacity-60 tabular-nums">{items.filter(i => !i.d).length}</span></div>
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-1">
+        {items.length === 0 && <p className="text-[11px] opacity-55 pt-1">Nada por fazer</p>}
+        {items.map((it, i) => (
+          <div key={i} className="flex items-center gap-1.5 text-[12px]">
+            <button type="button" onClick={() => setItems(p => p.map((x, j) => (j === i ? { ...x, d: !x.d } : x)))} aria-label="Concluir"
+              className="w-4 h-4 rounded-full border border-white/70 shrink-0" style={{ background: it.d ? '#fff' : 'transparent' }} />
+            <span className={`flex-1 truncate ${it.d ? 'line-through opacity-50' : ''}`}>{it.t}</span>
+            <button type="button" onClick={() => setItems(p => p.filter((_, j) => j !== i))} aria-label="Remover" className="opacity-50"><XIcon size={11} /></button>
+          </div>
+        ))}
+      </div>
+      <input value={draft} onChange={e => setDraft(e.target.value)} placeholder="Nova tarefa" maxLength={60}
+        onKeyDown={e => { if (e.key === 'Enter' && draft.trim()) { setItems(p => [...p, { t: draft.trim(), d: false }].slice(-12)); setDraft(''); } }}
+        className="w-full bg-white/10 rounded-lg px-2 py-1 text-[12px] outline-none placeholder-white/50 text-white" />
+    </div>
+  );
+}
+
+function PhotoWidget({ onOpen }: { onOpen: (id: string) => void }) {
+  const [urls, setUrls] = useState<string[]>([]);
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    let alive = true; const made: string[] = [];
+    const load = () => listMedia('photo').then(list => {
+      if (!alive) return;
+      made.splice(0).forEach(u => URL.revokeObjectURL(u));
+      const u = list.slice(0, 12).map(m => URL.createObjectURL(m.thumb ?? m.blob));
+      made.push(...u); setUrls(u);
+    }).catch(() => {});
+    load();
+    window.addEventListener('aeroos-media-changed', load);
+    return () => { alive = false; window.removeEventListener('aeroos-media-changed', load); made.forEach(u => URL.revokeObjectURL(u)); };
+  }, []);
+  useEffect(() => { if (urls.length < 2) return; const t = setInterval(() => setI(n => n + 1), 9000); return () => clearInterval(t); }, [urls.length]);
+  if (!urls.length) return <button type="button" onClick={() => onOpen('galeria')} className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-[12px] opacity-80"><PhotoIcon size={26} strokeWidth={1.5} />Adicione fotos</button>;
+  return (
+    <button type="button" onClick={() => onOpen('galeria')} className="w-full h-full rounded-[inherit] overflow-hidden relative block p-0">
+      <img key={i % urls.length} src={urls[i % urls.length]} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ animation: 'storeFade .8s ease both' }} />
+    </button>
+  );
+}
+
+function StepsWidget() {
+  // Passos organicos: sobem ao longo do dia, com pequenas variações
+  const now = new Date();
+  const mins = now.getHours() * 60 + now.getMinutes();
+  const steps = Math.round(mins * 5.6 + Math.sin(mins / 37) * 180);
+  const goal = 8000;
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+      <div className="relative">
+        {ring(steps / goal, '#30A46C', 72, 7)}
+        <Footprints size={20} className="absolute inset-0 m-auto" />
+      </div>
+      <div className="text-center leading-tight">
+        <div className="text-[15px] font-semibold tabular-nums">{steps.toLocaleString('pt-BR')}</div>
+        <div className="text-[11px] opacity-65">{(steps * 0.00072).toFixed(1).replace('.', ',')} km · {Math.round(steps * 0.04)} kcal</div>
+      </div>
+    </div>
+  );
+}
+
+const QUOTES = ['Um passo de cada vez.', 'Faça simples, faça bem.', 'O hoje é o que você constrói.', 'Respire fundo e continue.', 'Pequenos hábitos, grandes mudanças.', 'Curiosidade é combustível.', 'Descanso também é produtivo.', 'Comece antes de estar pronto.', 'Foco no que importa.', 'Gentileza nunca sai de moda.', 'Errar faz parte de aprender.', 'Você está indo melhor do que pensa.'];
 
 interface Props {
   type: string;
@@ -91,6 +207,32 @@ export function ClockWidget({ cfg, time, date, w, h }: { cfg: ClockCfg; time: st
 export function WidgetView({ type, batteryLevel, isCharging, track, playing, onPrev, onToggle, onNext, onOpen, time = '00:00', date = '', cfg, size }: Props) {
   if (type === 'relogio') {
     return <ClockWidget cfg={cfg ?? DEFAULT_CLOCK} time={time} date={date} w={size?.w ?? 4} h={size?.h ?? 2} />;
+  }
+  if (type === 'memoria') return <MemoryWidget />;
+  if (type === 'notas') return <NoteWidget />;
+  if (type === 'tarefas') return <TodoWidget />;
+  if (type === 'foto') return <PhotoWidget onOpen={onOpen} />;
+  if (type === 'passos') return <StepsWidget />;
+  if (type === 'contagem') {
+    const n = new Date();
+    const end = new Date(n.getFullYear(), 11, 31, 23, 59, 59);
+    const days = Math.max(0, Math.ceil((end.getTime() - n.getTime()) / 86400000));
+    return (
+      <div className="w-full h-full flex items-center gap-3">
+        <Hourglass size={30} strokeWidth={1.5} className="shrink-0" />
+        <div><div className="text-[26px] leading-none font-light tabular-nums">{days}</div><div className="text-[12px] opacity-70 mt-1">dias para o fim de {n.getFullYear()}</div></div>
+      </div>
+    );
+  }
+  if (type === 'frase') {
+    const n = new Date();
+    const doy = Math.floor((n.getTime() - new Date(n.getFullYear(), 0, 0).getTime()) / 86400000);
+    return (
+      <div className="w-full h-full flex items-center gap-3">
+        <Quote size={22} strokeWidth={1.6} className="shrink-0 opacity-70" />
+        <div className="text-[14px] font-medium leading-snug">{QUOTES[doy % QUOTES.length]}</div>
+      </div>
+    );
   }
   if (type === 'calendario') {
     const now = new Date();

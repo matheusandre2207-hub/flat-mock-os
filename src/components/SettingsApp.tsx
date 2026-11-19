@@ -3,8 +3,18 @@ import { Wifi, Bluetooth, Sun, Moon, Volume2, Smartphone, RefreshCw, User, Info,
 import { motion, AnimatePresence } from 'motion/react';
 import { Wallpaper } from '../types';
 import DisplayPrefs from './DisplayPrefs';
+import SettingsMenu from './SettingsMenu';
+import { MemoryPanel, DndPanel, AboutPanel, DeveloperPanel } from './SettingsExtra';
+import { usePrefs, setPrefs } from '../prefs';
+import { useMemory, fmtMem } from '../memorySim';
 
 interface SettingsAppProps {
+  dnd: boolean;
+  setDnd: (b: boolean) => void;
+  openedApps: string[];
+  appNames: Record<string, string>;
+  onCloseApps: (ids: string[]) => void;
+  email?: string;
   userName: string;
   setUserName: (n: string) => void;
   wifi: boolean;
@@ -159,8 +169,19 @@ export default function SettingsApp({
   setPincode,
   userAvatar,
   setUserAvatar,
-  onResetOS
+  onResetOS,
+  dnd, setDnd, openedApps, appNames, onCloseApps, email
 }: SettingsAppProps) {
+  const { prefs } = usePrefs();
+  const mem = useMemory();
+  const devTaps = useRef(0);
+  const onDevTap = (): string => {
+    if (prefs.dev.enabled) return 'O modo desenvolvedor já está ativado';
+    devTaps.current += 1;
+    const left = 7 - devTaps.current;
+    if (left <= 0) { setPrefs({ dev: { ...prefs.dev, enabled: true } }); devTaps.current = 0; return 'Você agora é um desenvolvedor!'; }
+    return left <= 3 ? `Faltam ${left} toques para ativar o modo desenvolvedor` : '';
+  };
   
   const [currentPanel, setCurrentPanel] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -325,432 +346,33 @@ export default function SettingsApp({
       {/* HEADER BAR (Customizable transition sliding pages) */}
       <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
         
-        {/* MAIN PANEL */}
+        {/* MENU PRINCIPAL */}
         {currentPanel === null && (
-          <div className="px-4 pt-5 max-w-md mx-auto w-full flex flex-col gap-6">
-            
-            {/* Title */}
-            <div className="text-left py-1 relative">
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Configurações</h1>
-            </div>
-
-            {/* Search Bar */}
-            <div className="relative flex items-center mb-1">
-              <Search size={16} className="absolute left-3 text-slate-400 dark:text-slate-500" />
-              <input 
-                type="text" 
-                placeholder="Buscar" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full pl-9 pr-10 py-2.5 ${
- darkMode 
- ? 'bg-slate-900 text-white border border-white/5' 
- : 'bg-white text-slate-900 border border-slate-200'
- } placeholder-slate-400 dark:placeholder-slate-500 text-sm font-medium rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all`}
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors flex items-center justify-center"
-                >
-                  <X size={12} className="text-slate-500" />
-                </button>
-              )}
-            </div>
-
-            {/* SEARCH RESULTS VIEW */}
-            {searchQuery.trim() !== '' ? (
-              <div className="space-y-2">
-                <h3 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 px-1">
-                  Resultados da busca
-                </h3>
-                {filteredSearch.length > 0 ? (
-                  <div className={`rounded-2xl overflow-hidden border ${
- darkMode ? 'bg-slate-900 border-white/5 divide-y divide-white/5' : 'bg-white border-slate-200/60 divide-y divide-slate-100'
- }`}>
-                    {filteredSearch.map(item => (
-                      <button 
-                        key={item.id}
-                        onClick={() => {
-                          setCurrentPanel(item.id);
-                          setSearchQuery('');
-                        }}
-                        className={`w-full flex items-center justify-between p-4 transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-bold text-slate-900 dark:text-white">{item.label}</div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">{item.description}</div>
-                        </div>
-                        <ChevronRight size={16} className="text-slate-400 shrink-0 ml-2" />
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    Nenhuma configuração encontrada para "{searchQuery}"
-                  </div>
-                )}
-              </div>
-            ) : (
-              // DEFAULT MENU WITH GAPS AND SECTION HEADINGS
-              <div className="flex flex-col gap-6">
-                
-                {/* 1. Profile / ID Apple Section */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 px-1">
-                    Conta e Perfil
-                  </span>
-                  <button 
-                    onClick={() => {
-                      setCurrentPanel('perfil');
-                      playTone(440, 'sine', 0.08, 0.03);
-                    }}
-                    className={`w-full flex items-center justify-between py-5.5 px-4.5 rounded-2xl active:scale-[0.98] transition-all text-left border ${
- darkMode 
- ? 'bg-slate-900 border-white/5 hover:bg-slate-800' 
- : 'bg-white border-slate-200/60 hover:bg-slate-50'
- }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-13 h-13 rounded-full bg-blue-500 flex items-center justify-center text-white shrink-0">
-                        <User size={26} fill="white" className="opacity-95" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-slate-900 dark:text-white text-[16.5px] leading-tight truncate">{userName}</h3>
-                        <p className="text-[11.5px] text-slate-500 dark:text-slate-400 mt-1 font-medium truncate">Apple ID, iCloud, Mídia e Compras</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={18} className="text-slate-400 shrink-0 ml-2" />
-                  </button>
-                </div>
-
-                {/* 2. Connectivity List Container */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 px-1">
-                    Rede e Conexões
-                  </span>
-                  <div className={`rounded-2xl border divide-y ${
- darkMode ? 'bg-slate-900 border-white/5 divide-white/5' : 'bg-white border-slate-200/60 divide-slate-100'
- }`}>
-                    {/* Wi-Fi option */}
-                    <button 
-                      onClick={() => {
-                        setCurrentPanel('wifi');
-                        playTone(440, 'sine', 0.08, 0.03);
-                      }}
-                      className={`flex items-center justify-between p-4 w-full rounded-t-2xl active:scale-[0.99] transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
- wifi ? 'bg-blue-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
- }`}>
-                          <Wifi size={18} />
-                        </div>
-                        <div>
-                          <h4 className="text-[14px] font-bold leading-tight text-slate-900 dark:text-white">Wi-Fi</h4>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[150px]">
-                            {wifi ? (connectedWifi || "Conectado") : "Inativo"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
-                        <span className="truncate max-w-[100px]">{wifi ? (connectedWifi || "Ativo") : "Inativo"}</span>
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-
-                    {/* Cellular option */}
-                    <button 
-                      onClick={() => {
-                        setCurrentPanel('celular');
-                        playTone(440, 'sine', 0.08, 0.03);
-                      }}
-                      className={`flex items-center justify-between p-4 w-full active:scale-[0.99] transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
- cellular ? 'bg-green-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
- }`}>
-                          <Activity size={18} />
-                        </div>
-                        <div>
-                          <h4 className="text-[14px] font-bold leading-tight text-slate-900 dark:text-white">Rede móvel</h4>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                            {cellular ? "Dados móveis ativos" : "Inativo"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
-                        <span>{cellular ? "5G Ativo" : "Inativo"}</span>
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-
-                    {/* Bluetooth option */}
-                    <button 
-                      onClick={() => {
-                        setCurrentPanel('bluetooth');
-                        playTone(440, 'sine', 0.08, 0.03);
-                      }}
-                      className={`flex items-center justify-between p-4 w-full active:scale-[0.99] transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
- bluetooth ? 'bg-blue-600 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
- }`}>
-                          <Bluetooth size={18} />
-                        </div>
-                        <div>
-                          <h4 className="text-[14px] font-bold leading-tight text-slate-900 dark:text-white">Bluetooth</h4>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                            {bluetooth ? "Ativado" : "Inativo"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
-                        <span>{bluetooth ? "Ativo" : "Inativo"}</span>
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-
-                    {/* Airplane Mode option */}
-                    <button 
-                      onClick={() => {
-                        setCurrentPanel('aviao');
-                        playTone(440, 'sine', 0.08, 0.03);
-                      }}
-                      className={`flex items-center justify-between p-4 w-full rounded-b-2xl active:scale-[0.99] transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
- airplaneMode ? 'bg-amber-500 text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'
- }`}>
-                          <Plane size={15} />
-                        </div>
-                        <div>
-                          <h4 className="text-[14px] font-bold leading-tight text-slate-900 dark:text-white">Modo avião</h4>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                            {airplaneMode ? "Todas as conexões pausadas" : "Desativado"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
-                        <span>{airplaneMode ? "Ativo" : "Inativo"}</span>
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* 3. Main System Options List - Stacked Group 1 (Display, Sounds, Accessibility) */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 px-1">
-                    Geral e Aparência
-                  </span>
-                  <div className={`rounded-2xl border divide-y ${
- darkMode ? 'bg-slate-900 border-white/5 divide-white/5' : 'bg-white border-slate-200/60 divide-slate-100'
- }`}>
-                    {/* Notifications option */}
-                    <button 
-                      onClick={() => {
-                        setCurrentPanel('notificacoes');
-                        playTone(440, 'sine', 0.08, 0.03);
-                      }}
-                      className={`w-full flex items-center justify-between p-4 rounded-t-2xl active:scale-[0.99] transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-red-500 text-white flex items-center justify-center relative shrink-0">
-                          <Bell size={17} />
-                          <div className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900" />
-                        </div>
-                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Notificações</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
-                        <span>Ativadas</span>
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-
-                    {/* Display Settings option */}
-                    <button 
-                      onClick={() => {
-                        setCurrentPanel('tela');
-                        playTone(440, 'sine', 0.08, 0.03);
-                      }}
-                      className={`w-full flex items-center justify-between p-4 active:scale-[0.99] transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-amber-400 text-white flex items-center justify-center shrink-0">
-                          <Sun size={17} />
-                        </div>
-                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Configurações da tela</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
-                        <span>{darkMode ? "Escuro" : "Claro"}</span>
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-
-                    {/* Sound & Vibration option */}
-                    <button 
-                      onClick={() => {
-                        setCurrentPanel('som');
-                        playTone(440, 'sine', 0.08, 0.03);
-                      }}
-                      className={`w-full flex items-center justify-between p-4 active:scale-[0.99] transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0">
-                          <Volume2 size={17} />
-                        </div>
-                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Som e vibração</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
-                        <span>{volume}%</span>
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-
-                    {/* Accessibility option */}
-                    <button 
-                      onClick={() => {
-                        setCurrentPanel('acessibilidade');
-                        playTone(440, 'sine', 0.08, 0.03);
-                      }}
-                      className={`w-full flex items-center justify-between p-4 rounded-b-2xl active:scale-[0.99] transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-cyan-500 text-white flex items-center justify-center shrink-0">
-                          <Accessibility size={17} />
-                        </div>
-                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Acessibilidade</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
-                        <span>Inativo</span>
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* 4. Main System Options List - Stacked Group 2 (Battery, Apps, Privacy, About) */}
-                <div className="flex flex-col gap-1.5 pb-6">
-                  <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 px-1">
-                    Sistema e Outros
-                  </span>
-                  <div className={`rounded-2xl border divide-y ${
- darkMode ? 'bg-slate-900 border-white/5 divide-white/5' : 'bg-white border-slate-200/60 divide-slate-100'
- }`}>
-                    {/* Battery option */}
-                    <button 
-                      onClick={() => {
-                        setCurrentPanel('bateria');
-                        playTone(440, 'sine', 0.08, 0.03);
-                      }}
-                      className={`w-full flex items-center justify-between p-4 rounded-t-2xl active:scale-[0.99] transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-green-500 text-white flex items-center justify-center shrink-0">
-                          <BatteryCharging size={17} />
-                        </div>
-                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Bateria</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
-                        <span className="font-bold text-green-500">{simulatedLevel}%</span>
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-
-                    {/* Privacy & Security option */}
-                    <button 
-                      onClick={() => {
-                        setCurrentPanel('privacidade');
-                        playTone(440, 'sine', 0.08, 0.03);
-                      }}
-                      className={`w-full flex items-center justify-between p-4 active:scale-[0.99] transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 text-white flex items-center justify-center shrink-0">
-                          <Lock size={17} />
-                        </div>
-                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Privacidade e segurança</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-
-                    {/* Applications List option */}
-                    <button 
-                      onClick={() => {
-                        setCurrentPanel('apps');
-                        playTone(440, 'sine', 0.08, 0.03);
-                      }}
-                      className={`w-full flex items-center justify-between p-4 active:scale-[0.99] transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-500 text-white flex items-center justify-center shrink-0">
-                          <Grid size={17} />
-                        </div>
-                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Aplicativos</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
-                        <span>{installedApps.length} instalados</span>
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-
-                    {/* About the device option */}
-                    <button 
-                      onClick={() => {
-                        setCurrentPanel('sobre');
-                        playTone(440, 'sine', 0.08, 0.03);
-                      }}
-                      className={`w-full flex items-center justify-between p-4 rounded-b-2xl active:scale-[0.99] transition-all text-left ${
- darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
- }`}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-purple-500 text-white flex items-center justify-center shrink-0">
-                          <Info size={17} />
-                        </div>
-                        <span className="text-[14.5px] font-bold text-slate-900 dark:text-white truncate">Sobre o Aparelho</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 shrink-0 ml-2">
-                        <span>v1.0.4</span>
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            )}
-          </div>
+          <SettingsMenu
+            darkMode={darkMode}
+            userName={userName}
+            userAvatar={userAvatar}
+            email={email}
+            query={searchQuery}
+            setQuery={setSearchQuery}
+            devUnlocked={prefs.dev.enabled}
+            onOpen={(id) => { setCurrentPanel(id); playTone(500, 'sine', 0.08, 0.03); }}
+            summaries={{
+              wifi: wifi ? (connectedWifi ?? 'Conectado') : 'Desativado',
+              celular: cellular ? 'Dados ativados' : 'Desativado',
+              bluetooth: bluetooth ? 'Ativado' : 'Desativado',
+              aviao: airplaneMode ? 'Ativado' : 'Desativado',
+              notificacoes: allowedNotifications ? 'Permitidas' : 'Bloqueadas',
+              dnd: dnd ? 'Ativado' : 'Desativado',
+              som: `Volume ${volume}%`,
+              tela: `${darkMode ? 'Modo escuro' : 'Modo claro'} · brilho ${brightness}%`,
+              bateria: `${Math.round(simulatedLevel)}%${simulatedCharging ? ' · carregando' : ''}`,
+              memoria: `${fmtMem(mem.used)} de ${fmtMem(mem.total)} em uso`,
+              apps: `${installedApps.length} instalados`,
+              sobre: `${prefs.dev.osName} ${prefs.dev.osVersion} · ${prefs.dev.model}`,
+              dev: 'Ativado',
+            }}
+          />
         )}
 
         {/* SUB-PAGES WRAPPERS WITH INTERACTIVE ELEMENTS */}
@@ -790,6 +412,9 @@ export default function SettingsApp({
                    currentPanel === 'wifi' ? "Wi-Fi" : 
                    currentPanel === 'celular' ? "Rede Móvel" : 
                    currentPanel === 'bluetooth' ? "Bluetooth" : 
+                   currentPanel === 'memoria' ? "Memória e armazenamento" : 
+                   currentPanel === 'dnd' ? "Não perturbe" : 
+                   currentPanel === 'dev' ? "Opções do desenvolvedor" : 
                    currentPanel}
                 </h2>
                 <div className="w-16" /> {/* Spacer */}
@@ -1770,59 +1395,14 @@ export default function SettingsApp({
 
               {/* PANEL 13: SOBRE (ABOUT DEVICE) */}
               {currentPanel === 'sobre' && (
-                <div className="space-y-4">
-                  <div className={`p-4.5 rounded-2xl space-y-3.5 ${
- darkMode ? 'bg-slate-900' : 'bg-white'
- }`}>
-                    <div className="flex items-center gap-3">
-                      <Smartphone size={24} className="text-purple-500" />
-                      <div>
-                        <h3 className="text-sm font-bold">Mock Phone 16 Pro</h3>
-                        <p className="text-[11px] opacity-50">Projetado com React 19 & Tailwind v4</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-200/40 dark:border-white/5 pt-3 font-mono">
-                      <div className="bg-black/10 dark:bg-black/35 p-2 rounded-lg">
-                        <span className="opacity-50 block text-[11px]">Processador</span>
-                        <span className="font-bold truncate block">Antigravity i5</span>
-                      </div>
-                      <div className="bg-black/10 dark:bg-black/35 p-2 rounded-lg">
-                        <span className="opacity-50 block text-[11px]">Memória RAM</span>
-                        <span className="font-bold truncate block">8 GB LPDDR5X</span>
-                      </div>
-                      <div className="bg-black/10 dark:bg-black/35 p-2 rounded-lg">
-                        <span className="opacity-50 block text-[11px]">Armazenamento</span>
-                        <span className="font-bold truncate block">128 GB UFS 4.0</span>
-                      </div>
-                      <div className="bg-black/10 dark:bg-black/35 p-2 rounded-lg">
-                        <span className="opacity-50 block text-[11px]">S.O. Versão</span>
-                        <span className="font-bold truncate block">v1.0.4 stable</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Software update check */}
-                  <div className={`p-4.5 rounded-2xl text-center space-y-3.5 ${
- darkMode ? 'bg-slate-900' : 'bg-white'
- }`}>
-                    <h4 className="text-xs font-bold opacity-60">Atualizações de Software</h4>
-                    <button
-                      onClick={runUpdateCheck}
-                      disabled={checkingUpdate}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-xs font-bold rounded-xl transition-all cursor-pointer active:scale-95"
-                    >
-                      <RefreshCw size={12} className={checkingUpdate ? "animate-spin" : ""} />
-                      {checkingUpdate ? "Buscando atualizações..." : "Verificar Software"}
-                    </button>
-                    {updateMessage && (
-                      <p className="text-[11px] text-green-500 font-bold mt-1 animate-pulse">
-                        <Check size={14} className="inline mr-1 -mt-0.5" />{updateMessage}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                <AboutPanel darkMode={darkMode} userName={userName} language={language} battery={simulatedLevel} email={email}
+                  checking={checkingUpdate} updateMessage={updateMessage} onCheck={runUpdateCheck} onDevTap={onDevTap} />
               )}
+              {currentPanel === 'memoria' && (
+                <MemoryPanel darkMode={darkMode} installedApps={installedApps} openedApps={openedApps} appNames={appNames} onCloseApps={onCloseApps} />
+              )}
+              {currentPanel === 'dnd' && <DndPanel darkMode={darkMode} dnd={dnd} setDnd={setDnd} />}
+              {currentPanel === 'dev' && <DeveloperPanel darkMode={darkMode} />}
             </motion.div>
           )}
         </AnimatePresence>

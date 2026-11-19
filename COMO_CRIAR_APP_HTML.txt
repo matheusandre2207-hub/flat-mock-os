@@ -357,3 +357,32 @@ importados e para os que já vêm no sistema.
   - Tela por baixo dos painéis: em Configurações > Tela > "Vidro", ajuste o
     escurecimento e o desfoque que aparecem atrás da barra de apps, das
     notificações e da central de controle quando abertas.
+
+
+20. CONFIGURAÇÕES, MEMÓRIA, NÃO PERTURBE E DESENVOLVEDOR
+--------------------------------------------------------
+  - Configurações: agora têm perfil no topo e seções agrupadas (Conexões,
+    Avisos e som, Aparência, Dispositivo, Sistema), cada uma com ícone
+    colorido e um resumo ao vivo (Wi-Fi conectado, bateria, memória em uso...).
+  - Memória e armazenamento: RAM simulada que muda de forma orgânica com os
+    apps abertos (apps em segundo plano usam menos, o cache cresce e encolhe),
+    histórico dos últimos minutos, apps em execução com opção de fechar e
+    "Limpar memória". Também mostra o armazenamento, incluindo o uso real dos
+    dados do AeroOS. A tela de apps recentes mostra a RAM em uso.
+  - Não perturbe: está na central de controle, nas Configurações e aparece
+    como uma lua na barra de status. Sem pop-ups nem sons; os avisos vão
+    para o histórico. Opcional: esconder os avisos na tela de bloqueio.
+  - Sobre o aparelho: modelo, sistema, versão, patch, kernel, tempo ligado,
+    processador, RAM, armazenamento, tela, bateria, série, IMEI e mais.
+  - Modo desenvolvedor: em "Sobre o aparelho", toque 7 vezes em "Número da
+    versão". Surge "Opções do desenvolvedor", onde dá para editar nome e versão
+    do sistema, fabricante, modelo, RAM, armazenamento, data e hora do sistema,
+    e a aparência avançada (opacidade e desfoque de cada superfície).
+  - Widgets novos: Memória, Nota rápida, Tarefas, Foto, Contagem (fim do ano),
+    Passos e Frase do dia. Tocar num widget abre a edição da tela inicial.
+  - Papéis de parede: nove de formas em tons pastel (verde, amarelo, azul,
+    rosa, roxo, marrom, branco, laranja e cinza), no fim da lista.
+  - Apps recentes: fundo desfocado, o cartão do app atual abre centralizado e
+    um arrasto curto ou rápido para cima fecha o app na hora.
+  - Tela de bloqueio: as notificações têm desfoque; ao pedir a senha, o
+    papel de parede do início aparece desfocado como fundo do teclado numérico.

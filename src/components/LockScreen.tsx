@@ -28,6 +28,7 @@ interface LockScreenProps {
   onUnlock: () => void;
   onReset: () => void;
   onSignOut?: () => void;
+  timeOffsetMs?: number;
 }
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -50,6 +51,7 @@ export default function LockScreen({
   onUnlock,
   onReset,
   onSignOut,
+  timeOffsetMs = 0,
 }: LockScreenProps) {
   const { prefs: lockPrefs } = usePrefs();
   const lockPos = lockPrefs.lock.pos;
@@ -66,7 +68,7 @@ export default function LockScreen({
 
   useEffect(() => {
     const updateTime = () => {
-      const now = new Date();
+      const now = new Date(Date.now() + timeOffsetMs);
       setTimeStr(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
       setDateStr(
         language === 'en'
@@ -77,7 +79,7 @@ export default function LockScreen({
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, [language]);
+  }, [language, timeOffsetMs]);
 
   // A dica de deslizar some sozinha depois de um tempo
   useEffect(() => {
@@ -167,7 +169,8 @@ export default function LockScreen({
 
   return (
     <motion.div
-      className="absolute inset-0 z-[9999] flex flex-col justify-between p-6 select-none text-white font-sans overflow-hidden bg-zinc-950"
+      className="absolute inset-0 z-[9999] flex flex-col justify-between p-6 select-none text-white font-sans overflow-hidden"
+      style={{ background: showKeypad ? 'transparent' : '#09090b', transition: 'background .45s ease' }}
       animate={controls}
       drag={showKeypad ? false : 'y'}
       dragMomentum={false}
@@ -183,7 +186,8 @@ export default function LockScreen({
         if (!up) {
           snapBack();
         } else if (pincode) {
-          peekHome();
+          setShowKeypad(true);
+          snapBack();
         } else {
           leave();
         }
@@ -194,9 +198,9 @@ export default function LockScreen({
       }}
     >
       {wallpaper && (
-        <div className="absolute inset-0 z-0 bg-center bg-cover" style={{ background: wallpaper.gradient }} />
+        <div className="absolute inset-0 z-0 bg-center bg-cover" style={{ background: wallpaper.gradient, opacity: showKeypad ? 0 : 1, transition: 'opacity .45s ease' }} />
       )}
-      <div className="absolute inset-0 z-[1] bg-black/45" />
+      <div className="absolute inset-0 z-[1]" style={{ background: showKeypad ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.45)', transition: 'background .45s ease' }} />
 
 
       <AnimatePresence mode="wait">
@@ -216,7 +220,7 @@ export default function LockScreen({
               <ClockFace scope="lock" time={timeStr} date={dateStr} />
 
               {notifications && notifications.length > 0 && (
-                <div className="w-full max-w-[340px] mx-auto mt-6 flex flex-col gap-2.5 flex-1 min-h-0 overflow-y-auto no-scrollbar pb-2" style={{ WebkitMaskImage: 'linear-gradient(to bottom, #000 90%, transparent)', maskImage: 'linear-gradient(to bottom, #000 90%, transparent)' }}>
+                <div className="w-full max-w-[340px] mx-auto mt-6 flex flex-col gap-2.5 flex-1 min-h-0 overflow-y-auto no-scrollbar pb-2">
                   {notifications.slice(0, 5).map((notif) => (
                     <SwipeDismiss
                       key={notif.id}
@@ -224,7 +228,7 @@ export default function LockScreen({
                       onTap={() => openFromNotification(notif.app)}
                       onDismiss={() => onDismissNotification?.(notif.id)}
                     >
-                      <div className="flex items-start gap-3 w-full rounded-[22px] bg-white/12 backdrop-blur-xl border border-white/15 p-3.5 text-left">
+                      <div className="flex items-start gap-3 w-full rounded-[22px] border border-white/20 p-3.5 text-left" style={{ background: 'rgba(24,24,30,0.42)', backdropFilter: 'blur(28px) saturate(1.6)', WebkitBackdropFilter: 'blur(28px) saturate(1.6)' }}>
                         <div className="shrink-0">{renderAppIcon?.(notif.app)}</div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2 text-[11px] text-white/65">

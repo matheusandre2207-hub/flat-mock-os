@@ -1,5 +1,22 @@
 import { Wallpaper, Track, Chat, Folder, NotificationItem } from './types';
 
+// Papéis de parede de formas: minimalistas, em tons pastel (verde, amarelo, azul, rosa, roxo, marrom, branco, laranja e cinza)
+const circle = (x: number, y: number, r: number, c: string) => `radial-gradient(circle at ${x}% ${y}%, ${c} ${r}%, transparent ${r + 0.4}%)`;
+const arch = (x: number, y: number, w: number, h: number, c: string) => `radial-gradient(ellipse ${w}% ${h}% at ${x}% ${y}%, ${c} 99%, transparent 100%)`;
+const shapesWallpaper = (name: string, v: number, bg1: string, bg2: string, a: string, b: string, c: string): Wallpaper => {
+  const layers = [
+    // 0: círculo grande no canto, círculo pequeno e arco embaixo
+    [circle(8, 16, 17, a), circle(84, 58, 9, c), arch(50, 104, 78, 24, b)],
+    // 1: sol no alto e duas colinas
+    [circle(72, 20, 13, c), arch(18, 100, 70, 22, a), arch(88, 106, 60, 18, b)],
+    // 2: três círculos sobrepostos
+    [circle(30, 34, 15, a), circle(56, 46, 12, b), circle(40, 64, 9, c)],
+    // 3: faixa diagonal suave e um círculo
+    [circle(80, 82, 14, a), `linear-gradient(118deg, transparent 40%, ${b} 40.3%, ${b} 56%, transparent 56.3%)`, circle(22, 20, 7, c)],
+  ][v % 4];
+  return { name, gradient: `${layers.join(', ')}, linear-gradient(165deg, ${bg1}, ${bg2})`, isDark: false };
+};
+
 export const wallpapersList: Wallpaper[] = [
   // Static wallpapers (exactly 10)
   { name: "Flat Charcoal", gradient: "linear-gradient(135deg, #18181b, #09090b, #18181b)", isDark: true },
@@ -23,7 +40,16 @@ export const wallpapersList: Wallpaper[] = [
   { name: "★ Cyber Grid Neon", gradient: "linear-gradient(135deg, #050510, #180825, #050510)", isDark: true, isAnimated: true, animatedType: "cyber-neon" },
   { name: "★ Starfield Warp Speed", gradient: "linear-gradient(135deg, #020205, #050508)", isDark: true, isAnimated: true, animatedType: "starfield" },
   { name: "★ Lava Lamp Glow", gradient: "linear-gradient(135deg, #09090c, #1a0f25, #09090c)", isDark: true, isAnimated: true, animatedType: "lava-lamp" },
-  { name: "★ Shifting Gradient", gradient: "linear-gradient(135deg, #1e1b4b, #311042, #1e1b4b)", isDark: true, isAnimated: true, animatedType: "gradient-shift" }
+  { name: "★ Shifting Gradient", gradient: "linear-gradient(135deg, #1e1b4b, #311042, #1e1b4b)", isDark: true, isAnimated: true, animatedType: "gradient-shift" },
+  shapesWallpaper("Formas Verde", 0, "#eaf4e7", "#d9ecd6", "#c5e2c1", "#add5a8", "#f4faf1"),
+  shapesWallpaper("Formas Amarelo", 1, "#fcf5d8", "#f7ebbb", "#f3df93", "#eed172", "#fffbea"),
+  shapesWallpaper("Formas Azul", 2, "#e4eefa", "#d3e5f7", "#bad6f1", "#a0c6e9", "#f4f9ff"),
+  shapesWallpaper("Formas Rosa", 3, "#fbe7ef", "#f7d7e4", "#f3bdd3", "#eba2c1", "#fff6fa"),
+  shapesWallpaper("Formas Roxo", 0, "#ede7f8", "#ded4f2", "#ccbeea", "#b7a5de", "#f8f5fe"),
+  shapesWallpaper("Formas Marrom", 1, "#f0e4d7", "#e5d3c0", "#d5b997", "#c2a27b", "#faf4ec"),
+  shapesWallpaper("Formas Branco", 2, "#f8f7f4", "#ece9e4", "#ffffff", "#e2dfd9", "#d8d5cd"),
+  shapesWallpaper("Formas Laranja", 3, "#fde9d7", "#fad6b9", "#f7c093", "#f2aa73", "#fff4ea"),
+  shapesWallpaper("Formas Cinza", 0, "#eaebed", "#dadcdf", "#c7cace", "#b1b5bb", "#f5f6f7"),
 ];
 
 export const initialNotifications: NotificationItem[] = [

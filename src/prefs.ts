@@ -17,6 +17,15 @@ export interface GlassPrefs {
 export type IconMode = 'normal' | 'dark' | 'light' | 'wallpaper';
 export type DockStyle = 'floating' | 'fixed';
 
+/** Informações do sistema editáveis pelo modo desenvolvedor */
+export interface DevPrefs {
+  enabled: boolean;          // modo desenvolvedor desbloqueado (toque 7 vezes no número da versão)
+  osName: string; osVersion: string; codename: string; build: string;
+  model: string; maker: string; deviceName: string;
+  ramGb: number; storageGb: number;
+  timeOffsetMs: number;      // diferença entre a hora do sistema e a hora real
+}
+
 export interface KbPrefs {
   enabled: boolean;                                   // usar o teclado do AeroOS em vez do teclado do celular
   theme: 'auto' | 'dark' | 'light' | 'wallpaper';
@@ -38,6 +47,8 @@ export interface Prefs {
   kb: KbPrefs;
   glass: GlassPrefs;
   dockStyle: DockStyle;
+  dev: DevPrefs;
+  dndHideLock: boolean;      // Não perturbe: esconde as notificações na tela de bloqueio
   /** Estilo dos ícones; se ausente, vem de iconTint (compatibilidade) */
   iconMode?: IconMode;
   home: ClockPref;
@@ -48,6 +59,8 @@ export const DEFAULTS: Prefs = {
   navStyle: 'gestures',
   drawerStyle: 'list',
   dockStyle: 'floating',
+  dndHideLock: false,
+  dev: { enabled: false, osName: 'AeroOS', osVersion: '1.0', codename: 'Aurora', build: 'AERO.261118.001', model: 'Aero One', maker: 'UNiVERSE', deviceName: '', ramGb: 8, storageGb: 128, timeOffsetMs: 0 },
   glass: { drawer: { op: 72, blur: 28 }, notif: { op: 72, blur: 28 }, control: { op: 72, blur: 28 }, nav: { op: 46, blur: 30 }, dock: { op: 46, blur: 30 }, bdDrawer: { op: 38, blur: 10 }, bdNotif: { op: 45, blur: 14 }, bdControl: { op: 45, blur: 14 } },
   iconTint: false,
   doubleTapSleep: true,
@@ -61,7 +74,7 @@ const KEY = 'os_prefs';
 export function getPrefs(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) || '{}');
-    return { ...DEFAULTS, ...p, kb: { ...DEFAULTS.kb, ...p.kb }, glass: { drawer: { ...DEFAULTS.glass.drawer, ...p.glass?.drawer }, notif: { ...DEFAULTS.glass.notif, ...p.glass?.notif }, control: { ...DEFAULTS.glass.control, ...p.glass?.control }, nav: { ...DEFAULTS.glass.nav, ...p.glass?.nav }, dock: { ...DEFAULTS.glass.dock, ...p.glass?.dock }, bdDrawer: { ...DEFAULTS.glass.bdDrawer, ...p.glass?.bdDrawer }, bdNotif: { ...DEFAULTS.glass.bdNotif, ...p.glass?.bdNotif }, bdControl: { ...DEFAULTS.glass.bdControl, ...p.glass?.bdControl } }, home: { ...DEFAULTS.home, ...p.home }, lock: { ...DEFAULTS.lock, ...p.lock } };
+    return { ...DEFAULTS, ...p, kb: { ...DEFAULTS.kb, ...p.kb }, dev: { ...DEFAULTS.dev, ...p.dev }, glass: { drawer: { ...DEFAULTS.glass.drawer, ...p.glass?.drawer }, notif: { ...DEFAULTS.glass.notif, ...p.glass?.notif }, control: { ...DEFAULTS.glass.control, ...p.glass?.control }, nav: { ...DEFAULTS.glass.nav, ...p.glass?.nav }, dock: { ...DEFAULTS.glass.dock, ...p.glass?.dock }, bdDrawer: { ...DEFAULTS.glass.bdDrawer, ...p.glass?.bdDrawer }, bdNotif: { ...DEFAULTS.glass.bdNotif, ...p.glass?.bdNotif }, bdControl: { ...DEFAULTS.glass.bdControl, ...p.glass?.bdControl } }, home: { ...DEFAULTS.home, ...p.home }, lock: { ...DEFAULTS.lock, ...p.lock } };
   } catch {
     return DEFAULTS;
   }
