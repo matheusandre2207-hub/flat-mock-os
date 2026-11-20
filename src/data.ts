@@ -1,39 +1,47 @@
 import { Wallpaper, Track, Chat, Folder, NotificationItem } from './types';
 
-// Papéis de parede de formas: minimalistas, em tons pastel (verde, amarelo, azul, rosa, roxo, marrom, branco, laranja e cinza)
-const shapesWallpaper = (name: string, v: number, bg1: string, bg2: string, a: string, b: string, c: string): Wallpaper => {
-  // Camadas orgânicas inspiradas em papel recortado, com contornos assimétricos
-  // e volumes próprios, sem reproduzir a referência literalmente.
-  const palettes = [
-    [
-      `radial-gradient(ellipse 78% 46% at 112% 12%, ${c} 0 48%, transparent 49%)`,
-      `radial-gradient(ellipse 86% 54% at 102% 28%, ${a} 0 48%, transparent 49%)`,
-      `radial-gradient(ellipse 95% 60% at 95% 48%, ${b} 0 49%, transparent 50%)`,
-      `radial-gradient(ellipse 105% 72% at 85% 72%, ${a} 0 49%, transparent 50%)`,
-      `radial-gradient(ellipse 115% 78% at 76% 100%, ${c} 0 49%, transparent 50%)`,
-    ],
-    [
-      `radial-gradient(ellipse 75% 52% at -12% 8%, ${c} 0 48%, transparent 49%)`,
-      `radial-gradient(ellipse 90% 58% at -2% 30%, ${a} 0 48%, transparent 49%)`,
-      `radial-gradient(ellipse 100% 66% at 8% 54%, ${b} 0 49%, transparent 50%)`,
-      `radial-gradient(ellipse 110% 76% at 18% 78%, ${a} 0 49%, transparent 50%)`,
-      `radial-gradient(ellipse 120% 82% at 28% 110%, ${c} 0 49%, transparent 50%)`,
-    ],
-    [
-      `radial-gradient(ellipse 68% 42% at 18% 12%, ${a} 0 48%, transparent 49%)`,
-      `radial-gradient(ellipse 90% 55% at 95% 35%, ${c} 0 48%, transparent 49%)`,
-      `radial-gradient(ellipse 90% 58% at 8% 66%, ${b} 0 48%, transparent 49%)`,
-      `radial-gradient(ellipse 90% 55% at 100% 92%, ${a} 0 48%, transparent 49%)`,
-    ],
-    [
-      `radial-gradient(ellipse 90% 44% at 104% 4%, ${a} 0 48%, transparent 49%)`,
-      `radial-gradient(ellipse 78% 58% at 2% 34%, ${c} 0 48%, transparent 49%)`,
-      `radial-gradient(ellipse 100% 62% at 105% 66%, ${b} 0 48%, transparent 49%)`,
-      `radial-gradient(ellipse 85% 50% at 0% 100%, ${a} 0 48%, transparent 49%)`,
-    ],
-  ];
-  const shadows = `radial-gradient(ellipse 70% 24% at 50% 42%, rgba(0,0,0,.10), transparent 72%), radial-gradient(ellipse 60% 20% at 45% 78%, rgba(0,0,0,.08), transparent 75%)`;
-  return { name, gradient: `${shadows}, ${palettes[v % palettes.length].join(', ')}, linear-gradient(145deg, ${bg1}, ${bg2})`, isDark: false };
+// Papéis de parede de ondas: camadas orgânicas "de papel" com sombra suave, em tons pastel.
+// Três composições próprias: dunas (camadas horizontais com um sol), fluxo (ondas diagonais) e anéis (blobs concêntricos).
+const rng = (seed: number) => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const smoothPath = (pts: [number, number][]) => {
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    d += `C${(p1[0] + (p2[0] - p0[0]) / 6).toFixed(1)},${(p1[1] + (p2[1] - p0[1]) / 6).toFixed(1)} ${(p2[0] - (p3[0] - p1[0]) / 6).toFixed(1)},${(p2[1] - (p3[1] - p1[1]) / 6).toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
+};
+const waveWallpaper = (name: string, layout: 'dunes' | 'flow' | 'rings', seed: number, pal: string[]): Wallpaper => {
+  const r = rng(seed), W = 400, H = 860, n = pal.length;
+  let layers = '';
+  const lighten = (hex: string) => hex; // o degradê de cada camada usa a própria cor e a próxima
+  pal.forEach((c, k) => {
+    const next = pal[Math.min(n - 1, k + 1)];
+    const grad = `<linearGradient id="g${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${lighten(c)}"/><stop offset="1" stop-color="${next}" stop-opacity="0.55"/></linearGradient>`;
+    let d = '';
+    if (layout === 'dunes') {
+      const base = 250 + k * 108, amp = 26 + r() * 26, ph = r() * 6, f = 0.012 + r() * 0.008;
+      const pts: [number, number][] = [];
+      for (let x = -40; x <= 440; x += 60) pts.push([x, base + amp * Math.sin(x * f + ph) + (r() - 0.5) * 22]);
+      d = `${smoothPath(pts)}L440,${H + 40}L-40,${H + 40}Z`;
+    } else if (layout === 'flow') {
+      const base = -20 + k * 62, amp = 40 + r() * 30, ph = r() * 6, f = 0.007 + r() * 0.006;
+      const pts: [number, number][] = [];
+      for (let y = -40; y <= H + 40; y += 70) pts.push([base + amp * Math.sin(y * f + ph) + (r() - 0.5) * 26 + k * 18, y]);
+      d = `${smoothPath(pts)}L${W + 40},${H + 40}L${W + 40},-40Z`;
+    } else {
+      const cx = 330 - k * 6, cy = 150 + k * 14, R = (n - k) * 138 - 30;
+      const pts: [number, number][] = [];
+      const m = 12;
+      const rad = Array.from({ length: m }, () => 1 + (r() - 0.5) * 0.16);
+      for (let i = 0; i <= m + 2; i++) { const a = ((i % m) / m) * Math.PI * 2; const rr = R * rad[i % m]; pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 1.18]); }
+      d = `${smoothPath(pts)}Z`;
+    }
+    layers += `<defs>${grad}</defs><path d="${d}" fill="url(#g${k})" filter="url(#sh)"/>`;
+    if (layout === 'dunes' && k === 0) layers += `<circle cx="${240 + r() * 100}" cy="${262 + r() * 34}" r="${48 + r() * 16}" fill="${pal[n - 1]}" opacity="0.95"/>`;
+  });
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice"><defs><filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="-4" dy="7" stdDeviation="7" flood-color="#1b1b1b" flood-opacity="0.22"/></filter></defs><rect width="${W}" height="${H}" fill="${pal[0]}"/>${layers}</svg>`;
+  return { name, gradient: `url("data:image/svg+xml,${encodeURIComponent(svg)}") center/cover no-repeat`, isDark: false };
 };
 
 export const wallpapersList: Wallpaper[] = [
@@ -60,15 +68,15 @@ export const wallpapersList: Wallpaper[] = [
   { name: "★ Starfield Warp Speed", gradient: "linear-gradient(135deg, #020205, #050508)", isDark: true, isAnimated: true, animatedType: "starfield" },
   { name: "★ Lava Lamp Glow", gradient: "linear-gradient(135deg, #09090c, #1a0f25, #09090c)", isDark: true, isAnimated: true, animatedType: "lava-lamp" },
   { name: "★ Shifting Gradient", gradient: "linear-gradient(135deg, #1e1b4b, #311042, #1e1b4b)", isDark: true, isAnimated: true, animatedType: "gradient-shift" },
-  shapesWallpaper("Formas Verde", 0, "#eaf4e7", "#d9ecd6", "#c5e2c1", "#add5a8", "#f4faf1"),
-  shapesWallpaper("Formas Amarelo", 1, "#fcf5d8", "#f7ebbb", "#f3df93", "#eed172", "#fffbea"),
-  shapesWallpaper("Formas Azul", 2, "#e4eefa", "#d3e5f7", "#bad6f1", "#a0c6e9", "#f4f9ff"),
-  shapesWallpaper("Formas Rosa", 3, "#fbe7ef", "#f7d7e4", "#f3bdd3", "#eba2c1", "#fff6fa"),
-  shapesWallpaper("Formas Roxo", 0, "#ede7f8", "#ded4f2", "#ccbeea", "#b7a5de", "#f8f5fe"),
-  shapesWallpaper("Formas Marrom", 1, "#f0e4d7", "#e5d3c0", "#d5b997", "#c2a27b", "#faf4ec"),
-  shapesWallpaper("Formas Branco", 2, "#f8f7f4", "#ece9e4", "#ffffff", "#e2dfd9", "#d8d5cd"),
-  shapesWallpaper("Formas Laranja", 3, "#fde9d7", "#fad6b9", "#f7c093", "#f2aa73", "#fff4ea"),
-  shapesWallpaper("Formas Cinza", 0, "#eaebed", "#dadcdf", "#c7cace", "#b1b5bb", "#f5f6f7"),
+  waveWallpaper("Ondas Verde", "flow", 11, ["#6fa384", "#82b595", "#97c6a7", "#acd5b8", "#c3e3cb", "#dbf0df"]),
+  waveWallpaper("Dunas Amarelo", "dunes", 23, ["#e0b94f", "#e9c866", "#f0d680", "#f5e29c", "#faedb9", "#fdf6d6"]),
+  waveWallpaper("Anéis Azul", "rings", 35, ["#6f9fcf", "#85b0da", "#9cc1e4", "#b4d2ee", "#cbe1f6", "#e1eefb"]),
+  waveWallpaper("Ondas Rosa", "flow", 47, ["#d98aa8", "#e29ab6", "#eaadc5", "#f1c0d3", "#f7d3e0", "#fbe6ee"]),
+  waveWallpaper("Dunas Roxo", "dunes", 59, ["#9884cf", "#a995da", "#bba9e4", "#cdbdee", "#ded2f6", "#eee7fb"]),
+  waveWallpaper("Anéis Marrom", "rings", 71, ["#a67f5b", "#b68f6b", "#c6a07d", "#d4b393", "#e2c8ab", "#efdcc6"]),
+  waveWallpaper("Ondas Branco", "flow", 83, ["#cfccc4", "#dbd8d1", "#e6e3dd", "#efede8", "#f6f4f0", "#fcfbf9"]),
+  waveWallpaper("Dunas Laranja", "dunes", 95, ["#e08a4f", "#e99a63", "#f0ab79", "#f5bd91", "#f9cfaa", "#fce1c5"]),
+  waveWallpaper("Anéis Cinza", "rings", 107, ["#8c9097", "#9da1a8", "#aeb2b8", "#bfc3c8", "#d0d3d7", "#e2e4e6"]),
 ];
 
 export const initialNotifications: NotificationItem[] = [

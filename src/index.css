@@ -806,8 +806,7 @@
   transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
 }
 .drawer-item:hover { background: var(--surface-2); }
-.drawer-item:active { background: transparent; transform: none; }
-.drawer-item-selected { background: var(--surface-2) !important; transform: scale(0.985); }
+.drawer-item:active { background: var(--surface-2); transform: scale(0.98); }
 .app-label { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .drawer-footer {
   padding: 12px 18px 16px;
@@ -1251,7 +1250,7 @@
   color: inherit;
   transition: transform var(--t-fast) var(--ease);
 }
-#app-drawer.drawer-grid .drawer-item:active { transform: none; }
+
 #app-drawer.drawer-grid .drawer-item .app-label {
   max-width: 78px;
   font-size: 11px;
@@ -1430,28 +1429,20 @@ button, [role="button"], a, input, select, textarea, label, summary { touch-acti
 }
 
 
-/* Gaveta: rolagem vertical não deve virar gesto de abertura de aplicativo. */
-.drawer-list { touch-action: pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
-.drawer-item { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+/* Gaveta de apps: o realce só aparece ao pressionar de verdade (nunca ao rolar) */
+#app-drawer .drawer-item { -webkit-tap-highlight-color: transparent; }
+#app-drawer .drawer-item.pressing { background: var(--surface-2); transform: scale(0.98); }
 
-/* Seletor de widgets compacto, com rolagem própria e linhas fáceis de arrastar. */
-.widget-picker-sheet {
-  max-height: min(68%, 620px);
-  min-height: 0;
-  border-radius: 28px 28px 0 0;
-  padding-bottom: max(var(--sab), 18px);
-  overflow: hidden;
-}
-.widget-picker-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
-  padding: 2px 2px 10px;
-  scrollbar-width: thin;
-}
-.widget-picker-list .widget-opt { flex: none; min-height: 58px; }
-.widget-picker-sheet .sheet-title { flex: none; padding-bottom: 8px; }
+/* Lista de widgets: folha compacta, em grade e arrastável */
+.sheet-bottom.wsheet { max-height: min(62%, 540px); display: flex; flex-direction: column; padding: 8px 14px 14px; border-radius: 28px 28px 0 0; }
+.wsheet-grab { touch-action: none; cursor: grab; flex: none; }
+.wsheet-handle { width: 40px; height: 4px; border-radius: 99px; background: rgba(127, 127, 127, 0.5); margin: 4px auto 10px; }
+.wsheet-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 10px; }
+.wsheet-head strong { display: block; font-size: 18px; font-weight: 600; }
+.wsheet-head span { font-size: 12px; opacity: 0.55; }
+.wsheet-grid { overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 8px; min-height: 0; }
+.wcard { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; border-radius: 20px; border: 0; background: var(--surface-2); color: var(--text); text-align: left; cursor: pointer; transition: transform 0.12s ease; }
+.wcard:active { transform: scale(0.97); }
+.wcard .ico { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--accent, #3E63DD); color: #fff; }
+.wcard b { font-size: 14px; font-weight: 600; }
+.wcard small { font-size: 11px; opacity: 0.6; }

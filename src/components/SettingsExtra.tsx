@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Cpu, Smartphone, Moon, Terminal, RefreshCw, Check, X } from 'lucide-react';
+import { Cpu, Smartphone, Moon, Terminal, RefreshCw, Check, X, Camera as CameraIcon, CloudUpload, Copy, Pencil } from 'lucide-react';
+import { iconFromFile } from '../appOverrides';
+import { listMedia } from '../mediaStorage';
 import { usePrefs, setPrefs, DEFAULTS } from '../prefs';
 import { useMemory, fmtMem, freedByClosing } from '../memorySim';
 import { GlassSection } from './DisplayPrefs';
@@ -249,6 +251,132 @@ export function DeveloperPanel({ darkMode }: { darkMode: boolean }) {
         <button type="button" onClick={() => setPrefs({ dev: { ...DEFAULTS.dev, enabled: true } })} className={`w-full py-3 rounded-2xl text-sm font-semibold border-0 cursor-pointer ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>Restaurar informações padrão</button>
         <button type="button" onClick={() => setPrefs({ dev: { ...d, enabled: false } })} className="w-full py-3 rounded-2xl text-sm font-semibold border-0 cursor-pointer bg-red-500/10 text-red-500">Desativar modo desenvolvedor</button>
       </div>
+    </div>
+  );
+}
+
+
+/* ===================== AEROCLOUD (PERFIL E CONTA) ===================== */
+const PLANS = [
+  { id: 'free', name: 'Grátis', gb: 5, price: 'R$ 0' },
+  { id: 'plus', name: 'Plus', gb: 50, price: 'R$ 4,99/mês' },
+  { id: 'pro', name: 'Pro', gb: 500, price: 'R$ 14,99/mês' },
+] as const;
+const SYNC_ITEMS: [string, string][] = [['fotos', 'Fotos'], ['notas', 'Notas'], ['contatos', 'Contatos'], ['mensagens', 'Mensagens'], ['ajustes', 'Configurações']];
+const lsGet = (k: string, d: string) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
+const lsSet = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* ok */ } };
+
+export function CloudPanel({ darkMode, userName, setUserName, userAvatar, email, photo, setPhoto }: {
+  darkMode: boolean; userName: string; setUserName: (n: string) => void; userAvatar: string; email?: string; photo?: string | null; setPhoto: (p: string | null) => void;
+}) {
+  const { prefs } = usePrefs();
+  const fileRef = React.useRef<HTMLInputElement>(null);
+  const [editing, setEditing] = useState(false);
+  const [nameInput, setNameInput] = useState(userName);
+  const [plan, setPlan] = useState(() => lsGet('os_cloud_plan', 'free'));
+  const [sync, setSync] = useState<Record<string, boolean>>(() => { try { return { fotos: true, notas: true, contatos: true, mensagens: false, ajustes: true, ...JSON.parse(lsGet('os_cloud_sync', '{}')) }; } catch { return {}; } });
+  const [auto, setAuto] = useState(() => lsGet('os_cloud_auto', '1') === '1');
+  const [last, setLast] = useState(() => Number(lsGet('os_cloud_last_backup', '0')) || 0);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [sizes, setSizes] = useState({ photos: 0, audio: 0, other: 0 });
+  const [msg, setMsg] = useState('');
+  const total = (PLANS.find(p => p.id === plan) ?? PLANS[0]).gb * 1e9;
+
+  useEffect(() => {
+    (async () => {
+      const [ph, au] = await Promise.all([listMedia('photo').catch(() => []), listMedia('audio').catch(() => [])]);
+      const photos = ph.reduce((n, m) => n + m.size, 0), audio = au.reduce((n, m) => n + m.size, 0);
+      const est = await navigator.storage?.estimate?.().catch(() => undefined);
+      setSizes({ photos, audio, other: Math.max(0, (est?.usage ?? 0) - photos - audio) + 3e6 });
+    })();
+  }, []);
+  useEffect(() => { if (!msg) return; const t = setTimeout(() => setMsg(''), 2600); return () => clearTimeout(t); }, [msg]);
+
+  const used = sizes.photos + sizes.audio + sizes.other + (auto && last ? 12e6 : 0);
+  const fmt = (b: number) => (b >= 1e9 ? `${(b / 1e9).toFixed(1).replace('.', ',')} GB` : b >= 1e6 ? `${Math.round(b / 1e6)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`);
+  const parts = [{ n: 'Fotos', v: sizes.photos, c: '#D6409F' }, { n: 'Músicas', v: sizes.audio, c: '#E5A100' }, { n: 'Apps e dados', v: sizes.other, c: '#3E63DD' }, { n: 'Backup', v: auto && last ? 12e6 : 0, c: '#30A46C' }];
+
+  const pick = async (f?: File) => { if (!f) return; try { setPhoto(await iconFromFile(f, 256)); setMsg('Foto atualizada'); } catch { setMsg('Não foi possível usar essa imagem'); } };
+  const saveName = () => { const n = nameInput.trim(); if (n) { setUserName(n); lsSet('os_user_name', n); setMsg('Nome atualizado'); } setEditing(false); };
+  const backupNow = () => {
+    if (progress !== null) return;
+    setProgress(0);
+    const iv = setInterval(() => setProgress(p => {
+      const n = (p ?? 0) + 4 + Math.random() * 6;
+      if (n >= 100) { clearInterval(iv); const t = Date.now(); lsSet('os_cloud_last_backup', String(t)); setLast(t); setMsg('Backup concluído'); setTimeout(() => setProgress(null), 400); return 100; }
+      return n;
+    }), 140);
+  };
+  const lastTxt = last ? new Date(last).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Nunca';
+
+  return (
+    <div className="space-y-5">
+      <Card dark={darkMode} className="flex flex-col items-center gap-3 text-center">
+        <div className="relative">
+          <div className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center text-5xl" style={{ background: 'color-mix(in srgb, var(--accent, #3E63DD) 18%, transparent)' }}>
+            {photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : (userAvatar || userName.charAt(0).toUpperCase())}
+          </div>
+          <button type="button" onClick={() => fileRef.current?.click()} aria-label="Mudar foto" className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center text-white border-2 border-white dark:border-slate-900" style={{ background: 'var(--accent, #3E63DD)' }}><CameraIcon size={15} /></button>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { pick(e.target.files?.[0]); e.target.value = ''; }} />
+        </div>
+        {editing ? (
+          <div className="w-full max-w-xs space-y-2">
+            <input value={nameInput} onChange={e => setNameInput(e.target.value)} maxLength={24} autoFocus aria-label="Nome"
+              className={`w-full px-4 py-2 text-sm rounded-xl text-center font-bold outline-none border focus:ring-2 focus:ring-blue-500/50 ${darkMode ? 'bg-black text-white border-white/10' : 'bg-slate-100 text-slate-900 border-slate-200'}`} />
+            <div className="flex justify-center gap-2">
+              <button type="button" onClick={saveName} className="px-5 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg border-0 cursor-pointer">Salvar</button>
+              <button type="button" onClick={() => { setEditing(false); setNameInput(userName); }} className="px-5 py-1.5 bg-slate-400 text-white text-xs font-bold rounded-lg border-0 cursor-pointer">Cancelar</button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="text-[20px] font-semibold flex items-center justify-center gap-2">{userName}
+              <button type="button" onClick={() => { setNameInput(userName); setEditing(true); }} aria-label="Editar nome" className="opacity-50 border-0 bg-transparent cursor-pointer"><Pencil size={14} /></button></div>
+            <button type="button" onClick={() => { navigator.clipboard?.writeText(email ?? '').catch(() => {}); setMsg('E-mail copiado'); }} className="mt-1 text-[12px] opacity-60 font-mono inline-flex items-center gap-1.5 border-0 bg-transparent cursor-pointer">{email ?? 'AeroAccount'}<Copy size={11} /></button>
+          </div>
+        )}
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className="px-2.5 py-1 rounded-full font-semibold" style={{ background: 'color-mix(in srgb, var(--accent, #3E63DD) 18%, transparent)', color: 'var(--accent, #3E63DD)' }}>AeroCloud {(PLANS.find(p => p.id === plan) ?? PLANS[0]).name}</span>
+          {photo && <button type="button" onClick={() => setPhoto(null)} className="opacity-60 border-0 bg-transparent cursor-pointer font-semibold">Remover foto</button>}
+        </div>
+        {msg && <p className="text-[12px] text-emerald-500 font-medium"><Check size={13} className="inline -mt-0.5 mr-1" />{msg}</p>}
+      </Card>
+
+      <div><Title>Armazenamento</Title><Card dark={darkMode} className="space-y-3">
+        <div className="flex items-baseline justify-between"><span className="text-[22px] font-light tabular-nums">{fmt(used)}</span><span className="text-[12px] opacity-55">de {fmt(total)} usados</span></div>
+        <div className="flex h-3 rounded-full overflow-hidden bg-slate-200/70 dark:bg-white/10">{parts.map(p => <div key={p.n} style={{ width: `${Math.max(p.v > 0 ? 1.5 : 0, (p.v / total) * 100)}%`, background: p.c, transition: 'width .6s' }} />)}</div>
+        <div className="grid grid-cols-2 gap-x-5 gap-y-1.5">{parts.map(p => <div key={p.n} className="flex items-center gap-2 text-[12px]"><i className="w-2.5 h-2.5 rounded-full" style={{ background: p.c }} /><span className="opacity-60">{p.n}</span><b className="ml-auto tabular-nums">{fmt(p.v)}</b></div>)}</div>
+      </Card></div>
+
+      <div><Title>Backup</Title><Card dark={darkMode} className="space-y-1">
+        <Switch title="Backup automático" desc="Guarda suas fotos, notas e ajustes quando o aparelho está carregando." checked={auto} onChange={b => { setAuto(b); lsSet('os_cloud_auto', b ? '1' : '0'); }} />
+        <Row k="Último backup" v={lastTxt} />
+        <div className="pt-2">
+          <button type="button" onClick={backupNow} disabled={progress !== null} className="w-full py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 flex items-center justify-center gap-2" style={{ background: 'var(--accent, #3E63DD)' }}>
+            <CloudUpload size={15} />{progress === null ? 'Fazer backup agora' : `Enviando… ${Math.min(100, Math.round(progress))}%`}</button>
+          {progress !== null && <div className="h-1 mt-2 rounded-full bg-slate-200/70 dark:bg-white/10 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${progress}%`, background: 'var(--accent, #3E63DD)', transition: 'width .14s linear' }} /></div>}
+        </div>
+      </Card></div>
+
+      <div><Title>Sincronização</Title><Card dark={darkMode} className="divide-y divide-slate-200/40 dark:divide-white/5">
+        {SYNC_ITEMS.map(([k, l]) => <Switch key={k} title={l} checked={!!sync[k]} onChange={b => { const n = { ...sync, [k]: b }; setSync(n); lsSet('os_cloud_sync', JSON.stringify(n)); }} />)}
+      </Card></div>
+
+      <div><Title>Dispositivos</Title><Card dark={darkMode}>
+        <div className="flex items-center gap-3 py-2"><div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ background: 'linear-gradient(135deg,#6E56CF,#3E63DD)' }}><Smartphone size={18} /></div>
+          <div className="min-w-0 flex-1"><div className="text-[14px] font-medium truncate">{prefs.dev.deviceName || `${prefs.dev.model} de ${userName}`}</div><div className="text-[11.5px] opacity-55">Este aparelho · agora</div></div><Check size={16} className="text-emerald-500" /></div>
+      </Card></div>
+
+      <div><Title>Planos</Title><div className="grid grid-cols-3 gap-2.5">
+        {PLANS.map(p => (
+          <button key={p.id} type="button" onClick={() => { setPlan(p.id); lsSet('os_cloud_plan', p.id); setMsg(`Plano ${p.name} selecionado (simulado)`); }}
+            className={`rounded-2xl p-3 text-left border-2 cursor-pointer ${darkMode ? 'bg-slate-900' : 'bg-white'}`} style={{ borderColor: plan === p.id ? 'var(--accent, #3E63DD)' : 'transparent' }}>
+            <div className="text-[13px] font-semibold">{p.name}</div>
+            <div className="text-[18px] font-light tabular-nums">{p.gb} GB</div>
+            <div className="text-[10.5px] opacity-55 mt-0.5">{p.price}</div>
+          </button>
+        ))}
+      </div><p className="text-[11px] opacity-45 px-1 mt-2">Planos simulados: nada é cobrado.</p></div>
     </div>
   );
 }

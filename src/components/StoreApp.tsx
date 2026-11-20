@@ -314,8 +314,6 @@ const REVIEWS = [
 
 interface StoreAppProps {
   darkMode: boolean;
-  userAvatar?: string;
-  userName?: string;
   installedApps: string[];
   onInstall: (id: string) => void;
   onUninstall: (id: string) => void;
@@ -328,6 +326,8 @@ interface StoreAppProps {
   onUpdateCustomApp: (id: string, patch: Partial<CustomApp>) => void;
   overrides: Record<string, AppOverride>;
   onUpdateApp: (id: string, o: AppOverride | null) => void;
+  profilePhoto?: string | null;
+  userAvatar?: string;
 }
 
 // Ícone de um app da loja: imagem enviada pelo app importado, ou o desenho padrão
@@ -361,7 +361,7 @@ function customToItem(app: CustomApp): AppItem {
   };
 }
 
-export default function StoreApp({ darkMode, userAvatar = '👤', userName = 'Usuário', installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp, onSetFollowWallpaper, onSetOrientation, onUpdateCustomApp, overrides, onUpdateApp }: StoreAppProps) {
+export default function StoreApp({ darkMode, installedApps, onInstall, onUninstall, onOpenApp, customApps, onImportCustomApp, onDeleteCustomApp, onSetFollowWallpaper, onSetOrientation, onUpdateCustomApp, overrides, onUpdateApp, profilePhoto, userAvatar }: StoreAppProps) {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -581,7 +581,11 @@ export default function StoreApp({ darkMode, userAvatar = '👤', userName = 'Us
               aria-expanded={avatarMenuOpen}
               className="p-0 border-none bg-transparent cursor-pointer rounded-full active:scale-95 transition-transform"
             >
-              {userAvatar.startsWith('data:image') ? <img src={userAvatar} alt={userName} className="w-9 h-9 rounded-full object-cover border border-white/20" /> : <span className="w-9 h-9 rounded-full border border-white/20 bg-white/15 flex items-center justify-center text-lg">{userAvatar}</span>}
+              {profilePhoto ? (
+                <img src={profilePhoto} alt="Perfil" className="w-9 h-9 rounded-full object-cover border border-white/20" />
+              ) : (
+                <span className="w-9 h-9 rounded-full flex items-center justify-center text-lg border border-white/20" style={{ background: 'color-mix(in srgb, var(--accent, #3E63DD) 22%, transparent)' }}>{userAvatar || '🙂'}</span>
+              )}
             </button>
           </div>
         )}

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, Delete as DeleteIcon, ArrowBigUp, CornerDownLeft, Search as SearchIcon } from 'lucide-react';
 import { usePrefs } from '../prefs';
 import { getIconTint } from '../wallpaperTint';
+import { suggest, correct, learnWord } from '../keyboardDict';
 
 // Teclado do AeroOS. Qualquer campo de texto do sistema abre este teclado (o do celular não aparece):
 // os campos recebem inputmode="none" e as teclas são inseridas direto no campo em foco.
@@ -192,6 +193,10 @@ export default function SystemKeyboard({ darkMode, overlay }: { darkMode: boolea
   const [layer, setLayer] = useState<Layer>('abc');
   const [shift, setShift] = useState<Shift>('off');
   const [kind, setKind] = useState<Kind>('text');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const sugRef = useRef<() => void>(() => {});
+  const lastSpaceAt = useRef(0);
+  const lastCorrection = useRef<{ from: string; to: string; at: number } | null>(null);
   const targetRef = useRef<Target | null>(null);
   const beforeRef = useRef('');
   const lastShift = useRef(0);
@@ -209,6 +214,7 @@ export default function SystemKeyboard({ darkMode, overlay }: { darkMode: boolea
     } catch { return ''; }
   };
   const refreshCap = () => {
+    sugRef.current();
     if (!kb.autoCap || kind !== 'text') return;
     if (/(^|[.!?]\s+)$/.test(getBefore())) setShift(s => (s === 'off' ? 'once' : s));
   };
@@ -294,7 +300,7 @@ export default function SystemKeyboard({ darkMode, overlay }: { darkMode: boolea
 
   // Layout
   const rows = 4, gap = 7;
-  const total = 30 + rows * kb.height + (rows - 1) * gap + 22 + (kb.suggestions ? 30 : 0);
+  const total = 36 + rows * kb.height + (rows - 1) * gap + 22;
   useEffect(() => {
     const r = document.documentElement;
     r.style.setProperty('--kb-h', open ? `${total}px` : '0px');
@@ -326,22 +332,67 @@ export default function SystemKeyboard({ darkMode, overlay }: { darkMode: boolea
     window.setTimeout(() => capRef.current(), 0);
   };
   const up = shift !== 'off';
-  const corrections: Record<string, string> = { 'vc':'você', 'vcs':'vocês', 'pq':'porque', 'tb':'também', 'naum':'não', 'nao':'não', 'voce':'você', 'voces':'vocês', 'tambem':'também', 'ola':'olá', 'ate':'até', 'entao':'então', 'obg':'obrigado', 'q':'que', 'ñ':'não' };
-  const currentWord = (getBefore().match(/[\p{L}]+$/u) || [''])[0].toLowerCase();
-  const suggestionWords = ['você','vocês','porque','também','não','sim','olá','hoje','amanhã','obrigado','tudo','como','estou','vamos','certo','beleza'];
-  const suggestions = currentWord ? Array.from(new Set([currentWord, ...suggestionWords.filter(w => w.startsWith(currentWord)), ...Object.keys(corrections).filter(w => w.startsWith(currentWord) || currentWord.startsWith(w)).map(w => corrections[w])])).slice(0,3) : ['Olá','Tudo','Você'];
-  const applySuggestion = (word: string) => {
+
+  // Digitação inteligente: sugestões, correção automática, ponto com espaço duplo
+  const wordRe = /[\p{L}\p{M}'’-]+$/u;
+  const currentWord = () => (getBefore().match(wordRe)?.[0] ?? '');
+  const refreshSuggest = () => {
+    if (!kb.suggestions || (kind !== 'text' && kind !== 'search')) { setSuggestions([]); return; }
     const before = getBefore();
-    const last = (before.match(/[\p{L}]+$/u) || [''])[0];
-    for (let n=0;n<last.length;n++) send({op:'backspace'});
-    send({op:'insert', text:word});
+    const w = before.match(wordRe)?.[0] ?? '';
+    if (w) setSuggestions(suggest(w, kb.lang));
+    else if (!before.trim()) setSuggestions(kb.lang === 'en' ? ['Hi', 'Hello', 'Thanks'] : ['Olá', 'Oi', 'Tudo']);
+    else setSuggestions([]);
+  };
+  sugRef.current = refreshSuggest;
+  const applyAutoCorrect = (): boolean => {
+    if (!kb.autoCorrect || kind !== 'text') return false;
+    const w = currentWord();
+    if (!w) return false;
+    const fix = correct(w, kb.lang);
+    if (fix) {
+      for (let i = 0; i < w.length; i++) send({ op: 'backspace' });
+      send({ op: 'insert', text: fix });
+      lastCorrection.current = { from: w, to: fix, at: Date.now() };
+      return true;
+    }
+    learnWord(w);
+    return false;
+  };
+  const onSpace = () => {
+    const now = Date.now();
+    if (kb.doubleSpace && kind === 'text' && now - lastSpaceAt.current < 600 && /[\p{L}\p{N}] $/u.test(getBefore())) {
+      send({ op: 'backspace' }); send({ op: 'insert', text: '. ' }); lastSpaceAt.current = 0; return;
+    }
+    applyAutoCorrect();
+    send({ op: 'insert', text: ' ' });
+    lastSpaceAt.current = now;
+  };
+  const onBackspace = () => {
+    const lc = lastCorrection.current;
+    // apagar logo depois de uma correção desfaz a correção e mantém a palavra original
+    if (lc && Date.now() - lc.at < 4000 && getBefore().endsWith(lc.to + ' ')) {
+      for (let i = 0; i < lc.to.length + 1; i++) send({ op: 'backspace' });
+      send({ op: 'insert', text: lc.from });
+      learnWord(lc.from); learnWord(lc.from);
+      lastCorrection.current = null;
+      return;
+    }
+    lastCorrection.current = null;
+    send({ op: 'backspace' });
+  };
+  const onSuggestion = (sug: string) => {
+    const w = currentWord();
+    const cap = w && w[0] !== w[0].toLowerCase();
+    const text = cap ? sug.charAt(0).toUpperCase() + sug.slice(1) : sug;
+    for (let i = 0; i < w.length; i++) send({ op: 'backspace' });
+    send({ op: 'insert', text: text + ' ' });
+    learnWord(text.toLowerCase());
+    lastSpaceAt.current = Date.now();
+    if (shift === 'once') setShift('off');
   };
   const typeText = (t: string, isLetter = true) => {
-    if (t === ' ' && kb.autoCorrect) {
-      const liveWord = ((getBefore().match(/[\p{L}]+$/u) || [''])[0]).toLowerCase();
-      const correction = corrections[liveWord];
-      if (correction) applySuggestion(correction);
-    }
+    if (/^[.,!?;:]$/.test(t)) applyAutoCorrect();
     send({ op: 'insert', text: t });
     if (isLetter && shift === 'once') setShift('off');
   };
@@ -363,9 +414,9 @@ export default function SystemKeyboard({ darkMode, overlay }: { darkMode: boolea
   const row = (children: React.ReactNode, pad = 0) => <div style={{ display: 'flex', gap: 6, padding: `0 ${pad}px` }}>{children}</div>;
 
   const enterIcon = kind === 'search' ? <SearchIcon size={20} /> : <CornerDownLeft size={20} />;
-  const back = <Key {...kp} key="bk" flex={1.5} variant="special" repeat label={<DeleteIcon size={21} />} aria="Apagar" onTap={() => send({ op: 'backspace' })} />;
+  const back = <Key {...kp} key="bk" flex={1.5} variant="special" repeat label={<DeleteIcon size={21} />} aria="Apagar" onTap={onBackspace} />;
   const enter = <Key {...kp} key="en" flex={1.7} variant="accent" label={enterIcon} aria="Enter" onTap={() => send({ op: 'enter' })} />;
-  const space = <Key {...kp} key="sp" flex={kind === 'email' || kind === 'url' ? 3.6 : 4.4} label={<span style={{ fontSize: 12, opacity: 0.55, letterSpacing: '0.08em' }}>AeroOS</span>} aria="Espaço" onTap={() => typeText(' ', false)} />;
+  const space = <Key {...kp} key="sp" flex={kind === 'email' || kind === 'url' ? 3.6 : 4.4} label={<span style={{ fontSize: 12, opacity: 0.55, letterSpacing: '0.08em' }}>AeroOS</span>} aria="Espaço" onTap={onSpace} />;
   const sideKey = kind === 'email' ? '@' : kind === 'url' ? '/' : ',';
 
   let body: React.ReactNode;
@@ -436,10 +487,20 @@ export default function SystemKeyboard({ darkMode, overlay }: { darkMode: boolea
         touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none', fontFamily: 'inherit',
       }}
     >
-      <div style={{ height: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px' }}>
-        <span style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.4 }}>Teclado AeroOS</span>
+      <div style={{ height: 36, display: 'flex', alignItems: 'center', padding: '0 4px' }}>
+        {kb.suggestions && suggestions.length > 0 && (kind === 'text' || kind === 'search') ? (
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'stretch', height: 30 }}>
+            {suggestions.slice(0, 3).map((sg, i) => (
+              <button key={sg + i} type="button" onMouseDown={e => e.preventDefault()} onPointerDown={e => { e.preventDefault(); buzz(); onSuggestion(sg); }}
+                style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', color: 'inherit', fontSize: 15, fontWeight: i === 0 ? 600 : 400, padding: '0 6px', cursor: 'pointer', fontFamily: 'inherit',
+                  borderLeft: i ? `1px solid ${look.dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}` : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sg}</button>
+            ))}
+          </div>
+        ) : (
+          <span style={{ flex: 1, paddingLeft: 8, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.4 }}>Teclado AeroOS</span>
+        )}
         <button type="button" aria-label="Esconder teclado" onMouseDown={e => e.preventDefault()} onPointerDown={e => { e.preventDefault(); hide(); }}
-          style={{ width: 32, height: 26, border: 0, background: 'transparent', color: 'inherit', opacity: 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          style={{ width: 36, height: 28, border: 0, background: 'transparent', color: 'inherit', opacity: 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <ChevronDown size={20} />
         </button>
       </div>

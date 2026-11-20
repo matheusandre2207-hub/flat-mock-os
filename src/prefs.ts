@@ -36,9 +36,11 @@ export interface KbPrefs {
   sound: boolean;
   vibrate: boolean;
   autoCap: boolean;
-  autoCorrect: boolean;
-  suggestions: boolean;
   accents: boolean;                                   // segurar uma vogal mostra acentos
+  autoCorrect: boolean;                               // corrige palavras ao digitar espaço ou pontuação
+  suggestions: boolean;                               // barra de sugestões de palavras
+  doubleSpace: boolean;                               // dois espaços viram ponto e espaço
+  lang: 'pt' | 'en';                                  // idioma do dicionário
 }
 
 export interface Prefs {
@@ -66,7 +68,7 @@ export const DEFAULTS: Prefs = {
   glass: { drawer: { op: 72, blur: 28 }, notif: { op: 72, blur: 28 }, control: { op: 72, blur: 28 }, nav: { op: 46, blur: 30 }, dock: { op: 46, blur: 30 }, bdDrawer: { op: 38, blur: 10 }, bdNotif: { op: 45, blur: 14 }, bdControl: { op: 45, blur: 14 } },
   iconTint: false,
   doubleTapSleep: true,
-  kb: { enabled: true, theme: 'auto', opacity: 82, blur: 24, height: 46, radius: 12, sound: false, vibrate: true, autoCap: true, autoCorrect: true, suggestions: true, accents: true },
+  kb: { enabled: true, theme: 'auto', opacity: 82, blur: 24, height: 46, radius: 12, sound: false, vibrate: true, autoCap: true, accents: true, autoCorrect: true, suggestions: true, doubleSpace: true, lang: 'pt' },
   home: { style: 'light', pos: 'top', align: 'left' },
   lock: { style: 'light', pos: 'top', align: 'center' }
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useDragControls } from 'motion/react';
 import { 
   Wifi, WifiOff, Bluetooth, Signal, Plane, Moon, Sun, 
   Volume2, VolumeX, Sliders, Search, User, Folder, FileText, 
@@ -47,7 +47,7 @@ import GalleryApp from './components/GalleryApp';
 import SystemKeyboard from './components/SystemKeyboard';
 import StatusPills from './components/StatusPills';
 import LandscapePanel from './components/LandscapePanel';
-import { Wifi as WifiIcon, Bluetooth as BluetoothIcon, Plane as PlaneIcon, Moon as MoonIcon, Signal as SignalIcon, Settings2 as WidgetEditIcon, Contrast as ContrastIcon } from 'lucide-react';
+import { Wifi as WifiIcon, Bluetooth as BluetoothIcon, Plane as PlaneIcon, Moon as MoonIcon, Signal as SignalIcon, Settings2 as WidgetEditIcon, Contrast as ContrastIcon, Layers as LayersIcon } from 'lucide-react';
 import { BUNDLED_APPS, isBundledId } from './bundledApps';
 import { listMedia, putMedia, deleteMedia, audioFromFile, fmtDuration, TRACK_COLORS, type MediaItem } from './mediaStorage';
 import type { Track as MediaTrack } from './types';
@@ -794,6 +794,9 @@ const randomIncomingMessages = [
   }
 ];
 
+// Ao tocar num widget, abre o app dele
+const WIDGET_APP: Record<string, string> = { tempo: 'clima', bateria: 'configuracoes', musica: 'musica', memoria: 'configuracoes', foto: 'galeria', notas: 'notas', passos: 'configuracoes' };
+
 function RecentsMemoryBadge() {
   const m = useMemory();
   return <div className="recents-mem">{`RAM ${fmtMem(m.used)} de ${fmtMem(m.total)} · ${fmtMem(m.free)} livres`}</div>;
@@ -858,6 +861,11 @@ export default function App() {
   const [dnd, setDnd] = useState<boolean>(() => localStorage.getItem('os_dnd') === '1');
   useEffect(() => { try { localStorage.setItem('os_dnd', dnd ? '1' : '0'); } catch { /* ok */ } }, [dnd]);
   const timeOffsetRef = useRef(0);
+  const [profilePhoto, setProfilePhotoState] = useState<string | null>(() => { try { return localStorage.getItem('os_profile_photo'); } catch { return null; } });
+  const setProfilePhoto = (ph: string | null) => {
+    setProfilePhotoState(ph);
+    try { if (ph) localStorage.setItem('os_profile_photo', ph); else localStorage.removeItem('os_profile_photo'); } catch { /* ok */ }
+  };
 
   // Conta AeroOS: quem existe neste aparelho e se alguém está conectado
   const [account, setAccount] = useState<PublicAccount | null>(() => getAccount());
@@ -1074,7 +1082,13 @@ export default function App() {
   // Wallpaper manager
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>(() => {
     const saved = localStorage.getItem('os_wallpapers');
-    return saved ? JSON.parse(saved) : wallpapersList;
+    if (!saved) return wallpapersList;
+    try {
+      const list: Wallpaper[] = JSON.parse(saved);
+      const have = new Set(list.map(w => w.name));
+      const extra = wallpapersList.filter(w => !have.has(w.name));
+      return extra.length ? [...list, ...extra] : list;
+    } catch { return wallpapersList; }
   });
   const [wallpaperIndex, setWallpaperIndex] = useState(() => {
     const saved = localStorage.getItem('os_wallpaper_index');
@@ -1105,10 +1119,10 @@ export default function App() {
 
   // Drawer Long press state for adding shortcuts
   const [longPressActiveApp, setLongPressActiveApp] = useState<string | null>(null);
-  const [drawerPressedApp, setDrawerPressedApp] = useState<string | null>(null);
+  const [pressedApp, setPressedApp] = useState<string | null>(null);
+  const pressVisualTimer = useRef(0);
+  const drawerLongPressed = useRef(false);
   const drawerLongPressTimerRef = useRef<any>(null);
-  const drawerGestureMovedRef = useRef(false);
-  const drawerLongPressTriggeredRef = useRef(false);
   
   // Apps in the dock (Max 4)
   const [dockApps, setDockApps] = useState<string[]>(() => {
@@ -1572,12 +1586,6 @@ export default function App() {
     // Disabled volume HUD display
   }, [volume]);
 
-  // Auto-close multitasking/recent apps panel when there are no opened apps left
-  useEffect(() => {
-    if (recentAppsOpen && openedApps.length === 0) {
-      setRecentAppsOpen(false);
-    }
-  }, [openedApps, recentAppsOpen]);
 
   // 3. Time Tick Clock trigger
   useEffect(() => {
@@ -2019,10 +2027,9 @@ export default function App() {
     }
 
     drawerPressCoordsRef.current = { startX: clientX, startY: clientY, currentX: clientX, currentY: clientY };
-    drawerGestureMovedRef.current = false;
-    drawerLongPressTriggeredRef.current = false;
 
     drawerLongPressTimerRef.current = setTimeout(() => {
+      drawerLongPressed.current = true;
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
@@ -2044,6 +2051,9 @@ export default function App() {
     }, 600); // 600ms long press
     
     setLongPressActiveApp(appName);
+    drawerLongPressed.current = false;
+    clearTimeout(pressVisualTimer.current);
+    pressVisualTimer.current = window.setTimeout(() => setPressedApp(appName), 120);
   };
 
   const handleDrawerPressMove = (e: React.MouseEvent | React.TouchEvent) => {
@@ -2064,8 +2074,9 @@ export default function App() {
     // If they moved significantly, cancel long press (they are scrolling)
     const diffX = Math.abs(clientX - drawerPressCoordsRef.current.startX);
     const diffY = Math.abs(clientY - drawerPressCoordsRef.current.startY);
-    if (diffX > 12 || diffY > 12) {
-      drawerGestureMovedRef.current = true;
+    if (diffX > 8 || diffY > 8) {
+      clearTimeout(pressVisualTimer.current);
+      setPressedApp(null);
       if (drawerLongPressTimerRef.current) {
         clearTimeout(drawerLongPressTimerRef.current);
         drawerLongPressTimerRef.current = null;
@@ -2074,25 +2085,22 @@ export default function App() {
     }
   };
 
-  const handleDrawerPressEnd = (appName: string) => {
+  // Só um toque (click) abre o app; soltar depois de rolar ou arrastar não abre nada
+  const handleDrawerPressEnd = (_appName?: string) => {
     if (drawerLongPressTimerRef.current) {
       clearTimeout(drawerLongPressTimerRef.current);
       drawerLongPressTimerRef.current = null;
     }
-    
-    // If released before 600ms, open the app
-    if (longPressActiveApp === appName) {
-      openApp(appName);
-    }
+    clearTimeout(pressVisualTimer.current);
+    setPressedApp(null);
     setLongPressActiveApp(null);
   };
 
-  const handleDrawerPressCancel = () => {
-    if (drawerLongPressTimerRef.current) {
-      clearTimeout(drawerLongPressTimerRef.current);
-      drawerLongPressTimerRef.current = null;
-    }
-    setLongPressActiveApp(null);
+  const handleDrawerPressCancel = () => handleDrawerPressEnd();
+
+  const handleDrawerClick = (appName: string) => {
+    if (drawerLongPressed.current) { drawerLongPressed.current = false; return; }
+    openApp(appName);
   };
 
   // Handle click or swipe-down action on popup notification
@@ -2471,9 +2479,28 @@ export default function App() {
   const [widgetSheet, setWidgetSheet] = useState(false);
   const [editWidgetId, setEditWidgetId] = useState<string | null>(null);
   const widgetJustDragged = useRef(false);
-  const widgetPressTimerRef = useRef<any>(null);
-  const widgetLongPressedRef = useRef(false);
-  const widgetPressStartRef = useRef<{x:number;y:number}|null>(null);
+  const widgetLongPressed = useRef(false);
+  const widgetHold = useRef<{ t: number; x: number; y: number } | null>(null);
+  const widgetSheetDrag = useDragControls();
+  const cancelWidgetHold = () => { if (widgetHold.current) { clearTimeout(widgetHold.current.t); widgetHold.current = null; } };
+  const startWidgetHold = (e: React.MouseEvent | React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('textarea, input')) return;
+    const pt = 'touches' in e ? e.touches[0] : e;
+    if (!pt) return;
+    cancelWidgetHold();
+    widgetHold.current = { x: pt.clientX, y: pt.clientY, t: window.setTimeout(() => {
+      widgetHold.current = null;
+      widgetLongPressed.current = true;
+      window.setTimeout(() => { widgetLongPressed.current = false; }, 600);
+      try { navigator.vibrate?.(40); } catch { /* ok */ }
+      setIsEditingHome(true);
+    }, 450) };
+  };
+  const moveWidgetHold = (e: React.MouseEvent | React.TouchEvent) => {
+    const h = widgetHold.current; if (!h) return;
+    const pt = 'touches' in e ? e.touches[0] : e;
+    if (pt && (Math.abs(pt.clientX - h.x) > 10 || Math.abs(pt.clientY - h.y) > 10)) cancelWidgetHold();
+  };
 
   // Arrastar widgets pela tela inicial (no modo de edição)
   const [widgetDrag, setWidgetDrag] = useState<WidgetDrag | null>(null);
@@ -2500,18 +2527,7 @@ export default function App() {
   stateRef.current = { placed, widgets };
 
   const handleWidgetPressStart = (e: React.MouseEvent | React.TouchEvent, w: WidgetItem) => {
-    if (!isEditingHome) {
-      widgetLongPressedRef.current = false;
-      const pt = 'touches' in e ? e.touches[0] : e;
-      if (pt) widgetPressStartRef.current = { x: pt.clientX, y: pt.clientY };
-      if (widgetPressTimerRef.current) clearTimeout(widgetPressTimerRef.current);
-      widgetPressTimerRef.current = setTimeout(() => {
-        widgetLongPressedRef.current = true;
-        setIsEditingHome(true);
-        if (navigator.vibrate) navigator.vibrate(45);
-      }, 620);
-      return;
-    }
+    if (!isEditingHome) { startWidgetHold(e); return; }
     const sz = widgetSize(w);
     const g = document.getElementById('home-grid');
     if (!sz || !g) return;
@@ -2679,6 +2695,8 @@ export default function App() {
             appNames={Object.fromEntries(Object.entries(appMetadata).map(([k, v]) => [k, v.label]))}
             onCloseApps={(ids) => { setOpenedApps(prev => prev.filter(x => !ids.includes(x))); if (activeApp && ids.includes(activeApp)) setActiveApp(null); }}
             email={account?.email}
+                  profilePhoto={profilePhoto}
+                  setProfilePhoto={setProfilePhoto}
             userName={userName}
             setUserName={setUserName}
             wifi={wifiActive}
@@ -2775,8 +2793,6 @@ export default function App() {
         return (
           <StoreApp
             darkMode={darkMode}
-            userAvatar={userAvatar}
-            userName={userName}
             installedApps={installedApps}
             onInstall={handleInstallApp}
             onUninstall={handleUninstallApp}
@@ -2789,6 +2805,8 @@ export default function App() {
               onUpdateCustomApp={patchCustomApp}
               overrides={appOverrides}
               onUpdateApp={updateAppOverride}
+              profilePhoto={profilePhoto}
+              userAvatar={userAvatar}
           />
         );
       case 'notas':
@@ -3149,16 +3167,19 @@ export default function App() {
                   } as React.CSSProperties}
                   onMouseDown={(e) => handleWidgetPressStart(e, w)}
                   onTouchStart={(e) => handleWidgetPressStart(e, w)}
+                  onTouchMove={moveWidgetHold}
+                  onMouseMove={moveWidgetHold}
+                  onTouchEnd={cancelWidgetHold}
+                  onTouchCancel={cancelWidgetHold}
+                  onMouseUp={cancelWidgetHold}
+                  onMouseLeave={cancelWidgetHold}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (widgetPressTimerRef.current) { clearTimeout(widgetPressTimerRef.current); widgetPressTimerRef.current = null; }
-                    if (widgetLongPressedRef.current) { widgetLongPressedRef.current = false; return; }
                     if (isEditingHome) { if (w.type === 'relogio' && !widgetJustDragged.current) setEditWidgetId(w.id); return; }
-                    if (!(e.target as HTMLElement).closest('button, input, textarea, a')) {
-                      const targetApp: Record<string, string> = { clima: 'clima', musica: 'musica', foto: 'galeria', calendario: 'notas', bateria: 'configuracoes', memoria: 'configuracoes', notas: 'notas', tarefas: 'notas', relogio: 'configuracoes', contagem: 'notas', passos: 'configuracoes', frase: 'notas' };
-                      const appId = targetApp[w.type];
-                      if (appId && appMetadata[appId]) openApp(appId);
-                    }
+                    if (widgetLongPressed.current) return;
+                    if ((e.target as HTMLElement).closest('button, input, textarea, a')) return;
+                    const target = WIDGET_APP[w.type];
+                    if (target && appMetadata[target]) openApp(target);
                   }}
                 >
                   {isEditingHome && (
@@ -3190,7 +3211,7 @@ export default function App() {
                     onPrev={() => setCurrentTrackIndex(currentTrackIndex === 0 ? allTracks.length - 1 : currentTrackIndex - 1)}
                     onToggle={() => setMusicPlaying(!musicPlaying)}
                     onNext={() => setCurrentTrackIndex((currentTrackIndex + 1) % allTracks.length)}
-                    onOpen={() => { if (!isEditingHome) setIsEditingHome(true); }}
+                    onOpen={(id) => { if (!isEditingHome && !widgetLongPressed.current && appMetadata[id]) openApp(id); }}
                   />
                 </div>
               );
@@ -3289,7 +3310,7 @@ export default function App() {
             <span className="drawer-time">{systemTime}</span>
           </div>
 
-          <div className="drawer-list no-scrollbar">
+          <div className="drawer-list no-scrollbar" onScroll={handleDrawerPressCancel}>
             {[...installedApps]
               .sort((a, b) => {
                 const labelA = appMetadata[a]?.label || '';
@@ -3303,13 +3324,15 @@ export default function App() {
                   <button
                     key={appName}
                     type="button"
-                    className={`drawer-item ${drawerPressedApp === appName ? 'drawer-item-selected' : ''}`}
+                    className={`drawer-item${pressedApp === appName ? ' pressing' : ''}`}
                     onMouseDown={(e) => handleDrawerPressStart(e, appName)}
                     onTouchStart={(e) => handleDrawerPressStart(e, appName)}
                     onMouseMove={(e) => handleDrawerPressMove(e)}
                     onTouchMove={(e) => handleDrawerPressMove(e)}
                     onMouseUp={() => handleDrawerPressEnd(appName)}
                     onTouchEnd={() => handleDrawerPressEnd(appName)}
+                    onTouchCancel={handleDrawerPressCancel}
+                    onClick={() => handleDrawerClick(appName)}
                     onMouseLeave={handleDrawerPressCancel}
                     onContextMenu={(e) => e.preventDefault()}
                   >
@@ -3343,6 +3366,8 @@ export default function App() {
               appNames={Object.fromEntries(Object.entries(appMetadata).map(([k, v]) => [k, v.label]))}
               onCloseApps={(ids) => { setOpenedApps(prev => prev.filter(x => !ids.includes(x))); if (activeApp && ids.includes(activeApp)) setActiveApp(null); }}
               email={account?.email}
+                  profilePhoto={profilePhoto}
+                  setProfilePhoto={setProfilePhoto}
               userName={userName}
               setUserName={setUserName}
               wifi={wifiActive}
@@ -3524,8 +3549,6 @@ export default function App() {
           <div className="app-content no-scrollbar p-0">
             <StoreApp
               darkMode={darkMode}
-              userAvatar={userAvatar}
-              userName={userName}
               installedApps={installedApps}
               onInstall={handleInstallApp}
               onUninstall={handleUninstallApp}
@@ -3538,6 +3561,8 @@ export default function App() {
               onUpdateCustomApp={patchCustomApp}
               overrides={appOverrides}
               onUpdateApp={updateAppOverride}
+              profilePhoto={profilePhoto}
+              userAvatar={userAvatar}
             />
           </div>
         </div>
@@ -3759,8 +3784,10 @@ export default function App() {
             <RecentsMemoryBadge />
             <div className="recents-track no-scrollbar">
               {openedApps.length === 0 ? (
-                <div className="empty-state" style={{ width: '100%', color: 'rgba(255,255,255,0.5)' }}>
-                  <span style={{fontSize:16,fontWeight:600,color:"rgba(255,255,255,.82)"}}>Sem aplicativos em segundo plano</span><small style={{fontSize:12,color:"rgba(255,255,255,.48)"}}>Os apps que você abrir aparecerão aqui</small>
+                <div style={{ width: '100%', minHeight: '55vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'rgba(255,255,255,0.75)', textAlign: 'center', padding: '0 36px' }}>
+                  <LayersIcon size={44} strokeWidth={1.3} style={{ opacity: 0.6 }} />
+                  <strong style={{ fontSize: 17, fontWeight: 600 }}>Sem aplicativos em segundo plano</strong>
+                  <span style={{ fontSize: 13, opacity: 0.6 }}>Os apps que você abrir ficam aqui para voltar rapidamente.</span>
                 </div>
               ) : (
                 openedApps.map((appName) => {
@@ -3940,24 +3967,35 @@ export default function App() {
               onClick={() => setWidgetSheet(false)}
             >
               <motion.div
-                className="sheet-bottom"
+                className="sheet-bottom wsheet"
                 initial={{ y: '100%' }}
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
                 transition={{ type: 'spring', damping: 32, stiffness: 320 }}
+                drag="y"
+                dragControls={widgetSheetDrag}
+                dragListener={false}
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={{ top: 0, bottom: 0.7 }}
+                onDragEnd={(_, info) => { if (info.offset.y > 90 || info.velocity.y > 500) setWidgetSheet(false); }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="sheet-title">
-                  <span>Widgets</span>
-                  <button type="button" className="sheet-action" onClick={() => setWidgetSheet(false)}>Fechar</button>
+                <div className="wsheet-grab" onPointerDown={(e) => widgetSheetDrag.start(e)}>
+                  <div className="wsheet-handle" />
+                  <div className="wsheet-head">
+                    <div><strong>Widgets</strong><span>Toque para adicionar à tela inicial</span></div>
+                    <button type="button" className="sheet-action" onClick={() => setWidgetSheet(false)}>Fechar</button>
+                  </div>
                 </div>
-                <div className="widget-picker-list">{Object.entries(WIDGETS).map(([type, m]) => (
-                  <button key={type} type="button" className="widget-opt" onClick={() => addWidget(type)}>
-                    <span className="ico">{m.icon}</span>
-                    <span className="font-medium">{m.label}</span>
-                    <small>{m.w}×{m.h}</small>
-                  </button>
-                ))}</div>
+                <div className="wsheet-grid no-scrollbar">
+                  {Object.entries(WIDGETS).map(([type, m]) => (
+                    <button key={type} type="button" className="wcard" onClick={() => addWidget(type)}>
+                      <span className="ico">{m.icon}</span>
+                      <b>{m.label}</b>
+                      <small>{m.w}×{m.h}</small>
+                    </button>
+                  ))}
+                </div>
               </motion.div>
             </motion.div>
           )}

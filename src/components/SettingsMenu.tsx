@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wifi, Signal, Bluetooth, Plane, Bell, Moon, Volume2, Sun, Accessibility, BatteryCharging, Cpu, LayoutGrid, Shield, Info, Terminal, Search, X, ChevronRight, User } from 'lucide-react';
+import { Wifi, Signal, Bluetooth, Plane, Bell, Moon, Volume2, Sun, Accessibility, Keyboard, BatteryCharging, Cpu, LayoutGrid, Shield, Info, Terminal, Search, X, ChevronRight, User } from 'lucide-react';
 
 export interface MenuItem { id: string; label: string; desc: string; keywords: string; icon: React.ReactNode; color: string; group: string }
 
@@ -12,6 +12,7 @@ export const MENU_ITEMS: MenuItem[] = [
   { id: 'dnd', label: 'Não perturbe', desc: 'Silencie avisos e pop-ups', keywords: 'nao perturbe silencio foco dnd', icon: <Moon size={17} />, color: '#6E56CF', group: 'Avisos e som' },
   { id: 'som', label: 'Som e vibração', desc: 'Volume, toque e feedback', keywords: 'som volume toque vibracao ringtone', icon: <Volume2 size={17} />, color: '#D6409F', group: 'Avisos e som' },
   { id: 'tela', label: 'Tela e personalização', desc: 'Tema, papel de parede, ícones, dock e teclado', keywords: 'tela brilho wallpaper papel de parede escuro dark icones dock teclado navegacao', icon: <Sun size={17} />, color: '#0091FF', group: 'Aparência' },
+  { id: 'teclado', label: 'Teclado', desc: 'Digitação, correção automática e aparência', keywords: 'teclado digitacao correcao automatica sugestoes autocorrecao idioma', icon: <Keyboard size={17} />, color: '#12A594', group: 'Aparência' },
   { id: 'acessibilidade', label: 'Acessibilidade', desc: 'Texto, contraste e filtros', keywords: 'acessibilidade zoom fonte contraste filtro', icon: <Accessibility size={17} />, color: '#12A594', group: 'Aparência' },
   { id: 'bateria', label: 'Bateria', desc: 'Nível, saúde e simulador', keywords: 'bateria nivel carga carregador', icon: <BatteryCharging size={17} />, color: '#30A46C', group: 'Dispositivo' },
   { id: 'memoria', label: 'Memória e armazenamento', desc: 'RAM, apps em execução e espaço', keywords: 'memoria ram armazenamento espaco limpar cache apps execucao', icon: <Cpu size={17} />, color: '#E5A100', group: 'Dispositivo' },
@@ -26,6 +27,7 @@ interface Props {
   userName: string;
   userAvatar: string;
   email?: string;
+  photo?: string | null;
   query: string;
   setQuery: (q: string) => void;
   summaries: Record<string, string>;
@@ -34,7 +36,7 @@ interface Props {
 }
 
 /** Menu principal das Configurações: perfil, busca e seções agrupadas, cada uma com ícone colorido e resumo ao vivo. */
-export default function SettingsMenu({ darkMode, userName, userAvatar, email, query, setQuery, summaries, devUnlocked, onOpen }: Props) {
+export default function SettingsMenu({ darkMode, userName, userAvatar, email, photo, query, setQuery, summaries, devUnlocked, onOpen }: Props) {
   const items = MENU_ITEMS.filter(i => i.id !== 'dev' || devUnlocked);
   const q = query.trim().toLowerCase();
   const found = q ? items.filter(i => (i.label + ' ' + i.desc + ' ' + i.keywords).toLowerCase().includes(q)) : [];
@@ -71,7 +73,7 @@ export default function SettingsMenu({ darkMode, userName, userAvatar, email, qu
       ) : (
         <>
           <button type="button" onClick={() => onOpen('perfil')} className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl text-left border ${darkMode ? 'bg-slate-900 border-white/5' : 'bg-white border-slate-200/60'}`}>
-            <span className="w-14 h-14 rounded-full flex items-center justify-center text-3xl shrink-0" style={{ background: 'color-mix(in srgb, var(--accent, #3E63DD) 18%, transparent)' }}>{userAvatar || <User />}</span>
+            <span className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-3xl shrink-0" style={{ background: 'color-mix(in srgb, var(--accent, #3E63DD) 18%, transparent)' }}>{photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : (userAvatar || <User />)}</span>
             <span className="flex-1 min-w-0">
               <span className="block text-[17px] font-semibold truncate">{userName}</span>
               <span className="block text-[12px] opacity-55 truncate font-mono">{email ?? 'AeroAccount'}</span>

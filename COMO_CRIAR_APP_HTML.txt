@@ -386,3 +386,24 @@ importados e para os que já vêm no sistema.
     um arrasto curto ou rápido para cima fecha o app na hora.
   - Tela de bloqueio: as notificações têm desfoque; ao pedir a senha, o
     papel de parede do início aparece desfocado como fundo do teclado numérico.
+
+
+21. WIDGETS, TECLADO, AEROCLOUD E PAPÉIS DE PAREDE
+--------------------------------------------------
+  - Widgets: tocar abre o app do widget (Clima, Música, Galeria, Notas,
+    Configurações). Segurar abre a edição da tela inicial.
+  - Lista de widgets: folha compacta em grade; arraste pelo topo para fechar.
+  - Gaveta de apps: só um toque abre o app. Rolar ou arrastar nunca abre nem
+    marca nenhum app; o realce aparece só ao pressionar.
+  - Apps recentes: abrem mesmo vazios ("Sem aplicativos em segundo plano").
+  - Teclado: Configurações > Teclado, com idioma, correção automática,
+    sugestões de palavras, ponto com espaço duplo, maiúscula automática,
+    acentos, vibração, som e aparência. Apagar logo depois de uma correção
+    desfaz a correção.
+  - AeroCloud (toque no perfil): foto de perfil, nome, armazenamento por tipo
+    (fotos, músicas, apps), backup, sincronização, dispositivos e planos
+    simulados. A foto aparece também na App Store.
+  - Papéis de parede: nove novos de camadas onduladas, com sombra suave, em
+    tons pastel: Ondas (verde, rosa, branco), Dunas com sol (amarelo, roxo,
+    laranja) e Anéis (azul, marrom, cinza). Entram também para quem já tinha
+    a lista salva.

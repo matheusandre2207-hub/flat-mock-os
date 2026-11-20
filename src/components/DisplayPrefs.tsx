@@ -1,6 +1,7 @@
 import React from 'react';
 import { usePrefs, setPrefs, ClockPref, NavStyle, DrawerStyle, KbPrefs, GlassPrefs, GlassLevel, DockStyle, IconMode, DEFAULTS } from '../prefs';
 import { getIconTint } from '../wallpaperTint';
+import { clearLearned } from '../keyboardDict';
 
 function Seg({ value, options, onChange }: { value: string; options: [string, string][]; onChange: (v: string) => void }) {
   return (
@@ -89,7 +90,7 @@ export function GlassSection() {
   );
 }
 
-function KeyboardSection() {
+export function KeyboardSection() {
   const { prefs } = usePrefs();
   const kb = prefs.kb;
   const set = (patch: Partial<KbPrefs>) => setPrefs({ kb: { ...kb, ...patch } });
@@ -110,6 +111,15 @@ function KeyboardSection() {
       <Range title="Desfoque do fundo" value={kb.blur} min={0} max={40} unit="px" onChange={n => set({ blur: n })} />
       <Range title="Altura das teclas" value={kb.height} min={34} max={60} unit="px" onChange={n => set({ height: n })} />
       <Range title="Arredondamento" value={kb.radius} min={4} max={22} unit="px" onChange={n => set({ radius: n })} />
+      <div className="space-y-2">
+        <h4 className="text-xs font-semibold opacity-70">Idioma</h4>
+        <Seg value={kb.lang} onChange={v => set({ lang: v as 'pt' | 'en' })} options={[['pt', 'Português (Brasil)'], ['en', 'English']]} />
+      </div>
+      <h4 className="text-xs font-semibold opacity-70 pt-1">Digitação</h4>
+      <Switch title="Correção automática" desc="Corrige a palavra ao digitar espaço ou pontuação. Apagar logo depois desfaz a correção." checked={kb.autoCorrect} onChange={b => set({ autoCorrect: b })} />
+      <Switch title="Sugestões de palavras" desc="Mostra até três palavras sugeridas acima das teclas." checked={kb.suggestions} onChange={b => set({ suggestions: b })} />
+      <Switch title="Ponto com espaço duplo" desc="Dois espaços seguidos viram ponto e espaço." checked={kb.doubleSpace} onChange={b => set({ doubleSpace: b })} />
+      <button type="button" onClick={() => clearLearned()} className="text-xs font-semibold text-blue-500 border-0 bg-transparent cursor-pointer">Limpar palavras aprendidas</button>
       <Switch title="Maiúscula automática" desc="Começa frases com letra maiúscula." checked={kb.autoCap} onChange={b => set({ autoCap: b })} />
       <Switch title="Acentos ao segurar" desc="Segure uma vogal para ver á, ã, é, ô e outras." checked={kb.accents} onChange={b => set({ accents: b })} />
       <Switch title="Vibração" desc="Vibra levemente ao tocar nas teclas." checked={kb.vibrate} onChange={b => set({ vibrate: b })} />
@@ -188,8 +198,6 @@ export default function DisplayPrefs() {
         </div>
         <Seg value={prefs.dockStyle} onChange={v => setPrefs({ dockStyle: v as DockStyle })} options={[['floating', 'Flutuante'], ['fixed', 'Fixa']]} />
       </div>
-      <div className="h-px bg-slate-200 dark:bg-white/10" />
-      <KeyboardSection />
     </div>
   );
 }
