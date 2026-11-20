@@ -142,6 +142,24 @@ const playRingtone = (type: string) => {
   }
 };
 
+
+const Card = ({ dm, children }: { dm: boolean; children: React.ReactNode }) => (
+  <div className={`rounded-2xl p-4 space-y-3 ${dm ? 'bg-slate-900' : 'bg-white'}`}>{children}</div>
+);
+const Tog = ({ title, desc, on, set }: { title: string; desc?: string; on: boolean; set: (b: boolean) => void }) => (
+  <button type="button" onClick={() => { set(!on); playTone(on ? 330 : 520, 'sine', 0.06, 0.03); }} className="w-full flex items-center justify-between gap-3 text-left">
+    <span><span className="block text-sm font-semibold">{title}</span>{desc && <span className="block text-xs opacity-55">{desc}</span>}</span>
+    <span className={`w-11 h-6 rounded-full p-0.5 shrink-0 transition-colors ${on ? 'bg-blue-600' : 'bg-slate-400/50'}`}><span className={`block w-5 h-5 rounded-full bg-white transition-transform ${on ? 'translate-x-5' : ''}`} /></span>
+  </button>
+);
+const Rng = ({ title, v, set, min = 0, max = 100, suffix = '%' }: { title: string; v: number; set: (n: number) => void; min?: number; max?: number; suffix?: string }) => (
+  <label className="block"><span className="flex justify-between text-sm font-semibold"><span>{title}</span><span className="opacity-60">{Math.round(v)}{suffix}</span></span>
+    <input type="range" min={min} max={max} value={v} onChange={e => set(Number(e.target.value))} className="w-full mt-1" /></label>
+);
+const Btn = ({ children, onClick, danger }: { children: React.ReactNode; onClick: () => void; danger?: boolean }) => (
+  <button type="button" onClick={onClick} className={`w-full py-2.5 rounded-xl text-sm font-semibold ${danger ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`}>{children}</button>
+);
+
 export default function SettingsApp({
   userName, setUserName,
   wifi, setWifi,
@@ -425,6 +443,121 @@ export default function SettingsApp({
                 <div className="w-16" /> {/* Spacer */}
               </div>
 
+
+              {currentPanel === 'wifi' && (
+                <Card dm={darkMode}>
+                  <Tog title="Wi-Fi" on={wifi} set={v => { setWifi(v); setConnectedWifi(v ? 'MockOS-Guest_5G' : null); }} />
+                  {wifi && ['MockOS-Guest_5G', 'Casa_2.4G', 'Cafe_Livre'].map(n => (
+                    <button key={n} type="button" onClick={() => { setWifiLoading(n); setTimeout(() => { setConnectedWifi(n); setWifiLoading(null); }, 900); }} className="w-full flex justify-between text-sm py-2 border-t border-slate-200/30">
+                      <span>{n}</span><span className="opacity-60">{wifiLoading === n ? 'Conectando…' : connectedWifi === n ? 'Conectado' : ''}</span>
+                    </button>
+                  ))}
+                </Card>
+              )}
+              {currentPanel === 'celular' && (
+                <Card dm={darkMode}>
+                  <Tog title="Dados móveis" on={cellular} set={setCellular} />
+                  <Tog title="Limite de dados" desc="Avisar ao atingir o limite" on={dataLimitEnabled} set={setDataLimitEnabled} />
+                </Card>
+              )}
+              {currentPanel === 'bluetooth' && (
+                <Card dm={darkMode}>
+                  <Tog title="Bluetooth" on={bluetooth} set={v => { setBluetooth(v); if (!v) setBluetoothDevices(d => d.map(x => ({ ...x, connected: false }))); }} />
+                  {bluetooth && bluetoothDevices.map(d => (
+                    <button key={d.id} type="button" onClick={() => { setConnectingBtId(d.id); setTimeout(() => { setBluetoothDevices(l => l.map(x => x.id === d.id ? { ...x, connected: !x.connected } : x)); setConnectingBtId(null); }, 800); }} className="w-full flex justify-between text-sm py-2 border-t border-slate-200/30">
+                      <span>{d.name}</span><span className="opacity-60">{connectingBtId === d.id ? 'Conectando…' : d.connected ? 'Conectado' : 'Não conectado'}</span>
+                    </button>
+                  ))}
+                </Card>
+              )}
+              {currentPanel === 'aviao' && (
+                <Card dm={darkMode}><Tog title="Modo Avião" desc="Desliga Wi-Fi, Bluetooth e rede móvel" on={airplaneMode} set={setAirplaneMode} /></Card>
+              )}
+              {currentPanel === 'tela' && (
+                <div className="space-y-3">
+                  <Card dm={darkMode}>
+                    <Tog title="Tema escuro" on={darkMode} set={setDarkMode} />
+                    <Tog title="Modo noturno" desc="Tons mais quentes" on={nightMode} set={setNightMode} />
+                    <Rng title="Brilho" v={brightness} set={setBrightness} min={10} />
+                    {onToggleFullscreen && <Btn onClick={onToggleFullscreen}>{isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}</Btn>}
+                  </Card>
+                  <Card dm={darkMode}>
+                    <h3 className="text-sm font-semibold">Papel de parede</h3>
+                    <div className="grid grid-cols-3 gap-2">
+                      {wallpapers.map((w, i) => (
+                        <button key={i} type="button" onClick={() => setWallpaperIndex(i)} className={`h-20 rounded-xl text-[10px] font-semibold flex items-end p-1 ${i === currentWallpaperIndex ? 'ring-2 ring-blue-500' : ''} ${w.isDark ? 'text-white' : 'text-black'}`} style={{ background: w.gradient }}>{w.name}</button>
+                      ))}
+                    </div>
+                    {onOpenGallery && <Btn onClick={onOpenGallery}>Escolher da galeria</Btn>}
+                  </Card>
+                  <DisplayPrefs />
+                </div>
+              )}
+              {currentPanel === 'bateria' && (
+                <Card dm={darkMode}>
+                  <p className="text-3xl font-bold">{Math.round(simulatedLevel)}%{simulatedCharging ? ' ⚡' : ''}</p>
+                  <Tog title="Simulador manual" desc="Controlar nível e carregamento" on={useManualBattery} set={setUseManualBattery} />
+                  {useManualBattery && (<>
+                    <Rng title="Nível da bateria" v={simulatedLevel} set={setSimulatedLevel} min={1} />
+                    <Tog title="Carregando" on={simulatedCharging} set={setSimulatedCharging} />
+                  </>)}
+                </Card>
+              )}
+              {currentPanel === 'som' && (
+                <Card dm={darkMode}>
+                  <Rng title="Volume" v={volume} set={v => { setVolume(v); playTone(440, 'sine', 0.05, 0.03); }} />
+                  <h3 className="text-sm font-semibold pt-1">Toque</h3>
+                  {['classic', 'synth', 'bell', 'marimba', 'cyberpunk', 'diamond', 'crystal', 'gold'].map(r => (
+                    <button key={r} type="button" onClick={() => { setSelectedRingtone(r); playRingtone(r); }} className="w-full flex justify-between text-sm py-2 border-t border-slate-200/30 capitalize">
+                      <span>{r}</span>{selectedRingtone === r && <Check size={16} className="text-blue-600" />}
+                    </button>
+                  ))}
+                  <Tog title="Vibração do teclado" desc="Feedback tátil ao digitar" on={prefs.kb.vibrate} set={v => setPrefs({ kb: { ...prefs.kb, vibrate: v } })} />
+                </Card>
+              )}
+              {currentPanel === 'notificacoes' && (
+                <Card dm={darkMode}>
+                  <Tog title="Permitir notificações" on={allowedNotifications} set={setAllowedNotifications} />
+                  <div className="flex gap-2">
+                    {(['stack', 'list', 'count'] as const).map(st => (
+                      <button key={st} type="button" onClick={() => setNotificationStyle(st)} className={`flex-1 py-2 rounded-xl text-xs font-semibold ${notificationStyle === st ? 'bg-blue-600 text-white' : 'bg-slate-400/20'}`}>{st === 'stack' ? 'Pilha' : st === 'list' ? 'Lista' : 'Contagem'}</button>
+                    ))}
+                  </div>
+                </Card>
+              )}
+              {currentPanel === 'privacidade' && (
+                <Card dm={darkMode}>
+                  <Tog title="Serviços de localização" on={locationServices} set={setLocationServices} />
+                  <label className="block text-sm font-semibold">Alterar PIN
+                    <input value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" className="w-full mt-1 px-3 py-2 rounded-xl bg-slate-400/20 outline-none" />
+                  </label>
+                </Card>
+              )}
+              {currentPanel === 'acessibilidade' && (
+                <Card dm={darkMode}><Tog title="Escala de cinza" on={grayscaleMode} set={setGrayscaleMode} />
+                  <div className="flex gap-2">{(['pt', 'en'] as const).map(l => (
+                    <button key={l} type="button" onClick={() => setLanguage(l)} className={`flex-1 py-2 rounded-xl text-sm font-semibold ${language === l ? 'bg-blue-600 text-white' : 'bg-slate-400/20'}`}>{l === 'pt' ? 'Português' : 'English'}</button>
+                  ))}</div>
+                </Card>
+              )}
+              {currentPanel === 'apps' && (
+                <Card dm={darkMode}>
+                  {installedApps.length === 0 && <p className="text-sm opacity-60">Nenhum app instalado.</p>}
+                  {installedApps.map(id => (
+                    <div key={id} className="flex items-center justify-between text-sm py-1.5 border-t border-slate-200/30">
+                      <span>{appNames[id] || id}</span>
+                      <button type="button" onClick={() => onUninstall(id)} className="text-red-600 font-semibold">Remover</button>
+                    </div>
+                  ))}
+                </Card>
+              )}
+              {currentPanel === 'sobre' && (
+                <div className="space-y-3">
+                  <AboutPanel darkMode={darkMode} userName={userName} language={language} battery={Math.round(simulatedLevel)} email={email} checking={checkingUpdate} updateMessage={updateMessage}
+                    onCheck={() => { setCheckingUpdate(true); setUpdateMessage(''); setTimeout(() => { setCheckingUpdate(false); setUpdateMessage('O sistema está atualizado'); playTone(880, 'sine', 0.15, 0.06); }, 1500); }} onDevTap={onDevTap} />
+                  <Btn danger onClick={onResetOS}>Restaurar sistema</Btn>
+                </div>
+              )}
               {/* PANEL 1: PROFILE / EDIT NAME */}
               {currentPanel === 'perfil' && (
                 <CloudPanel darkMode={darkMode} userName={userName} setUserName={setUserName} userAvatar={userAvatar} email={email} photo={profilePhoto} setPhoto={setProfilePhoto} />
